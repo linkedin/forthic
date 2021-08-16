@@ -1,0 +1,13 @@
+["jira" "example_contexts"] USE-MODULES
+
+# The jira module words require a context (host, creds) to run.
+example_contexts.JIRA-STG jira.PUSH-CONTEXT!
+
+# NOTE: Change this specify a different Jira username, if needed
+: USER   CURRENT-USER;
+
+: JQL              ["assignee=" USER " and resolution is null"] CONCAT;
+: FIELDS           ['Summary' 'Assignee'];
+: |TO-LINES        ">STR" MAP "<br>" JOIN;
+: ACTIVE-TICKETS   JQL FIELDS jira.SEARCH;
+: MAIN-PAGE        ["<code>" ACTIVE-TICKETS |TO-LINES "</code>"] CONCAT;

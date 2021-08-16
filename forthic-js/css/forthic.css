@@ -1,0 +1,142 @@
+/*
+    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-family: 'IBM Plex Serif', serif;
+*/
+
+
+/* -------------------- BEGIN: Misc -------------------- */
+.clickable {
+    cursor: pointer;
+}
+
+td.clickable:hover {
+    text-decoration: underline;
+}
+/* -------------------- END: Misc -------------------- */
+
+
+/* -------------------- BEGIN: Busy Overlay -------------------- */
+#busy-overlay {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    z-index: 100;
+    top: 0;
+    left: 0;
+}
+
+#busy-overlay.hidden {
+    display: none;
+}
+
+#busy-overlay div.background {
+    background-color: blue;
+    width: 100%;
+    height: 100%;
+    opacity: 47%;
+}
+
+#busy-overlay h1 {
+    color: #444;
+    opacity: 100%;
+    background-color: #ebd534;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    margin: 7rem 0;
+    text-align: center;
+    box-shadow: 1rem .4rem 1rem;
+}
+
+#busy-overlay .hourglass {
+    animation: rotation 1.5s infinite;
+    animation-delay: 1.5s;
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+/* -------------------- END: Busy Overlay -------------------- */
+
+
+
+/* -------------------- BEGIN: Picker -------------------- */
+.picker {
+    display: flex;
+    flex-direction: column;
+}
+
+.picker .value {
+    cursor: pointer;
+    font-size: 1.4rem;
+    border: 1px solid black;
+    padding: 0.3rem;
+    transition: all 0.2s;
+    background-color: rgb(103, 109, 197);
+    color: white;
+}
+
+.picker .option {
+    cursor: pointer;
+    font-size: 1.4rem;
+    border: 1px solid black;
+    border-top: none;
+    padding: 0.3rem;
+    transition: all 0.2s;
+}
+
+.picker .option:first-child {
+    border-top: 1px solid black;
+}
+
+.picker .option.selected {
+    background-color: rgb(103, 109, 197);
+    color: white;
+}
+
+.picker .option:hover {
+    background-color: rgb(103, 109, 197, 0.3);
+}
+
+.picker .value:hover {
+    background-color: rgb(103, 109, 197, 0.8);
+}
+
+.pick-list {
+    position: relative;
+}
+
+.picker .typeahead {
+    display: none;
+}
+
+.picker .hidden {
+    display: none;
+}
+
+/* -------------------- END: Picker -------------------- */
+
+
+
+/* -------------------- BEGIN: Ldap Picker -------------------- */
+.ldap-picker .value-wrapper {
+    display: flex;
+}
+
+.ldap-picker .value-wrapper.hidden {
+    display: none;
+}
+
+.ldap-picker .value {
+    flex-grow: 1;
+}
+/* -------------------- END: Ldap Picker -------------------- */

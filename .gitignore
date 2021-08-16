@@ -1,0 +1,16 @@
+forthic-env
+myenv
+*.swp
+TODO
+*.pyc
+.secrets*
+.key*
+one-ofs
+*.cache
+apps/examples/static/forthic/*
+*.DS_Store
+*.ignore
+.vscode
+.coverage
+forthic.egg-info
+build

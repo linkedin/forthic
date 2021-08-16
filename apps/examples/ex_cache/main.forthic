@@ -1,0 +1,7 @@
+["cache"] USE-MODULES
+
+["Alpha" "Beta" "Gamma"] "greek" cache.CACHE!
+
+: GREEK   "greek" cache.CACHE@;
+
+: MAIN-PAGE   ["<code>" GREEK >STR  "</code>"] CONCAT;

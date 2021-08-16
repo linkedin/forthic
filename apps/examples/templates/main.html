@@ -1,0 +1,16 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="module" src="/static/forthic/main.mjs"></script>
+    <title>Forthic Examples</title>
+</head>
+<body>
+    <h1>Forthic Examples</h1>
+    {% for info in ex_infos %}
+    <h2>{{info['name']}}</h2>
+    {{info['description'] |safe}}
+    <p><a href="/examples/{{info['name']}}">Link</a></p>
+    {% endfor %}
+</body>
+</html>

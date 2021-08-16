@@ -1,0 +1,9 @@
+# NOTES
+
+This shows how to build and install a python module without publishing: https://towardsdatascience.com/building-a-python-package-without-publishing-e2d36c4686cd
+
+To create and use a virtual python environment:
+* python3 -m venv myenv
+* .\myenv\Scripts\activate
+
+To install locally, use `pip install .`

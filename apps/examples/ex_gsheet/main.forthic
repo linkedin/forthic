@@ -1,0 +1,12 @@
+["gsheet" "example_contexts"] USE-MODULES
+
+# The gsheet module words require a context (OAuth token) to run.
+example_contexts.GOOGLE gsheet.PUSH-CONTEXT!
+
+: MY-URL           "https://add-your-gsheet-url-here";
+
+: |TO-LINES        ">STR" MAP "<br>" JOIN;
+: MY-ROWS          MY-URL gsheet.SHEET-ROWS;
+
+: MAIN-PAGE        "Uncomment the line below once you have MY-URL defined";
+# : MAIN-PAGE        ["<code>" MY-ROWS |TO-LINES "</code>"] CONCAT;

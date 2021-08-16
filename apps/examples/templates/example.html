@@ -1,0 +1,21 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="module" src="/static/forthic/main.mjs"></script>
+    <title>Forthic Example: {{example}}</title>
+</head>
+<body>
+    <h1>Forthic Example: {{example}}</h1>
+    <h2>Overview</h2>
+    {{overview |safe}}
+    <h2>Forthic Code</h2>
+    <code>
+        <pre>{{example_forthic}}</pre>
+    </code>
+    <h2>Example Output</h2>
+    <div class="example-output">
+        {{html_output |safe}}
+    </div>
+</body>
+</html>
