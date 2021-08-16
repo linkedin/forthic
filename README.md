@@ -34,11 +34,11 @@ See [EXAMPLES.md](docs/EXAMPLES.md) for more info about each example.
 ## Tests
 ```
 # Tests the Python Forthic interpreter
-make test-py
+make test
 
 # Tests the JavaScript Forthic interpreter
 make test-js
 
 # Tests both
-make test
+make test-all
 ```
