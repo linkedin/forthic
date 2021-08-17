@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 .PHONY: install-forthic test test-js credentials-server examples docs
 
 example-server: install-forthic
