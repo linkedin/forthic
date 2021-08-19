@@ -275,7 +275,7 @@ class HtmlModule(Module):
             store_button_states(button_id, {'state': 'RUNNING'})
             interp.run(forthic)
             store_button_states(button_id, {'state': ''})
-        except RuntimeError as e:
+        except Exception as e:
             store_button_states(button_id, {'state': 'ERROR', 'message': str(e)})
 
 

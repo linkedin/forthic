@@ -51,6 +51,7 @@ class HtmlModule extends Module {
         this.add_module_word("RUN-ON-SERVER", this.word_RUN_ON_SERVER);
         this.add_module_word("SERVER-PROMISE", this.word_SERVER_PROMISE);
         this.add_module_word("START-JOB-PROMISE", this.word_START_JOB_PROMISE);
+        this.add_module_word("SERVER-FORTHIC-BUTTON", this.word_SERVER_FORTHIC_BUTTON);
         this.add_module_word("NEXT-EVENT-LOOP", this.word_NEXT_EVENT_LOOP);
         this.add_module_word("AWAIT", this.word_AWAIT);
         this.add_module_word("<THEN", this.word_l_THEN);
@@ -392,6 +393,18 @@ class HtmlModule extends Module {
         interp.stack_push(result);
     }
 
+    // ( button_id args_forthic server_forthic -- ServerForthicButton )
+    // NOTE: `args_forthic` must evaluate to an array of arguments.
+    //       Each arg will be "escaped" using JSON, so the `server_forthic` must call `JSON>` on
+    //       each arg to unescape it.
+    word_SERVER_FORTHIC_BUTTON(interp) {
+        let server_forthic = interp.stack_pop();
+        let args_forthic = interp.stack_pop();
+        let button_id = interp.stack_pop();
+        let result = new ServerForthicButton(interp, button_id, args_forthic, server_forthic);
+        interp.stack_push(result);
+    }
+
     // ( --  )
     async word_NEXT_EVENT_LOOP(interp) {
         // This is meant to be used with AWAIT so the next word runs in the next event loop
@@ -601,10 +614,17 @@ COMMON-TYPES "FDEFINE-ELEMENT INTERPRET" FOREACH
 : DISABLE  <DISABLE POP;
 : ADD-LISTENER   <ADD-LISTENER POP;
 
+["word" "args"] VARIABLES
+: S-INTERPRET      SERVER-PROMISE "ALERT" <CATCH AWAIT;  # ( forthic -- server_response )
+: S-FORTHIC        (word ! args !) [args @ ">JSON QUOTED" MAP word @] FLATTEN CONCAT;
+: S-RUN            S-FORTHIC S-INTERPRET;  # ( args word -- server_response )
+
 COMMON-TYPES EXPORT
+
  ["SVG-NS" "SVG-ELEMENT" "SVG" "BUSY-OVERLAY" "BUSY" "NOT-BUSY"
   "ENABLE" "DISABLE" "ADD-LISTENER"
-  "INNER-HTML!" "INNER-TEXT!" "APPEND"] EXPORT
+  "INNER-HTML!" "INNER-TEXT!" "APPEND"
+  "S-INTERPRET" "S-FORTHIC" "S-RUN"] EXPORT
 `;
 
 
@@ -636,6 +656,155 @@ function remove_css_class(element, css_class) {
     }
 
     element.className = remaining_classes.join(" ");
+}
+
+
+// ----- ServerForthicButton ---------------------------------------------------------------------------------
+class ServerForthicButton {
+    constructor(interp, button_id, args_forthic, server_forthic) {
+        let self = this;
+        self.ASYNC_BUTTON_KEY = '_async_forthic_button_state';  // Key for button states in server Forthic cache
+        self.interp = interp;
+        self.button_id = button_id;
+        self.args_forthic = args_forthic;
+        self.server_forthic = server_forthic;
+
+        // Options (these are settable using <REC!)
+        self.reload_page = true;
+        self.confirmable = false;
+
+        // Add supporting nodes
+        self.button = $(`#${button_id}`);
+        self.button.after(`<div id='${button_id}-error' style='display: none;'>
+            <h3>Error Running Job</h3>
+            <p id="${button_id}-error-message" class="error"></p>
+            </div>`);
+        self.button.after(`<p id='${button_id}-running' style='display: none;'>Running...</p>`)
+
+        self.error_div = $(`#${button_id}-error`)
+        self.error_message = $(`#${button_id}-error-message`)
+        self.running_p = $(`#${button_id}-running`)
+
+        // Hook up click handler
+        $(`#${self.button_id}`).click(() => {self.handle_click()})
+
+        // Pull initial state data and render
+        setTimeout(() => {self.set_initial_state()}, 0);
+    }
+
+    async set_initial_state() {
+        let state_info = await this.get_state_info();
+        this.update_state(state_info);
+
+        if (state_info.state == 'RUNNING')   this.check_state_periodically();
+    }
+
+    update_state(state_info) {
+        switch (state_info.state) {
+            case 'RUNNING':
+                this.show_running_state();
+                break;
+
+            case 'ERROR':
+                this.show_error_state(state_info.message)
+                break;
+
+            default:
+                this.show_normal_state();
+                break;
+        }
+    }
+
+    async check_state_periodically() {
+        let self = this;
+        let state_info = await self.get_state_info();
+        self.update_state(state_info);
+        if (state_info.state == "RUNNING") {
+            setTimeout(() => {self.check_state_periodically()}, 10000);
+        }
+    }
+
+    show_normal_state() {
+        this.error_div.hide()
+        this.running_p.hide()
+        this.button.prop("disabled", false);
+    }
+
+    show_running_state() {
+        this.error_div.hide()
+        this.running_p.show()
+        this.button.prop("disabled", true);
+    }
+
+    show_error_state(message) {
+        this.running_p.hide()
+        this.error_div.show()
+        this.error_message.text(message);
+        this.button.prop("disabled", false);
+    }
+
+    async handle_click() {
+        let self = this;
+        if (self.confirmable) {
+            if (!confirm("Are you sure?"))   return;
+        }
+
+        await self.interp.run(self.args_forthic);
+        self.interp.stack_push(self.server_forthic);
+        await self.interp.run("S-FORTHIC");
+        let forthic = self.interp.stack_pop()
+
+        $(`#${self.button_id}`).prop("disabled", true);
+
+        $.ajax({
+            type: "POST",
+            url: self.get_forthic_route(),
+            data: {
+                'forthic': `'${forthic}' '${self.button_id}' {html RUN-ASYNC-BUTTON}`
+            }
+        }).done(function(data) {
+            $(`#${self.button_id}`).prop("disabled", false);
+            if (self.reload_page)   window.location.reload();
+        })
+        .fail( function(xhr, status, error) {
+            console.error(xhr.responseText);
+            let error_text = JSON.parse(xhr.responseText).split("\\n")[0];
+            alert("Problem executing action. " + error_text);
+            $(`#${self.button_id}`).prop("disabled", false);
+        });
+
+        // Wait a few seconds and then start checking state
+        self.show_running_state();
+        setTimeout(() => {self.check_state_periodically()}, 3000);
+    }
+
+    get_forthic_route() {
+        var base = window.location.origin + window.location.pathname;
+        var end = base[base.length-1] == "/" ? "forthic" : "/forthic";
+        return base + end;
+    }
+
+    async get_state_info() {
+        let result;
+        try {
+            let forthic = `'${this.ASYNC_BUTTON_KEY}' cache.CACHE@ '${this.button_id}' REC@ '' DEFAULT`;
+            console.log(forthic)
+            let response = await $.ajax({
+                type: "POST",
+                url: this.get_forthic_route(),
+                data: {
+                    'forthic': forthic
+                }
+            });
+            result = response.result;
+            return result;
+        } catch (error) {
+            console.error(error);
+            console.error(error.responseText);
+            let error_text = JSON.parse(error.responseText).split("\\n")[0];
+            alert("Problem checking state. " + error_text);
+        }
+    }
 }
 
 

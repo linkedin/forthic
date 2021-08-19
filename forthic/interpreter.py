@@ -357,7 +357,7 @@ class Interpreter(IInterpreter):
         word = StartModuleWord(token.name)
         if self.is_compiling:
             if not self.cur_definition:
-                raise InterruptedError("Interpreter is compiling, but there is no current definition")
+                raise InterpreterError("Interpreter is compiling, but there is no current definition")
             self.cur_definition.add_word(word)
 
         # NOTE: We execute the word within a definition so we can do lookups during compile
@@ -368,7 +368,7 @@ class Interpreter(IInterpreter):
         word = EndModuleWord()
         if self.is_compiling:
             if not self.cur_definition:
-                raise InterruptedError("Interpreter is compiling, but there is no current definition")
+                raise InterpreterError("Interpreter is compiling, but there is no current definition")
             self.cur_definition.add_word(word)
 
         # NOTE: We execute the word within a definition so we can do lookups during compile
@@ -408,7 +408,7 @@ class Interpreter(IInterpreter):
     def handle_word(self, word: IWord) -> None:
         if self.is_compiling:
             if not self.cur_definition:
-                raise InterruptedError("Interpreter is compiling, but there is no current definition")
+                raise InterpreterError("Interpreter is compiling, but there is no current definition")
             self.cur_definition.add_word(word)
         else:
             self.count_word(word)
