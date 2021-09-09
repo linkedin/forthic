@@ -2327,7 +2327,12 @@ class GlobalModule(Module):
             interp.stack_push(len(a))
             return
 
-        result = int(float(a))
+        result: Union[int, None]
+        try:
+            result = int(float(a))
+        except ValueError:
+            result = None
+
         interp.stack_push(result)
 
     # ( a -- a_int )
@@ -2338,7 +2343,12 @@ class GlobalModule(Module):
             interp.stack_push(0.0)
             return
 
-        result = float(a)
+        result: Union[float, None]
+        try:
+            result = float(a)
+        except ValueError:
+            result = None
+
         interp.stack_push(result)
 
     # ( low high -- int )

@@ -712,13 +712,14 @@ JIRA_FORTHIC = '''
 : REQUIRE               "Require";      # in_key "requires" out_key
 
 : ISSUE-URL              HOST "/browse/" CONCAT SWAP CONCAT ;   # ( key -- url )
+: JQL-URL                HOST "/issues/?jql=" CONCAT SWAP URL-ENCODE CONCAT ;   # ( jql -- url )
 
 ["_key"] VARIABLES
 : PARENT-KEY             (_key !) ["key=" _key @] CONCAT ["parent"] SEARCH 0 NTH "parent" REC@;
 
 [
     "DEPENDENCY" "ACTION-ITEM" "CLONERS" "DUPLICATE" "ISSUE-SPLIT" "RELATED" "REQUIRE"
-    "ISSUE-URL"
+    "ISSUE-URL" "JQL-URL"
     "PARENT-KEY"
 ] EXPORT
 '''

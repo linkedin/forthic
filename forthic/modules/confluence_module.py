@@ -31,10 +31,11 @@ class ConfluenceModule(Module):
         self.add_module_word('NBSP', self.word_NBSP)
         self.add_module_word('SPACES-WIDE', self.word_SPACES_WIDE)
 
-        self.add_module_word(
-            '|ESCAPE-TABLE-CONTENT', self.word_pipe_ESCAPE_TABLE_CONTENT
-        )
+        self.add_module_word('|ESCAPE-TABLE-CONTENT', self.word_pipe_ESCAPE_TABLE_CONTENT)
+        self.add_module_word('|ESCAPE-NEWLINES', self.word_pipe_ESCAPE_NEWLINES)
+        self.add_module_word('COLOR-BOX', self.word_COLOR_BOX)
         self.add_module_word('TABLE', self.word_TABLE)
+        self.add_module_word('RENDER', self.word_RENDER)
 
         self.add_module_word('UPSERT-PAGE', self.word_UPSERT_PAGE)
 
@@ -105,36 +106,26 @@ class ConfluenceModule(Module):
         We also remove the '|' character except in the case where it's used to specify a link
         """
         content = interp.stack_pop()
+        result = escape_table_content(content)
+        interp.stack_push(result)
+
+    # ( str -- str )
+    def word_pipe_ESCAPE_NEWLINES(self, interp: IInterpreter):
+        content = interp.stack_pop()
         if not content:
-            interp.stack_push('')
+            interp.stack_push(content)
             return
+        content = content.strip()
+        content = content.replace('\r', '')
+        pieces = content.split('\n')
+        result = r" \\ ".join(pieces)
+        interp.stack_push(result)
+        pass
 
-        def escape_newlines(s):
-            s = s.strip()
-            s = s.replace('\r', '')
-            pieces = s.split('\n')
-            non_blank_pieces = [p for p in pieces if p]
-            res = '\n'.join(non_blank_pieces)
-
-            # If content is empty, return a space so the table cell doesn't collapse
-            if not res:
-                res = ' '
-            return res
-
-        def remove_pipes_if_needed(s):
-            res = re.sub(
-                r'\[(.*?)\|(.*?)\]', r'[\1%s\2]' % US, s
-            )   # Replace pipes in links with US character
-            res = re.sub(
-                r'\|', '', res
-            )                             # Remove all other pipes
-            res = re.sub(
-                US, '|', res
-            )                               # Replace US chars with pipes again
-            return res
-
-        result = escape_newlines(content)
-        result = remove_pipes_if_needed(result)
+    # ( color -- ColorBox )
+    def word_COLOR_BOX(self, interp: IInterpreter):
+        color = interp.stack_pop()
+        result = ColorBox(color)
         interp.stack_push(result)
 
     # ( headers recs -- wiki_markup )
@@ -164,6 +155,15 @@ class ConfluenceModule(Module):
             table_row(r)
         interp.run(']')
         interp.run('/N JOIN')
+
+    # ( object -- html/wiki )
+    def word_RENDER(self, interp: IInterpreter):
+        obj = interp.stack_pop()
+        if isinstance(obj, str):
+            result = obj
+        else:
+            result = obj.render()
+        interp.stack_push(result)
 
     # ( space parent_title title content -- )
     def word_UPSERT_PAGE(self, interp: IInterpreter):
@@ -264,6 +264,44 @@ class ConfluenceModule(Module):
         return result
 
 
+def escape_table_content(content):
+    """This escapes content that should be rendered into a wiki table cell.
+
+    In particular, we remove blank lines and we also remove the '|' character except in the case where it's
+    used to specify a link
+    """
+    if not content:
+        return ''
+
+    def remove_blank_lines(s):
+        s = s.strip()
+        s = s.replace('\r', '')
+        pieces = s.split('\n')
+        non_blank_pieces = [p for p in pieces if p]
+        res = "\n".join(non_blank_pieces)
+
+        # If content is empty, return a space so the table cell doesn't collapse
+        if not res:
+            res = ' '
+        return res
+
+    def remove_pipes_if_needed(s):
+        res = re.sub(
+            r'\[(.*?)\|(.*?)\]', r'[\1%s\2]' % US, s
+        )   # Replace pipes in links with US character
+        res = re.sub(
+            r'\|', '', res
+        )                             # Remove all other pipes
+        res = re.sub(
+            US, '|', res
+        )                               # Replace US chars with pipes again
+        return res
+
+    result = remove_blank_lines(content)
+    result = remove_pipes_if_needed(result)
+    return result
+
+
 class ConfluenceContext:
     """Override this and pass to PUSH-CONTEXT! in order to make Confluence calls"""
 
@@ -313,3 +351,32 @@ class ConfluenceContext:
 
 CONFLUENCE_FORTHIC = '''
 '''
+
+
+class ColorBox():
+    def __init__(self, color):
+        self.color = color
+        self.options = {
+            "hover_text": ''
+        }
+        return
+
+    def __getitem__(self, key: str) -> Optional[bool]:
+        result = self.options.get(key)
+        return result
+
+    def __setitem__(self, key: str, value: Optional[bool]):
+        if key not in self.options:
+            raise RuntimeError(f"Unknown ColorBox option: '{key}'. Must be one of {self.options.keys()}")
+        self.options[key] = value
+
+    def render(self):
+        result = '{html}<table style="margin:0px auto; display:inline-block; margin-left:-6px;">'
+        result += '   <tbody style="">'
+        result += '      <tr style="">'
+        result += f'''      <td title="{self.options['hover_text']}" style="border:1px solid black; color:rgb(255,255,255);
+                               vertical-align:middle; width:8px; overflow:hidden; height:25px;
+                               background-color:{self.color}">'''
+        result += '         </td> </tr> </tbody> </table>{html}'
+
+        return result
