@@ -94,6 +94,23 @@ Given a gsheet URL, returns its sheet id followed by its tab ID.
 
 Returns metainfo for a gsheet ID.
 
+### URL>SHEET-INFO
+`( url -- info )`
+
+Givne a URL to a gsheet, returns the metainfo for the gsheet (and all tabs)
+
+
+### URL>TAB-INFO
+`( url -- tab_info )`
+
+Givne a URL to a gsheet tab, returns the metainfo for that tab
+
+
+### NUM-ROWS
+`( url -- num )`
+
+Given a URL to a gsheet tab, returns the number of rows in that tab
+
 
 ### ROWS
 `( gsheet_id range -- rows )`
@@ -113,6 +130,25 @@ Returns a range of gsheet data as an array of records. The fields in each record
 correspond to the specified `header`.
 
 If the `header` cannot be found in the range, an error is raised.
+
+### BATCH-UPDATE
+`( url update_requests -- )`
+
+This provides direct access to the [batchUpdate API](https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/batchUpdate).
+
+This takes a `url` and an array of `update_requests` where each request is a [Request object](https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/request#Request) like:
+```
+    : DELETE-ROWS-RANGE   [
+        ["dimension"   "ROWS"]
+        ["startIndex"   5]
+    ] REC;
+
+    ["deleteDimension"  [
+        ["range"   DELETE-ROWS-RANGE]
+    ] REC]
+```
+
+This word adds the tab ID associated with the `url` to each of the request objects and executes the batch update call.
 
 ### CLEAR-SHEET!
 `( url -- )`

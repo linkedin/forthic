@@ -17,7 +17,11 @@ FORTHIC = '''
 : SHEET-ROWS   URL>SHEET-ID/RANGE ROWS;   # ( url -- rows )
 : SHEET-RECORDS   ( headers ! ) URL>SHEET-ID/RANGE headers @ RECORDS;   # (url headers  -- records )
 
-["SHEET-ROWS" "SHEET-RECORDS"] EXPORT
+: NUM-ROWS   URL>TAB-INFO ["properties" "gridProperties" "rowCount"] REC@; # ( url -- num)
+
+["SHEET-ROWS"
+"SHEET-RECORDS"
+"NUM-ROWS"] EXPORT
 '''
 
 
@@ -33,17 +37,17 @@ class GsheetModule(Module):
         self.add_module_word('PUSH-CONTEXT!', self.word_PUSH_CONTEXT_bang)
         self.add_module_word('POP-CONTEXT!', self.word_POP_CONTEXT_bang)
         self.add_module_word('SHEET-INFO', self.word_SHEET_INFO)
-        self.add_module_word(
-            'URL>SHEET-ID/RANGE', self.word_URL_to_SHEET_ID_slash_RANGE
-        )
-        self.add_module_word(
-            'URL>SHEET-ID/TAB-ID', self.word_URL_to_SHEET_ID_slash_TAB_ID
-        )
+        self.add_module_word('URL>SHEET-INFO', self.word_URL_to_SHEET_INFO)
+        self.add_module_word('URL>TAB-INFO', self.word_URL_to_TAB_INFO)
+        self.add_module_word('URL>SHEET-ID/RANGE', self.word_URL_to_SHEET_ID_slash_RANGE)
+        self.add_module_word('URL>SHEET-ID/TAB-ID', self.word_URL_to_SHEET_ID_slash_TAB_ID)
         self.add_module_word('ROWS', self.word_ROWS)
         self.add_module_word('ROWS!', self.word_ROWS_bang)
         self.add_module_word('COLUMNS!', self.word_COLUMNS_bang)
         self.add_module_word('RECORDS', self.word_RECORDS)
         self.add_module_word('CLEAR-SHEET!', self.word_CLEAR_SHEET_bang)
+
+        self.add_module_word('BATCH-UPDATE', self.word_BATCH_UPDATE)
 
         self.add_module_word(
             'CONDITIONAL-FORMATS', self.word_CONDITIONAL_FORMATS
@@ -74,10 +78,7 @@ class GsheetModule(Module):
         self.add_module_word('<BOLD', self.word_l_BOLD)
         self.add_module_word('<TEXT-FORMAT', self.word_l_TEXT_FORMAT)
 
-        self.add_module_word(
-            'ADD-CONDITIONAL-FORMAT-RULES',
-            self.word_ADD_CONDITIONAL_FORMAT_RULES,
-        )
+        self.add_module_word('ADD-CONDITIONAL-FORMAT-RULES', self.word_ADD_CONDITIONAL_FORMAT_RULES)
         self.add_module_word('UPDATE-BORDERS', self.word_UPDATE_BORDERS)
 
         self.add_module_word('INDEX>COL-NAME', self.word_INDEX_to_COL_NAME)
@@ -95,7 +96,28 @@ class GsheetModule(Module):
     # ( gsheet_id -- info )
     def word_SHEET_INFO(self, interp: IInterpreter):
         gsheet_id = interp.stack_pop()
+
         result = self.get_sheet_info(gsheet_id)
+        interp.stack_push(result)
+
+    # ( url -- info )
+    def word_URL_to_SHEET_INFO(self, interp: IInterpreter):
+        url = interp.stack_pop()
+        gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
+        result = self.get_sheet_info(gsheet_id)
+        interp.stack_push(result)
+
+    # ( url -- info )
+    def word_URL_to_TAB_INFO(self, interp: IInterpreter):
+        url = interp.stack_pop()
+        gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
+        gsheet_info = self.get_sheet_info(gsheet_id)
+
+        result = None
+        for s in gsheet_info['sheets']:
+            if str(s['properties']['sheetId']) == str(tab_id):
+                result = s
+                break
         interp.stack_push(result)
 
     # (url -- sheet_id range)
@@ -420,6 +442,47 @@ class GsheetModule(Module):
                 f'Problem repeating cell formats {gsheet_id}: {status.text}'
             )
 
+    # ( url update_requests -- )
+    def word_BATCH_UPDATE(self, interp: IInterpreter):
+        """Performs a batch update to a gsheet
+        Params:
+        * `url`: gsheet URL
+        * `update_requests`: An array of objects with a single key being the gsheet operation to perform
+                             (e.g., updateCells, deleteDimension, etc.) and with a value corresponding to
+                             the operation. If the value requires a range, the `sheetId` will be filled out
+                             by this method
+        """
+        update_requests = interp.stack_pop()
+        url = interp.stack_pop()
+
+        gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
+        context = self.get_context()
+
+        gsheets_session = self.get_gsheets_session()
+
+        def add_sheet_id(update_requests):
+            for r in update_requests:
+                for v in r.values():
+                    if 'range' in v:
+                        v['range']['sheetId'] = tab_id
+            return
+
+        add_sheet_id(update_requests)
+        update_data = {
+            'requests': update_requests
+        }
+
+        api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}:batchUpdate'
+        status = gsheets_session.post(
+            api_url,
+            data=json.dumps(update_data),
+            proxies=context.get_proxies(),
+        )
+        if not status.ok:
+            raise GsheetError(
+                f'Problem running BATCH-UPDATE {gsheet_id}: {status.text}'
+            )
+
     # ( url -- )
     def word_CLEAR_SHEET_bang(self, interp: IInterpreter):
         url = interp.stack_pop()
@@ -645,10 +708,16 @@ class GsheetModule(Module):
             raise GsheetError(response.text)
 
         data = response.json()
-        rows = data['values']
+        if "values" not in data:
+            rows = []
+        else:
+            rows = data['values']
 
         # We add empty cells where needed to make all rows the same length
         def pad_rows(rows: List[List[str]]) -> List[List[str]]:
+            if not rows:
+                return rows
+
             row_lengths = [len(r) for r in rows]
             max_length = max(row_lengths)
             res = []

@@ -83,7 +83,6 @@ FORTHIC = """
 : CHILD-JQL             fchild_jql @ { INTERPRET };
 : PARENT-KEY>CHILDREN   CHILD-JQL child_fields @ jira.SEARCH;
 : TICKETS-BY-PARENT   (child_fields ! fchild_jql ! parent_tickets !) PARENT-KEYS DUP "PARENT-KEY>CHILDREN" MAP ZIP REC;
-# : TICKETS-BY-PARENT     PARENT-KEYS DUP "PARENT-KEY>CHILDREN" MAP ZIP REC;
 
 
 # -- Details Table

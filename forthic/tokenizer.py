@@ -155,7 +155,7 @@ class Tokenizer:
                 return StringToken(self.token_string)
             else:
                 self.token_string += char
-        raise UnterminatedStringError("Unterminated string ({string_delimeter})")
+        raise UnterminatedStringError(f"Unterminated string ({string_delimiter}), {self.token_string}")
 
     def transition_from_GATHER_WORD(self) -> WordToken:
         while self.position < len(self.input_string):
