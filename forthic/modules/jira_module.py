@@ -1,5 +1,6 @@
 import re
 import requests
+import datetime
 from dateutil import parser
 from ..module import Module
 from ..global_module import drill_for_value
@@ -38,6 +39,7 @@ class JiraModule(Module):
 
         self.add_module_word('CHANGELOG', self.word_CHANGELOG)
         self.add_module_word('FIELD-AS-OF', self.word_FIELD_AS_OF)
+        self.add_module_word('FIELD-CHANGE-AS-OF', self.word_FIELD_CHANGE_AS_OF)
 
         self.add_module_word('FIELD-TAG', self.word_FIELD_TAG)
         self.add_module_word('REMOVE-FIELD-TAGS', self.word_REMOVE_FIELD_TAGS)
@@ -194,32 +196,21 @@ class JiraModule(Module):
         changes = interp.stack_pop()
         date = interp.stack_pop()
 
-        def select_field_changes(changes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-            if not changes:
-                changes = []
-            result = []
-            for c in changes:
-                if c['field'] == field:
-                    result.append(c)
-            return result
-
-        field_changes = select_field_changes(changes)
-
-        def change_containing_date() -> Optional[Dict[str, Any]]:
-            res = None
-            for c in field_changes:
-                change_date = c['date'].date()
-                if change_date > date:
-                    break
-                else:
-                    res = c
-            return res
-
-        change = change_containing_date()
+        field_changes = select_field_changes(field, changes)
+        change = change_containing_date(field_changes, date)
         result = None
         if change:
             result = change['to']
+        interp.stack_push(result)
 
+    # ( date changes field -- change )
+    def word_FIELD_CHANGE_AS_OF(self, interp: IInterpreter):
+        field = interp.stack_pop()
+        changes = interp.stack_pop()
+        date = interp.stack_pop()
+
+        field_changes = select_field_changes(field, changes)
+        result = change_containing_date(field_changes, date)
         interp.stack_push(result)
 
     # ( ticket field key -- value )
@@ -723,3 +714,29 @@ JIRA_FORTHIC = '''
     "PARENT-KEY"
 ] EXPORT
 '''
+
+
+# ----- Helper functions -------------------------------------------------------------------------------------
+def select_field_changes(field: str, changes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Given a list of changes and a `field`, return only changes for `field`
+    """
+    if not changes:
+        changes = []
+    result = []
+    for c in changes:
+        if c['field'] == field:
+            result.append(c)
+    return result
+
+
+def change_containing_date(field_changes: List[Dict[str, Any]], date: datetime.date) -> Optional[Dict[str, Any]]:
+    """Given a list of field changes and a `date`, returns the change containing `date`
+    """
+    res = None
+    for c in field_changes:
+        change_date = c['date'].date()
+        if change_date > date:
+            break
+        else:
+            res = c
+    return res

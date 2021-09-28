@@ -208,14 +208,16 @@ This takes the values of the record and organizes them by the specified field. I
 
 `( record field -- record )`
 
-Similar to `BY-FIELD` except that the resulting record is a list of items rather than a single item. Records with duplicate fields are mapped to the same list.
+This groups the values of an array/record into lists such that in each list, items all share the same value for the specified `field`.
+
 
 ### GROUP-BY
 `( array forthic -- record )`
 
 `( record forthic -- record )`
 
-Similar to `GROUP-BY-FIELD`, but the `forthic` string is run to compute the keys for each item. The `forthic` string expects a value and converts this into a key.
+This groups the values of an array/record into lists such that in each list, share the same value when operated on by the specified `forthic` string.
+
 
 
 ### GROUP-BY-w/KEY
@@ -223,7 +225,8 @@ Similar to `GROUP-BY-FIELD`, but the `forthic` string is run to compute the keys
 
 `( record forthic -- record )`
 
-Similar to `GROUP-BY`, but the `forthic` string should expect the item's key/index and value. For an array, the index is pushed onto the stack; for a record, the item key.
+This groups the values of an array/record into lists such that in each list, share the same value when operated on by the specified `forthic` string.
+The `forthic` string should expect an index/key and then the value.
 
 
 ### GROUPS-OF
@@ -260,7 +263,7 @@ Example:
 
 `( record forthic -- record )`
 
-This is similar to `MAP`, but the `forthic` string should expect an index/key and then the value.
+For an array, returns a new array whose values are the result of the `forthic` string be executed for the corresponding items. For a record, returns a new record whose values are the result of the `forthic` string being executed for corresponding values in the source record. The `forthic` string should expect an index/key and then the value.
 
 Example:
 ```
@@ -275,7 +278,9 @@ Example:
 
 `( record forthic -- ? )`
 
-Similar to `MAP` but does not do anything with the result of running the `forthic` string.
+For an array, executes a `forthic` string for each of the corresponding items. For a record, executes a `forthic` string for each of the values in a record.
+
+NOTE: This does not return any values
 
 Example:
 ```
@@ -289,7 +294,10 @@ Example:
 
 `( record forthic -- ? )`
 
-Similar to `MAP-w/KEY` but does not do anything with the result of running the `forthic` string.
+For an array, executes a `forthic` string for each of the corresponding items. For a record, executes a `forthic` string for each of the values in a record.
+The `forthic` string should expect an index/key and then the value.
+
+NOTE: This does not return any values
 
 
 ### ZIP
@@ -306,7 +314,8 @@ Given two records, returns a new record analogously to the arrays case, but pair
 
 `( record1 record2 forthic -- record )`
 
-Similar to `ZIP` but the value in the new array/record is determined by running the `forthic`. This string expects two values: the first value from array1/record1 and the second from array2/record2.
+Similar to `ZIP` but the value in the new array/record is determined by running the specified `forthic` string.
+This string expects two values: the first value from array1/record1 and the second from array2/record2.
 
 
 ### KEYS
@@ -410,7 +419,11 @@ Example:
 
 `( record forthic -- record )`
 
-Similar to `SELECT` except that the `forthic` predicate expects the key/index and the value.
+Given an `array` and a `forthic` predicate, returns all elements in the array such that the predicate returns `True`.
+
+Given a `record` and a `forthic` predicate, returns a record with key/vals where the predicate returns `True` for each value.
+
+The `forthic` predicate expects the key/index and the value.
 
 
 ### TAKE
@@ -428,7 +441,7 @@ Given a `record` and a number `n`, splits the keys in the record into the first 
 
 `( record n -- rest )`
 
-Similar to `TAKE` except the first `n` elements are dropped and only `rest` is returned.
+Drops the first `n` elements of a container.
 
 
 ### ROTATE
@@ -631,7 +644,7 @@ Returns a carriage return character (`\r`).
 Returns a tab character (`\t`).
 
 
-### LOWER
+### |LOWER
 `( string -- string )`
 
 Given a `string`, returns a lower-cased version of it.
@@ -827,7 +840,7 @@ Given a time, this is a no-op.
 ### <TZ!
 `( time tzstr -- time )`
 
-Given a `time` and a timezone string `tzstr`, parses the timezone string and sets the time's timezone to it. The timezone is parsed using the host languages timezone utilities. 
+Given a `time` and a timezone string `tzstr`, parses the timezone string and sets the time's timezone to it. The timezone is parsed using the host languages timezone utilities.
 
 For Python timezone strings see [Stack Overflow](https://stackoverflow.com/questions/13866926/is-there-a-list-of-pytz-timezones).
 
@@ -895,7 +908,7 @@ Returns the Sunday of this week.
 `( date num_days -- date )`
 
 Given a `date` and an integer `num_days` (which may be negative) returns the
-date that as `num_days` after `date`. 
+date that as `num_days` after `date`.
 
 
 ### SUBTRACT-DATES
@@ -1096,6 +1109,16 @@ If this cannot be done, an exception is raised.
 
 Given an integer range `low` and `high`, returns an integer drawn using a
 uniformly random distribution over that range.
+
+### RANGE-INDEX
+`( val start_ranges -- index )`
+
+Given a value `val` and an array of `start_ranges` that give the starting values of an array of ranges,
+this returns the index where `val` falls.
+
+If `val` is less than the first start range, then `NULL` is returned.
+
+NOTE: `start_ranges` must be in ascending order.
 
 
 ## Reference: Profiling Words

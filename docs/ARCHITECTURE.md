@@ -48,12 +48,12 @@ New words can be created out of existing words using "start definition" (`:`) an
 ```
 : DOUBLE   2 * ;
 ```
-Definitions can use of previously defined words:
+Definitions can use previously defined words:
 ```
 : DOUBLE      2 *;
 : QUADRUPLE   DOUBLE DOUBLE;   # yum
 ```
-Definitions are stored in an array rather than a dictionary. This allows definitions to be changed without affecting existing definitions that already use them:
+In the interpreter, definitions are stored in an array rather than a dictionary. This allows them to be redefined without affecting existing definitions that already use them:
 ```
 : DOUBLE      2 *;
 : QUADRUPLE   DOUBLE DOUBLE;

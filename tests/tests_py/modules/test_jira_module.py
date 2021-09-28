@@ -83,7 +83,7 @@ class TestJiraModule(unittest.TestCase):
             "SAMPLE-101" jira.VOTES
         """)
         self.assertEqual(['user1', 'user2'], self.interp.stack[0])
-       
+
     def test_CHANGELOG(self):
         self.interp.run("""
             "SAMPLE-101" ["Risk_Factor"] jira.CHANGELOG
@@ -110,14 +110,24 @@ class TestJiraModule(unittest.TestCase):
         self.assertEqual("Green", self.interp.stack[0])
         self.assertEqual("Yellow", self.interp.stack[1])
 
+    def test_FIELD_CHANGE_AS_OF(self):
+        self.interp.run("""
+            ["changes"] VARIABLES
+            "SAMPLE-101" ["Risk_Factor"] jira.CHANGELOG changes !
+             2020-07-25 changes @ "Risk_Factor" jira.FIELD-CHANGE-AS-OF 'date' REC@ DATE>STR
+             2020-10-01 changes @ "Risk_Factor" jira.FIELD-CHANGE-AS-OF 'date' REC@ DATE>STR
+        """)
+        self.assertEqual("2020-07-25", self.interp.stack[0])
+        self.assertEqual("2020-08-15", self.interp.stack[1])
+
     def test_FIELD_TAG(self):
         self.interp.run("""
             ["ticket"] VARIABLES
             [
                 ["Description" "This is a sample description [objective: To make things awesome]"]
             ] REC ticket !
-            
-            ticket @ "Description" "objective" jira.FIELD-TAG            
+
+            ticket @ "Description" "objective" jira.FIELD-TAG
         """)
         self.assertEqual("To make things awesome", self.interp.stack[0])
 
@@ -133,7 +143,7 @@ class TestJiraModule(unittest.TestCase):
             [
                 ["Description" "This is a sample description."]
             ] REC ticket !
-            
+
             ticket @ "Description" "risk" "There isn't any risk!" jira.<FIELD-TAG!
         """)
         ticket = self.interp.stack[0]

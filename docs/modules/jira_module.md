@@ -158,7 +158,7 @@ Returns a list of ticket changes involving the specified fields. The `changes` w
 ### FIELD-AS-OF
 `( date changes field -- value )`
 
-Returns the value of a field as of a date given `changes` from a `CHANGELOG` call.
+Returns the value of a field as of a date given an array of `changes` from a `CHANGELOG` call.
 
 Example:
 ```
@@ -167,6 +167,21 @@ Example:
 "MYPROJ-1234" ["Assignee"] jira.CHANGELOG changes !
 
 2020-07-25 changes @ "Assignee" jira.FIELD-AS-OF   # ( -- "user1" )
+```
+
+
+### FIELD-CHANGE-AS-OF
+`( date changes field -- change )`
+
+Returns the change record of a field as of a date given an array of `changes` from a `CHANGELOG` call.
+
+Example:
+```
+['changes'] VARIABLES
+
+"MYPROJ-1234" ["Assignee"] jira.CHANGELOG changes !
+
+2020-07-25 changes @ "Assignee" jira.FIELD-CHANGE-AS-OF   # ( -- change_record )
 ```
 
 ### <FIELD-TAG!
