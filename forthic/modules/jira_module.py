@@ -1,6 +1,7 @@
 import re
 import requests
 import datetime
+import pytz
 from dateutil import parser
 from ..module import Module
 from ..global_module import drill_for_value
@@ -40,6 +41,7 @@ class JiraModule(Module):
         self.add_module_word('CHANGELOG', self.word_CHANGELOG)
         self.add_module_word('FIELD-AS-OF', self.word_FIELD_AS_OF)
         self.add_module_word('FIELD-CHANGE-AS-OF', self.word_FIELD_CHANGE_AS_OF)
+        self.add_module_word('TIME-IN-STATE', self.word_TIME_IN_STATE)
 
         self.add_module_word('FIELD-TAG', self.word_FIELD_TAG)
         self.add_module_word('REMOVE-FIELD-TAGS', self.word_REMOVE_FIELD_TAGS)
@@ -211,6 +213,75 @@ class JiraModule(Module):
 
         field_changes = select_field_changes(field, changes)
         result = change_containing_date(field_changes, date)
+        interp.stack_push(result)
+
+    # ( resolution changes field -- record )
+    def word_TIME_IN_STATE(self, interp: IInterpreter):
+        field = interp.stack_pop()
+        changes = interp.stack_pop()
+        resolution = interp.stack_pop()
+
+        # NOTE: Each change should have the following form:
+        #  {'date': datetime.datetime(2021, 1, 15, 8, 31, 15, tzinfo=tzutc()), 'field': 'status', 'from': 'Open', 'to': 'In Progress', 'from_': '1', 'to_': '3'}
+
+        result: Dict[str, float] = {}
+
+        # If there is 1 or fewer changes, we can't compute anything
+        if len(changes) <= 1:
+            interp.stack_push(result)
+            return
+
+        def check_consistency(changes, field):
+            """Check that field changes are consistent"""
+            # Ensure that all changes are for the specified field
+            for c in changes:
+                if c['field'] != field:
+                    raise JiraError(f"TIME-IN-STATE expected all changes to have field '{field}' not '{c['field']}'")
+
+            cur_value = changes[0]['to']
+            for change in changes[1:]:
+                if change['from'] != cur_value:
+                    raise JiraError(f"TIME-IN-STATE expected next value to be '{cur_value}' not '{change['from']}'")
+                cur_value = change['to']
+            return
+
+        def make_duration_rec(state, duration_h):
+            res = {
+                "state": state,
+                "duration_h": duration_h
+            }
+            return res
+
+        def compute_duration_h(cur_time, prev_time):
+            duration = cur_time - prev_time
+            res = duration.total_seconds() / 3600
+            return res
+
+        def compute_duration_recs(changes):
+            res = []
+            cur_timestamp = changes[0]['date']
+            for change in changes[1:]:
+                res.append(make_duration_rec(change['from'], compute_duration_h(change['date'], cur_timestamp)))
+                cur_timestamp = change['date']
+
+            # If the ticket is resolved, the last state's duration is zero. Otherwise, the clock is still running
+            if resolution:
+                res.append(make_duration_rec(change['to'], 0))
+            else:
+                now = datetime.datetime.now().replace(tzinfo=pytz.UTC)
+                res.append(make_duration_rec(change['to'], compute_duration_h(now, cur_timestamp)))
+            return res
+
+        def consolidate_changes(duration_recs):
+            res = defaultdict(float)
+            for rec in duration_recs:
+                res[rec['state']] += rec['duration_h']
+            return res
+
+        # Compute result
+        check_consistency(changes, field)
+        duration_recs = compute_duration_recs(changes)
+        result = consolidate_changes(duration_recs)
         interp.stack_push(result)
 
     # ( ticket field key -- value )

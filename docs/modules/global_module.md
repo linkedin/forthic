@@ -30,6 +30,10 @@ Sets the value of a variable.
 
 Returns the value of a variable.
 
+### !@
+`( value variable -- value )`
+
+Sets a value of a variable, leaving value on stack.
 
 ### INTERPRET
 `( string -- ? )`

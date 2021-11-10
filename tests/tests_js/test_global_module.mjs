@@ -54,6 +54,20 @@ async function test_set_get_variables() {
     return true;
 }
 
+async function test_bang_at() {
+    let interp = new Interpreter();
+    await interp.run("['x']  VARIABLES");
+    await interp.run("24 x !@");
+    let x_var = interp.app_module.variables['x'];
+
+    if (x_var.get_value() != 24)   return false;
+    if (interp.stack[0] != 24)     return false;
+
+    return true;
+}
+
+// TODO: Add !@ test
+
 
 async function test_interpret() {
     let interp = new Interpreter();
@@ -477,7 +491,7 @@ async function test_map_w_key() {
         by_key[rec["key"]] = rec
     });
     interp.stack_push(by_key);
-    
+
     await interp.run(`
     ["k" "v"] VARIABLES
     "v ! k ! k @ >STR v @ 'status' REC@ CONCAT" MAP-w/KEY
@@ -1566,6 +1580,7 @@ let tests = {
     "test_literal": test_literal,
     "test_variables": test_variables,
     "test_set_get_variables": test_set_get_variables,
+    "test_bang_at": test_bang_at,
     "test_interpret": test_interpret,
     "test_memo": test_memo,
     "test_rec": test_rec,

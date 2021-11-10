@@ -3,6 +3,7 @@ import os
 import random
 import math
 import pytz
+import pdb
 import datetime
 from dateutil import parser
 import urllib
@@ -84,6 +85,7 @@ class GlobalModule(Module):
         self.add_module_word('VARIABLES', self.word_VARIABLES)
         self.add_module_word('!', self.word_bang)
         self.add_module_word('@', self.word_at)
+        self.add_module_word('!@', self.word_bang_at)
         self.add_module_word('INTERPRET', self.word_INTERPRET)
         self.add_module_word('MEMO', self.word_MEMO)
         self.add_module_word('EXPORT', self.word_EXPORT)
@@ -360,6 +362,14 @@ class GlobalModule(Module):
     def word_at(self, interp: IInterpreter):
         """Pushes variable's value onto the stack"""
         variable = interp.stack_pop()
+        interp.stack_push(variable.value)
+
+    # ( value variable -- value )
+    def word_bang_at(self, interp: IInterpreter):
+        """Set the value of a variable and then pushes variable's value onto the stack"""
+        variable = interp.stack_pop()
+        value = interp.stack_pop()
+        variable.value = value
         interp.stack_push(variable.value)
 
     # ( string -- ? )
@@ -1856,21 +1866,22 @@ class GlobalModule(Module):
 
     # ( -- )
     def word_dot_s(self, interp: IInterpreter):
-        items = ['Forthic Stack:']
-        indices = reversed(range(len(interp.stack)))
-        for i in indices:
-            items.append(
-                f'[{i}]: {str(interp.stack[i])}'
-            )
-        stack_string = '\n'.join(items)
+        top_of_stack = None
+        if len(interp.stack) > 0:
+            top_of_stack = interp.stack[-1]
 
         if interp.dev_mode:
-            print(stack_string)
-            import pdb
-
+            print(top_of_stack)
             pdb.set_trace()
         else:
             # Raising an exception to show stack to user
+            items = ['Forthic Stack:']
+            indices = reversed(range(len(interp.stack)))
+            for i in indices:
+                items.append(
+                    f'[{i}]: {str(interp.stack[i])}'
+                )
+            stack_string = '\n'.join(items)
             raise StackDump(stack_string)
 
     # ( time -- time )
@@ -2466,7 +2477,7 @@ def drill_for_value(record, fields):
     """Descends into record using an array of fields, returning final value or None"""
     result = record
     for f in fields:
-        if not result:
+        if result is None:
             break
         else:
             result = result.get(f)

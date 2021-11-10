@@ -184,6 +184,31 @@ Example:
 2020-07-25 changes @ "Assignee" jira.FIELD-CHANGE-AS-OF   # ( -- change_record )
 ```
 
+### TIME-IN-STATE
+`( resolution changes field -- record )`
+
+Returns a record mapping a field value into number of hours that the ticket spent in that state. The `resolution`
+comes from the Jira's `Resolution` field. The `changes` come from a `CHANGELOG` call. The `field` is the field
+of interest.
+
+If the ticket has been resolved, then duration of the final state be set 0. If the ticket
+is unresolved, the duration of the final state will be the elapsed time since the final state was set.
+
+If a ticket was moved back and forth between different states, the total time spent in each state will
+be accumulated in the result.
+
+Example:
+```
+['changes'] VARIABLES
+
+"PROJ-1234" ["status"] jira.CHANGELOG changes !
+
+"Resolved" changes @ "status" jira.TIME-IN-STATE
+
+# Returns something like
+# {'Open': 793.6, 'Scoping': 856.9, 'In Development': 900.7, 'Closed': 0.0})
+```
+
 ### <FIELD-TAG!
 `(ticket_rec field tag value -- ticket_rec )`
 

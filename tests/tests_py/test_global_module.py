@@ -35,6 +35,15 @@ class TestGlobalModule(unittest.TestCase):
         interp.run("x @")
         self.assertEqual(interp.stack[-1], 24)
 
+    def test_bang_at(self):
+        interp = Interpreter()
+        interp.run("['x']  VARIABLES")
+        interp.run("24 x !@")
+        x_var = interp.app_module.variables['x']
+
+        self.assertEqual(x_var.get_value(), 24)
+        self.assertEqual(interp.stack[-1], 24)
+
     def test_interpret(self):
         interp = Interpreter()
         interp.run("'24' INTERPRET")
@@ -856,7 +865,7 @@ class TestGlobalModule(unittest.TestCase):
         """)
         stack = interp.stack
         self.assertEqual(stack[0], 0)
-        self.assertEqual(stack[1], 5)        
+        self.assertEqual(stack[1], 5)
         self.assertIsNone(stack[2])
 
         # For record

@@ -30,6 +30,7 @@ class GlobalModule extends Module {
         this.add_module_word("VARIABLES", this.word_VARIABLES);
         this.add_module_word("!", this.word_bang);
         this.add_module_word("@", this.word_at);
+        this.add_module_word("!@", this.word_bang_at);
         this.add_module_word("INTERPRET", this.word_INTERPRET);
         this.add_module_word("MEMO", this.word_MEMO);
         this.add_module_word("EXPORT", this.word_EXPORT);
@@ -290,6 +291,14 @@ class GlobalModule extends Module {
     // ( variable -- value )
     word_at(interp) {
         let variable = interp.stack_pop()
+        interp.stack_push(variable.value)
+    }
+
+    // ( value variable -- value )
+    word_bang_at(interp) {
+        let variable = interp.stack_pop()
+        let value = interp.stack_pop()
+        variable.value = value
         interp.stack_push(variable.value)
     }
 
@@ -2592,7 +2601,7 @@ function drill_for_value(record, fields) {
     let result = record;
     for (let i=0; i < fields.length; i++) {
         let f = fields[i];
-        if (!result)   return null;
+        if (result == null)   return null;
         result = result[f];
     }
     return result

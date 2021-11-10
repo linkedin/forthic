@@ -155,6 +155,16 @@ This word adds the tab ID associated with the `url` to each of the request objec
 
 Clears all content and formatting from a gsheet
 
+### CLEAR-TAB!
+`( url tabname -- )`
+
+Clears all content and formatting from the specified tab in a gsheet.
+
+### ENSURE-TAB!
+`( url tabname -- )`
+
+Ensures that a tab named `tabname` is in the gsheet.
+
 ### SHEET-ROWS
 `( url -- rows )`
 

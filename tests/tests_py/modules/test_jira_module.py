@@ -1,4 +1,5 @@
 import unittest
+import datetime
 from forthic.interpreter import Interpreter
 from forthic.modules.jira_module import JiraModule
 from tests.tests_py.modules.jira_context import JiraTestContext
@@ -119,6 +120,31 @@ class TestJiraModule(unittest.TestCase):
         """)
         self.assertEqual("2020-07-25", self.interp.stack[0])
         self.assertEqual("2020-08-15", self.interp.stack[1])
+
+    def test_TIME_IN_STATE(self):
+        field = "status"
+        resolution = "Fixed"
+
+        # NOTE: The following data would come from something like `'PROJ-1234' ['status'] jira.CHANGELOG`
+        changes = [
+            {"date": datetime.datetime(2021, 7, 21, 1, 14, 57), "field": "status", "from": "", "to": "Open"},
+            {"date": datetime.datetime(2021, 8, 23, 2, 56, 7), "field": "status", "from": "Open", "to": "Scoping", "from_": "1", "to_": "10128"},
+            {"date": datetime.datetime(2021, 9, 27, 19, 53, 39), "field": "status", "from": "Scoping", "to": "In Development", "from_": "10128", "to_": "10194"},
+            {"date": datetime.datetime(2021, 11, 4, 8, 36, 5), "field": "status", "from": "In Development", "to": "Closed", "from_": "10194", "to_": "6"}
+        ]
+
+        # Make the call
+        self.interp.stack_push(resolution)
+        self.interp.stack_push(changes)
+        self.interp.stack_push(field)
+        self.interp.run("jira.TIME-IN-STATE")
+
+        # Check the results
+        result = self.interp.stack_pop()
+        self.assertAlmostEqual(793, int(result['Open']))
+        self.assertAlmostEqual(856, int(result['Scoping']))
+        self.assertAlmostEqual(900, int(result['In Development']))
+        self.assertAlmostEqual(0, int(result['Closed']))
 
     def test_FIELD_TAG(self):
         self.interp.run("""

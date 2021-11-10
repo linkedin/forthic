@@ -47,6 +47,9 @@ class GsheetModule(Module):
         self.add_module_word('RECORDS', self.word_RECORDS)
         self.add_module_word('CLEAR-SHEET!', self.word_CLEAR_SHEET_bang)
 
+        self.add_module_word('CLEAR-TAB!', self.word_CLEAR_TAB_bang)
+        self.add_module_word('ENSURE-TAB!', self.word_ENSURE_TAB_bang)
+
         self.add_module_word('BATCH-UPDATE', self.word_BATCH_UPDATE)
 
         self.add_module_word(
@@ -499,10 +502,45 @@ class GsheetModule(Module):
                         'fields': 'userEnteredValue',
                     }
                 },
+            ]
+        }
+        api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}:batchUpdate'
+        status = gsheets_session.post(
+            api_url,
+            data=json.dumps(update_data),
+            proxies=context.get_proxies(),
+        )
+        if not status.ok:
+            raise GsheetError(
+                f'Problem clearing gsheet {gsheet_id}: {status.text}'
+            )
+
+    # ( url tabname -- )
+    def word_CLEAR_TAB_bang(self, interp: IInterpreter):
+        tabname = interp.stack_pop()
+        url = interp.stack_pop()
+
+        context = self.get_context()
+        gsheet_id, _ = self.get_gsheet_id_and_tab_id(url)
+
+        sheet_info = self.get_sheet_info(gsheet_id)
+
+        def get_tab_id(sheet_info, tabname):
+            res = None
+            for s in sheet_info['sheets']:
+                if s['properties']['title'] == tabname:
+                    return s['properties']['sheetId']
+            return res
+
+        tab_id = get_tab_id(sheet_info, tabname)
+
+        gsheets_session = self.get_gsheets_session()
+        update_data = {
+            'requests': [
                 {
                     'updateCells': {
                         'range': {'sheetId': tab_id},
-                        'fields': 'userEnteredFormat',
+                        'fields': 'userEnteredValue',
                     }
                 },
             ]
@@ -515,7 +553,53 @@ class GsheetModule(Module):
         )
         if not status.ok:
             raise GsheetError(
-                f'Problem clearing gsheet {gsheet_id}: {status.text}'
+                f'Problem clearing tab {tabname} from gsheet {gsheet_id}: {status.text}'
+            )
+
+    # ( url title -- )
+    def word_ENSURE_TAB_bang(self, interp: IInterpreter):
+        title = interp.stack_pop()
+        url = interp.stack_pop()
+
+        gsheet_id, _ = self.get_gsheet_id_and_tab_id(url)
+        context = self.get_context()
+
+        def does_tab_exist(gsheet_id, tab_title):
+            properties = self.get_spreadsheet_properties(gsheet_id)
+            sheets = properties.get('sheets')
+            if not sheets:
+                return False
+            for s in sheets:
+                if s['properties']['title'] == tab_title:
+                    return True
+            return False
+
+        # If tab exists, return its title
+        if does_tab_exist(gsheet_id, title):
+            return
+
+        # Otherwise, add tab and return the new tab ID
+        gsheets_session = self.get_gsheets_session()
+        update_data = {
+            'requests': [
+                {
+                    'addSheet': {
+                        'properties': {
+                            'title': title
+                        }
+                    }
+                },
+            ]
+        }
+        api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}:batchUpdate'
+        status = gsheets_session.post(
+            api_url,
+            data=json.dumps(update_data),
+            proxies=context.get_proxies(),
+        )
+        if not status.ok:
+            raise GsheetError(
+                f'Problem adding sheet to gsheet {gsheet_id}: {status.text}'
             )
 
     # ( url col_start row_start col_end row_end -- GsheetRange )
@@ -690,6 +774,15 @@ class GsheetModule(Module):
         context = self.get_context()
         result = gsheets_session.get(
             f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}',
+            proxies=context.get_proxies(),
+        ).json()
+        return result
+
+    def get_spreadsheet_properties(self, gsheet_id: str) -> Any:
+        gsheets_session = self.get_gsheets_session()
+        context = self.get_context()
+        result = gsheets_session.get(
+            f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}?fields=sheets.properties',
             proxies=context.get_proxies(),
         ).json()
         return result
