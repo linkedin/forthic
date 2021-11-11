@@ -231,13 +231,15 @@ class JiraModule(Module):
             interp.stack_push(result)
             return
 
+        def select_changes_for_field(changes, field):
+            res = []
+            for c in changes:
+                if c['field'] == field:
+                    res.append(c)
+            return res
+
         def check_consistency(changes, field):
             """Check that field changes are consistent"""
-            # Ensure that all changes are for the specified field
-            for c in changes:
-                if c['field'] != field:
-                    raise JiraError(f"TIME-IN-STATE expected all changes to have field '{field}' not '{c['field']}'")
-
             cur_value = changes[0]['to']
             for change in changes[1:]:
                 if change['from'] != cur_value:
@@ -279,6 +281,7 @@ class JiraModule(Module):
             return res
 
         # Compute result
+        changes = select_changes_for_field(changes, field)
         check_consistency(changes, field)
         duration_recs = compute_duration_recs(changes)
         result = consolidate_changes(duration_recs)
