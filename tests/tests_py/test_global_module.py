@@ -8,14 +8,15 @@ from forthic.global_module import GlobalModuleError
 class TestGlobalModule(unittest.TestCase):
     def test_literal(self):
         interp = Interpreter()
-        interp.run("True  2  3.14 2020-06-05 9:00 11:30 PM 22:15 AM")
+        interp.run("TRUE FALSE 2  3.14 2020-06-05 9:00 11:30 PM 22:15 AM")
         self.assertEqual(interp.stack[0], True)
-        self.assertEqual(interp.stack[1], 2)
-        self.assertEqual(interp.stack[2], 3.14)
-        self.assertEqual(interp.stack[3], datetime.date(2020, 6, 5))
-        self.assertEqual(interp.stack[4], datetime.time(9, 0))
-        self.assertEqual(interp.stack[5], datetime.time(23, 30))
-        self.assertEqual(interp.stack[6], datetime.time(10, 15))
+        self.assertEqual(interp.stack[1], False)
+        self.assertEqual(interp.stack[2], 2)
+        self.assertEqual(interp.stack[3], 3.14)
+        self.assertEqual(interp.stack[4], datetime.date(2020, 6, 5))
+        self.assertEqual(interp.stack[5], datetime.time(9, 0))
+        self.assertEqual(interp.stack[6], datetime.time(23, 30))
+        self.assertEqual(interp.stack[7], datetime.time(10, 15))
 
     def test_variables(self):
         interp = Interpreter()
@@ -195,10 +196,8 @@ class TestGlobalModule(unittest.TestCase):
         [["a" 1] ["b" 2]] REC  REVERSE
         """)
         self.assertEqual(len(interp.stack), 1)
+        self.assertEqual(list(interp.stack[-1].keys()), ["b", "a"])
 
-        rec = interp.stack[-1]
-        values = [rec[k] for k in ["a", "b"]]
-        self.assertEqual(values, [1, 2])
 
     def test_unique(self):
         interp = Interpreter()
@@ -405,7 +404,7 @@ class TestGlobalModule(unittest.TestCase):
         array = interp.stack[0]
         self.assertEqual(array, [2, 4, 6, 8, 10])
 
-        # Test grouping a record
+        # Test mapping over a record
         interp = Interpreter()
 
         # First, set up the record
@@ -431,7 +430,7 @@ class TestGlobalModule(unittest.TestCase):
         array = interp.stack[0]
         self.assertEqual(array, [2, 6, 10, 14, 18])
 
-        # Test grouping a record
+        # Test mapping over a record
         interp = Interpreter()
 
         # First, set up the record
@@ -693,6 +692,30 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(list(stack[0].keys()), ['a'])
         self.assertEqual(list(stack[0].values()), [1])
 
+    def test_UNION(self):
+        interp = Interpreter()
+        interp.run("""
+        ['x' 'y'] VARIABLES
+        ['a' 'b' 'c'] x !
+        ['a' 'c' 'd'] y !
+        x @ y @ UNION
+        """)
+        stack = interp.stack
+        self.assertEqual(sorted(stack[0]), ['a', 'b', 'c', 'd'])
+
+        # Records
+        interp = Interpreter()
+        interp.run("""
+        ['x' 'y'] VARIABLES
+        [['a' 1] ['b' 2] ['f' 3]] REC x !
+        [['a' 20] ['c' 40] ['d' 10]] REC y !
+        x @ y @ UNION
+        """)
+        stack = interp.stack
+        self.assertEqual(sorted(list(stack[0].keys())), ['a', 'b', 'c', 'd', 'f'])
+        self.assertEqual(sorted(list(stack[0].values())), [1, 2, 3, 10, 40])
+
+
     def test_select(self):
         interp = Interpreter()
         interp.run("""
@@ -807,13 +830,14 @@ class TestGlobalModule(unittest.TestCase):
         stack = interp.stack
         self.assertEqual(stack[0], [1, 2, 3, 4, 7, 8])
 
-        # Sort record (no-op)
+        # Sort record
         interp = Interpreter()
         interp.run("""
-        [['a' 1] ['b' 2] ['c' 3]] REC  SORT
+        [['a' 3] ['b' 1] ['c' 2]] REC  SORT
         """)
         stack = interp.stack
         self.assertEqual(len(stack[0]), 3)
+        self.assertEqual(list(stack[0].keys()), ['b', 'c', 'a'])
 
     def test_sort_w_forthic(self):
         interp = Interpreter()
@@ -826,10 +850,11 @@ class TestGlobalModule(unittest.TestCase):
         # Sort record (no-op)
         interp = Interpreter()
         interp.run("""
-        [['a' 1] ['b' 2] ['c' 3]] REC  SORT
+        [['a' 1] ['b' 2] ['c' 3]] REC  "-1 *" SORT-w/FORTHIC
         """)
         stack = interp.stack
         self.assertEqual(len(stack[0]), 3)
+        self.assertEqual(list(stack[0].keys()), ['c', 'b', 'a'])
 
     def test_sort_w_key_func(self):
         interp = Interpreter()
@@ -953,10 +978,10 @@ class TestGlobalModule(unittest.TestCase):
         # For record
         interp = Interpreter()
         interp.run("""
-        [['a' 1] ['b' 2] ['c' 3]] REC  LAST
+        [['a' 1] ['b' 2] ['c' 3]] REC  2 KEY-OF
         """)
         stack = interp.stack
-        self.assertEqual(stack[0], 3)
+        self.assertEqual(stack[0], 'b')
 
     def test_reduce(self):
         interp = Interpreter()
@@ -1096,6 +1121,23 @@ class TestGlobalModule(unittest.TestCase):
         stack = interp.stack
         self.assertEqual(stack[0], ['android', 'ios', 'android', 'web', 'web'])
 
+    def test_URL_ENCODE(self):
+        interp = Interpreter()
+        interp.run("""
+        "now/is the time" URL-ENCODE
+        """)
+        stack = interp.stack
+        self.assertEqual(stack[0], "now%2Fis+the+time")
+
+    def test_URL_DECODE(self):
+        interp = Interpreter()
+        interp.run("""
+        "now%2Fis%20the%20time" URL-DECODE
+        """)
+        stack = interp.stack
+        self.assertEqual(stack[0], "now/is the time")
+
+
     def test_default(self):
         interp = Interpreter()
         interp.run("""
@@ -1107,6 +1149,18 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(stack[0], 22.4)
         self.assertEqual(stack[1], 0)
         self.assertEqual(stack[2], "Howdy")
+
+    def test_star_DEFAULT(self):
+        interp = Interpreter()
+        interp.run("""
+        NULL "3.1 5 +" *DEFAULT
+        0 "22.4" *DEFAULT
+        "" "['Howdy, ' 'Everyone!'] CONCAT" *DEFAULT
+        """)
+        stack = interp.stack
+        self.assertAlmostEqual(stack[0], 8.1)
+        self.assertEqual(stack[1], 0)
+        self.assertEqual(stack[2], "Howdy, Everyone!")
 
     def test_l_repeat(self):
         interp = Interpreter()
@@ -1320,6 +1374,7 @@ class TestGlobalModule(unittest.TestCase):
         5 3 MOD
         2.51 ROUND
         [1 2 3] +
+        [2 3 4] *
         """)
         stack = interp.stack
         self.assertEqual(stack[0], 6)
@@ -1329,6 +1384,7 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(stack[4], 2)
         self.assertEqual(stack[5], 3)
         self.assertEqual(stack[6], 6)
+        self.assertEqual(stack[7], 24)
 
     def test_comparison(self):
         interp = Interpreter()

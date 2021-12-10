@@ -7,22 +7,34 @@ class OrgModule extends Module {
 
         let self = this;
         this.org_contexts = [];
-        this.add_exportable_word(new ModuleWord("PUSH-CONTEXT!", this.word_PUSH_CONTEXT_bang, self));
-        this.add_exportable_word(new ModuleWord("POP-CONTEXT!", this.word_POP_CONTEXT_bang, self));
-        this.add_exportable_word(new ModuleWord("FULL-ORG", this.word_FULL_ORG, self));
-        this.add_exportable_word(new ModuleWord("DIRECT-MANAGERS", this.word_DIRECT_MANAGERS, self));
-        this.add_exportable_word(new ModuleWord("GROUP-BY-LEADS", this.word_GROUP_BY_LEADS, self));
-        this.add_exportable_word(new ModuleWord("ITEM>LEAD", this.word_ITEM_to_LEAD, self));
+        this.add_exportable_word(new ModuleWord("SET-CONTEXT!", (interp) => this.word_SET_CONTEXT_bang(interp), self));
+        this.add_exportable_word(new ModuleWord("PUSH-CONTEXT!", (interp) => this.word_PUSH_CONTEXT_bang(interp), self));
+        this.add_exportable_word(new ModuleWord("POP-CONTEXT!", (interp) => this.word_POP_CONTEXT_bang(interp), self));
+        this.add_exportable_word(new ModuleWord("FULL-ORG", (interp) => this.word_FULL_ORG(interp), self));
+        this.add_exportable_word(new ModuleWord("DIRECT-MANAGERS", (interp) => this.word_DIRECT_MANAGERS(interp), self));
+        this.add_exportable_word(new ModuleWord("GROUP-BY-LEADS", (interp) => this.word_GROUP_BY_LEADS(interp), self));
+        this.add_exportable_word(new ModuleWord("ITEM>LEAD", (interp) => this.word_ITEM_to_LEAD(interp), self));
+    }
+
+    // ( user_managers -- )
+    // Sets context for org computations
+    //     `user_managers` is a list of pairs [username, manager_username]
+    word_SET_CONTEXT_bang(interp) {
+        let self = this;
+
+        let user_managers = interp.stack_pop();
+        let org_context = new OrgContext(user_managers);
+        self.org_contexts = [org_context]
     }
 
     // ( user_managers -- )
     // Sets context for org computations
     //     `user_managers` is a list of pairs [username, manager_username]
     word_PUSH_CONTEXT_bang(interp) {
-        let self = this.obj;
+        let self = this;
 
         let user_managers = interp.stack_pop();
-        org_context = new OrgContext(user_managers);
+        let org_context = new OrgContext(user_managers);
         self.org_contexts.push(org_context);
     }
 
@@ -30,14 +42,14 @@ class OrgModule extends Module {
     // ( -- )
     // Restores previous context for org computations
     word_POP_CONTEXT_bang(interp) {
-        let self = this.obj;
+        let self = this;
         self.org_contexts.pop();
     }
 
     // (manager -- usernames)
     // Returns all usernames reporting up to manager
     word_FULL_ORG(interp) {
-        let self = this.obj;
+        let self = this;
         let manager = interp.stack_pop();
         let org_context = self.org_contexts[self.org_contexts.length-1];
         let result = org_context.full_org(manager);
@@ -48,7 +60,7 @@ class OrgModule extends Module {
     // Returns usernames of direct reports of a manager who are also managers
     // NOTE: This also returns the manager at the end of the list
     word_DIRECT_MANAGERS(interp) {
-        let self = this.obj;
+        let self = this;
         let manager = interp.stack_pop();
         let org_context = self.org_contexts[self.org_contexts.length-1];
         let result = org_context.get_direct_managers(manager);
@@ -57,7 +69,7 @@ class OrgModule extends Module {
 
     // ( items field leads default_lead -- record )
     word_GROUP_BY_LEADS(interp) {
-        let self = this.obj;
+        let self = this;
         let default_lead = interp.stack_pop();
         let leads = interp.stack_pop();
         let field = interp.stack_pop();
@@ -70,6 +82,7 @@ class OrgModule extends Module {
 
     // ( item field leads default_lead -- lead )
     word_ITEM_to_LEAD(interp) {
+        let self = this;
         let default_lead = interp.stack_pop();
         let leads = interp.stack_pop();
         let field = interp.stack_pop();
@@ -105,7 +118,7 @@ class OrgContext {
                 managers[p[1]] = true;
             });
             let res = [];
-            Object.keys(managers).forEach(m => res.push(m)); 
+            Object.keys(managers).forEach(m => res.push(m));
             return res;
         }
 
@@ -136,8 +149,10 @@ class OrgContext {
 
             let directs = self.direct_managers[manager];
             directs.forEach(m => {
-                res.push(m);
-                add_directs(m, res);
+                if (m != manager) {
+                    res.push(m);
+                    add_directs(m, res);
+                }
             });
         }
 
@@ -177,17 +192,20 @@ class OrgContext {
     }
 
     group_by_leads(items, field, leads, default_lead) {
+        if (!items)   return {};
+
         let self = this;
         let manager_to_lead = {};
         leads.forEach(lead => {
-            managers = self.org_managers(lead);
+            let managers = self.org_managers(lead);
             managers.forEach(m => {
                 manager_to_lead[m] = lead;
             });
         });
 
         // Group items by lead
-        result = {};
+        let result = {};
+        result[default_lead] = []
         leads.forEach(lead => {
             result[lead] = [];
         });
@@ -226,7 +244,7 @@ class OrgContext {
             return get_lead(username);
         }
 
-        result = get_lead(username);
+        let result = get_lead(username);
         return result
     }
 }

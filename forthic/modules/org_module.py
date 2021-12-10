@@ -20,6 +20,7 @@ class OrgModule(Module):
         self.add_module_word('MANAGER', self.word_MANAGER)
         self.add_module_word('CHAIN', self.word_CHAIN)
         self.add_module_word('CHAIN-KEY-FUNC', self.word_CHAIN_KEY_FUNC)
+        self.add_module_word('USERS-MANAGERS', self.word_USERS_MANAGERS)
 
     # ( org_context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
@@ -113,6 +114,14 @@ class OrgModule(Module):
 
         interp.stack_push(result)
 
+    # ( -- user_mgr_pairs )
+    def word_USERS_MANAGERS(self, interp: IInterpreter):
+        """Returns an array of user/manager pairs
+        """
+        org_context = self.current_context()
+        result = org_context.get_users_managers()
+        interp.stack_push(result)
+
     # =================================
     # Helpers
     def current_context(self):
@@ -165,8 +174,9 @@ class OrgContext:
                 return
             directs = self.direct_managers[manager]
             for m in directs:
-                res.append(m)
-                add_directs(m, res)
+                if m != manager:
+                    res.append(m)
+                    add_directs(m, res)
 
         result = []
         result.append(root_manager)

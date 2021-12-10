@@ -88,3 +88,8 @@ Example:
 
 USERS-TO-SORT  ROOT-USER org.CHAIN-KEY-FUNC SORT-w/KEY-FUNC   # Sorts by most senior person first
 ```
+
+### USERS-MANAGERS
+`( -- users_managers )`
+
+Returns an array of `[user manager]` pairs from the current org context.

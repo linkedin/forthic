@@ -169,6 +169,20 @@ Example:
 2020-07-25 changes @ "Assignee" jira.FIELD-AS-OF   # ( -- "user1" )
 ```
 
+### FIELD-AS-OF-SINCE
+`( as_of_date changes field since_date -- value )`
+
+Returns the value of a `field` as of a date since another date given an array of `changes` from a `CHANGELOG` call.
+If there was no change since the `since_date`, then this returns `NULL`
+
+Example:
+```
+['changes'] VARIABLES
+
+"MYPROJ-1234" ["Assignee"] jira.CHANGELOG changes !
+
+2020-07-25 changes @ "Assignee" 2020-09-01 jira.FIELD-AS-OF-SINCE   # ( -- "user1" )
+```
 
 ### FIELD-CHANGE-AS-OF
 `( date changes field -- change )`

@@ -236,13 +236,6 @@ class Interpreter(IInterpreter):
         module = module_class(self)
         self.registered_modules[module.name] = module
 
-    def run_module_code(self, module: Module) -> None:
-        """Every Module has words defined in the host language and words defined in Forthic. This runs the
-        words defined in Forthic."""
-        self.module_stack_push(module)
-        self.run(module.forthic_code)
-        self.module_stack_pop()
-
     def find_word(self, name: str) -> Optional[IWord]:
         """Searches the interpreter for a word
 

@@ -66,9 +66,6 @@ async function test_bang_at() {
     return true;
 }
 
-// TODO: Add !@ test
-
-
 async function test_interpret() {
     let interp = new Interpreter();
     await interp.run("'24' INTERPRET");

@@ -121,6 +121,28 @@ class TestJiraModule(unittest.TestCase):
         self.assertEqual("2020-07-25", self.interp.stack[0])
         self.assertEqual("2020-08-15", self.interp.stack[1])
 
+    def test_FIELD_AS_OF_SINCE(self):
+        self.interp.run("""
+            ["changes"] VARIABLES
+            "SAMPLE-101" ["Risk_Factor"] jira.CHANGELOG changes !
+
+            # NOTE: Here is the changelog
+            # [{'date': datetime.datetime(2020, 7, 25, 1, 36, 24, tzinfo=tzutc()), 'field': 'Risk_Factor', 'from': '', 'to': 'Blue'},
+            #  {'date': datetime.datetime(2020, 7, 25, 1, 38, 46, tzinfo=tzutc()), 'field': 'Risk_Factor', 'from': 'Blue', 'to': 'Green', 'from_': '32078', 'to_': '32075'},
+            #  {'date': datetime.datetime(2020, 8, 15, 1, 39, 5, tzinfo=tzutc()), 'field': 'Risk_Factor', 'from': 'Green', 'to': 'Yellow', 'from_': '32078', 'to_': '32075'}]
+
+             2020-07-25 changes @ "Risk_Factor" 2020-07-01 jira.FIELD-AS-OF-SINCE
+             2020-10-01 changes @ "Risk_Factor" 2020-07-01 jira.FIELD-AS-OF-SINCE
+             2020-08-17 changes @ "Risk_Factor" 2020-08-01 jira.FIELD-AS-OF-SINCE
+             2020-08-17 changes @ "Risk_Factor" 2020-08-16 jira.FIELD-AS-OF-SINCE
+             2020-10-01 changes @ "Risk_Factor" 2020-09-01 jira.FIELD-AS-OF-SINCE
+        """)
+        self.assertEqual("Green", self.interp.stack[0])
+        self.assertEqual("Yellow", self.interp.stack[1])
+        self.assertEqual("Yellow", self.interp.stack[2])
+        self.assertIsNone(self.interp.stack[3])
+        self.assertIsNone(self.interp.stack[4])
+
     def test_TIME_IN_STATE(self):
         field = "status"
         resolution = "Fixed"

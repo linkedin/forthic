@@ -51,6 +51,7 @@ class GsheetModule(Module):
         self.add_module_word('ENSURE-TAB!', self.word_ENSURE_TAB_bang)
 
         self.add_module_word('BATCH-UPDATE', self.word_BATCH_UPDATE)
+        self.add_module_word('BATCH-UPDATE-TAB', self.word_BATCH_UPDATE_TAB)
 
         self.add_module_word(
             'CONDITIONAL-FORMATS', self.word_CONDITIONAL_FORMATS
@@ -484,6 +485,66 @@ class GsheetModule(Module):
         if not status.ok:
             raise GsheetError(
                 f'Problem running BATCH-UPDATE {gsheet_id}: {status.text}'
+            )
+
+    # ( url tab_title update_requests -- )
+    def word_BATCH_UPDATE_TAB(self, interp: IInterpreter):
+        """Performs a batch update to a gsheet
+        Params:
+        * `url`: gsheet URL
+        * `tab_title`: Title of tab to update
+        * `update_requests`: An array of objects with a single key being the gsheet operation to perform
+                             (e.g., updateCells, deleteDimension, etc.) and with a value corresponding to
+                             the operation. If the value requires a range, the `sheetId` will be filled out
+                             by this method
+        """
+        update_requests = interp.stack_pop()
+        tab_title = interp.stack_pop()
+        url = interp.stack_pop()
+
+        gsheet_id, _ = self.get_gsheet_id_and_tab_id(url)
+        context = self.get_context()
+
+        def get_sheet_id(gsheet_id, tab_title):
+            properties = self.get_spreadsheet_properties(gsheet_id)
+            sheets = properties.get('sheets')
+            if not sheets:
+                return None
+            for s in sheets:
+                if s['properties']['title'] == tab_title:
+                    return s["properties"]["sheetId"]
+            return None
+
+        gsheet_id, _ = self.get_gsheet_id_and_tab_id(url)
+        context = self.get_context()
+
+        sheet_id = get_sheet_id(gsheet_id, tab_title)
+        if (sheet_id is None):
+            raise GsheetError(f"Can't find tab '{tab_title}' for gsheet {gsheet_id}")
+
+        gsheets_session = self.get_gsheets_session()
+
+        def add_sheet_id(update_requests):
+            for r in update_requests:
+                for v in r.values():
+                    if 'range' in v:
+                        v['range']['sheetId'] = sheet_id
+            return
+
+        add_sheet_id(update_requests)
+        update_data = {
+            'requests': update_requests
+        }
+
+        api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}:batchUpdate'
+        status = gsheets_session.post(
+            api_url,
+            data=json.dumps(update_data),
+            proxies=context.get_proxies(),
+        )
+        if not status.ok:
+            raise GsheetError(
+                f'Problem running BATCH-UPDATE-TAB {gsheet_id}: {status.text}'
             )
 
     # ( url -- )

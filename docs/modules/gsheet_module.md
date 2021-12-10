@@ -150,6 +150,15 @@ This takes a `url` and an array of `update_requests` where each request is a [Re
 
 This word adds the tab ID associated with the `url` to each of the request objects and executes the batch update call.
 
+### BATCH-UPDATE-TAB
+`( url tab_title update_requests -- )`
+
+This provides direct access to the [batchUpdate API](https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/batchUpdate) for updating a specific tab.
+
+This takes a `url` to a gsheet, the title of the tab to operate on, and an array of `update_requests` where each element is a [Request object](https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/request#Request) with a single key being the gsheet operation to perform
+(e.g., updateCells, deleteDimension, etc.) and with a value corresponding to the operation.
+If the value requires a range, the `sheetId` will be filled out automatically.
+
 ### CLEAR-SHEET!
 `( url -- )`
 

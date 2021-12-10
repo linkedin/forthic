@@ -198,11 +198,6 @@ class Module {
         if (result) result = new PushValueWord(varname, result);
         return result;
     }
-
-    set_variable(varname, value=null) {
-        var v = new Variable(value);
-        this.variables[varname] = v;
-    }
 }
 
 

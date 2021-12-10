@@ -172,7 +172,3 @@ class Module(IModule):
         if variable:
             result = PushValueWord(varname, variable)
         return result
-
-    def set_variable(self, varname: str, value: Any = None) -> None:
-        """Creates/sets a variable"""
-        self.variables[varname] = Variable(value)

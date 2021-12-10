@@ -114,9 +114,7 @@ class GlobalModule(Module):
         self.add_module_word('FOREACH', self.word_FOREACH)
         self.add_module_word('FOREACH-w/KEY', self.word_FOREACH_w_KEY)
         self.add_module_word('FOREACH>ERRORS', self.word_FOREACH_to_ERRORS)
-        self.add_module_word(
-            'FOREACH-w/KEY>ERRORS', self.word_FOREACH_w_KEY_to_ERRORS
-        )
+        self.add_module_word('FOREACH-w/KEY>ERRORS', self.word_FOREACH_w_KEY_to_ERRORS)
         self.add_module_word('PROCESS-ITEMS', self.word_PROCESS_ITEMS)
         self.add_module_word('ZIP', self.word_ZIP)
         self.add_module_word('ZIP-WITH', self.word_ZIP_WITH)
@@ -232,8 +230,6 @@ class GlobalModule(Module):
 
         # ----------------
         # Math words
-        self.add_module_word('FALSE', self.word_FALSE)
-        self.add_module_word('TRUE', self.word_TRUE)
         self.add_module_word('+', self.word_plus)
         self.add_module_word('-', self.word_minus)
         self.add_module_word('*', self.word_times)
@@ -293,9 +289,9 @@ class GlobalModule(Module):
     def to_bool(self, str_val: str) -> Optional[bool]:
         """If str_val can be converted to bool, return value; otherwise None"""
         result = None
-        if str_val == 'True':
+        if str_val == 'TRUE':
             result = True
-        elif str_val == 'False':
+        elif str_val == 'FALSE':
             result = False
         return result
 
@@ -554,10 +550,16 @@ class GlobalModule(Module):
             interp.stack_push(container)
             return
 
+        def reverse_record(rec):
+            res = {}
+            for pair in reversed(rec.items()):
+                res[pair[0]] = pair[1]
+            return res
+
         if isinstance(container, list):
             result = list(reversed(container))
         else:   # If not a list, treat as record
-            result = container
+            result = reverse_record(container)
 
         interp.stack_push(result)
 
@@ -1018,7 +1020,7 @@ class GlobalModule(Module):
                 else:
                     result.append(container[i])
         else:
-            keys = sorted(list(container.keys()))
+            keys = list(container.keys())
             result = {}
             for i in indexes:
                 if i is not None:
@@ -1226,7 +1228,12 @@ class GlobalModule(Module):
             last = result.pop()
             result.insert(0, last)
         else:
-            result = container
+            result = {}
+            keys = list(container.keys())
+            last = keys.pop()
+            keys.insert(0, last)
+            for k in keys:
+                result[k] = container[k]
 
         interp.stack_push(result)
 
@@ -1275,10 +1282,17 @@ class GlobalModule(Module):
         if not container:
             container = []
 
+        def sort_record(record):
+            sorted_items = sorted(record.items(), key=lambda x: x[1])
+            res = {}
+            for pair in sorted_items:
+                res[pair[0]] = pair[1]
+            return res
+
         if isinstance(container, list):
             result = sorted(container[:])
         else:
-            result = container
+            result = sort_record(container)
 
         interp.stack_push(result)
 
@@ -1291,17 +1305,23 @@ class GlobalModule(Module):
         if not container:
             container = []
 
+        def forthic_func(val):
+            interp.stack_push(val)
+            interp.run(forthic)
+            res = interp.stack_pop()
+            return res
+
+        def sort_record(record):
+            sorted_items = sorted(record.items(), key=lambda x: forthic_func(x[1]))
+            res = {}
+            for pair in sorted_items:
+                res[pair[0]] = pair[1]
+            return res
+
         if isinstance(container, list):
-
-            def forthic_func(val):
-                interp.stack_push(val)
-                interp.run(forthic)
-                res = interp.stack_pop()
-                return res
-
             result = sorted(container[:], key=forthic_func)
         else:
-            result = container
+            result = sort_record(container)
 
         interp.stack_push(result)
 
@@ -1347,7 +1367,7 @@ class GlobalModule(Module):
         if isinstance(container, list):
             result = container[n]
         else:
-            keys = sorted(list(container.keys()))
+            keys = list(container.keys())
             key = keys[n]
             result = container[key]
 
@@ -1757,7 +1777,7 @@ class GlobalModule(Module):
     def word_star_DEFAULT(self, interp: IInterpreter):
         default_forthic = interp.stack_pop()
         value = interp.stack_pop()
-        if value is None:
+        if value is None or value == '':
             interp.run(default_forthic)
             value = interp.stack_pop()
         interp.stack_push(value)
@@ -2085,14 +2105,6 @@ class GlobalModule(Module):
         result = parser.parse(string)
         interp.stack_push(result)
 
-    # ( -- TRUE )
-    def word_TRUE(self, interp: IInterpreter):
-        interp.stack_push(True)
-
-    # ( -- FALSE )
-    def word_FALSE(self, interp: IInterpreter):
-        interp.stack_push(False)
-
     # ( a b -- a+b )
     # ( [a1 a2...] -- sum )
     def word_plus(self, interp: IInterpreter):
@@ -2130,15 +2142,23 @@ class GlobalModule(Module):
         interp.stack_push(result)
 
     # ( a b -- a*b )
+    # ( [a1 a2...] -- product )
     def word_times(self, interp: IInterpreter):
         b = interp.stack_pop()
-        a = interp.stack_pop()
+        result = 1
+        numbers = []
+        if isinstance(b, list):
+            numbers = b
+        else:
+            a = interp.stack_pop()
+            numbers = [a, b]
 
-        if a is None or b is None:
-            interp.stack_push(None)
-            return
-
-        interp.stack_push(a * b)
+        for num in numbers:
+            if num is None:
+                interp.stack_push(None)
+                return
+            result *= num
+        interp.stack_push(result)
 
     # ( a b -- a/b )
     def word_divide_by(self, interp: IInterpreter):

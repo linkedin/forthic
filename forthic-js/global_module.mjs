@@ -148,8 +148,6 @@ class GlobalModule extends Module {
 
         // --------------------
         // Math words
-        this.add_module_word("FALSE", this.word_FALSE);
-        this.add_module_word("TRUE", this.word_TRUE);
         this.add_module_word("+", this.word_plus);
         this.add_module_word("-", this.word_minus);
         this.add_module_word("*", this.word_times);
@@ -181,6 +179,10 @@ class GlobalModule extends Module {
 
         // --------------------
         // Hash params words (js-specific)
+        this.add_module_word("LOCATION", this.word_LOCATION);
+        this.add_module_word("QUERY-PARAMS", this.word_QUERY_PARAMS);
+        this.add_module_word("QUERY-PARAMS!", this.word_QUERY_PARAMS_bang);
+
         this.add_module_word("CONFIGURE-HASH-PARAMS", this.word_CONFIGURE_HASH_PARAMS);
         this.add_module_word("HASH-PARAMS", this.word_HASH_PARAMS);
         this.add_module_word("HASH-PARAMS!", this.word_HASH_PARAMS_bang);
@@ -221,8 +223,8 @@ class GlobalModule extends Module {
     // =======================
     // Literal handlers
     to_bool(str_val) {
-        if (str_val == "true") return true;
-        else if (str_val == "false") return false;
+        if (str_val == "TRUE") return true;
+        else if (str_val == "FALSE") return false;
         else return null;
     }
 
@@ -1967,16 +1969,6 @@ class GlobalModule extends Module {
         interp.stack_push(result)
     }
 
-    // (  -- false )
-    word_FALSE(interp) {
-        interp.stack_push(false);
-    }
-
-    // (  -- true )
-    word_TRUE(interp) {
-        interp.stack_push(true);
-    }
-
     // ( a b -- a+b )
     // ( items -- sum )
     word_plus(interp) {
@@ -2270,6 +2262,47 @@ class GlobalModule extends Module {
         });
     }
 
+    // ( -- location_rec )
+    word_LOCATION(interp) {
+        interp.stack_push(location)
+    }
+
+    // ( -- query_params_rec )
+    word_QUERY_PARAMS(interp) {
+        let search = location.search.slice(1);
+
+        let result = {};
+        if (!search) {
+            interp.stack_push(result);
+            return;
+        }
+
+        let params = search.split("&");
+        params.forEach(p => {
+            let pair = p.split('=')
+            let key = pair[0];
+            let value = pair[1];
+            // NOTE: We don't handle the case where there are duplicate keys
+            result[key] = value;
+        })
+        interp.stack_push(result);
+    }
+
+    // ( query_params_rec -- )
+    word_QUERY_PARAMS_bang(interp) {
+        let query_params_rec = interp.stack_pop();
+
+        function to_query_string(rec) {
+            let res = Object.keys(rec).map(key => {
+                return `${key}=${encodeURIComponent(rec[key])}`;
+            }).join("&");
+            return res;
+        }
+        let query_string = to_query_string(query_params_rec);
+        let new_location = location.origin + location.pathname + '?' + query_string;
+        window.location = new_location;
+    }
+
     // ( config -- )
     // config is an array of arrays with the following info:
     //    [ getter_name query_param default_val getter_transform setter_transform ]
@@ -2338,7 +2371,7 @@ class GlobalModule extends Module {
                     apply_default_if_needed(query_param, default_val);
                     break;
 
-                case 4:
+                case 5:
                     getter_name = row[0];
                     query_param = row[1];
                     default_val = row[2];

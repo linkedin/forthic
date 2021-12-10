@@ -220,8 +220,10 @@ class HtmlModule(Module):
             f'''
             import {{ Interpreter }} from "{self.js_path}/interpreter.mjs?version={random_str}";
             let interp = new Interpreter();
-            interp.run(`{forthic}`);
-        '''
+            interp.run(`{forthic}`)
+            .then(() => {{
+                window.FORTHIC_INTERP = interp
+            }})'''
         )
         interp.stack_push(result)
 

@@ -40,6 +40,7 @@ class JiraModule(Module):
 
         self.add_module_word('CHANGELOG', self.word_CHANGELOG)
         self.add_module_word('FIELD-AS-OF', self.word_FIELD_AS_OF)
+        self.add_module_word('FIELD-AS-OF-SINCE', self.word_FIELD_AS_OF_SINCE)
         self.add_module_word('FIELD-CHANGE-AS-OF', self.word_FIELD_CHANGE_AS_OF)
         self.add_module_word('TIME-IN-STATE', self.word_TIME_IN_STATE)
 
@@ -202,6 +203,24 @@ class JiraModule(Module):
         change = change_containing_date(field_changes, date)
         result = None
         if change:
+            result = change['to']
+        interp.stack_push(result)
+
+    # ( as_of_date changes field since_date -- value )
+    def word_FIELD_AS_OF_SINCE(self, interp: IInterpreter):
+        """Returns change as of a date since a date
+
+        If `since_date` > `as_of_date`, this will have the same behavior as `FIELD-AS-OF`
+        """
+        since_date = interp.stack_pop()
+        field = interp.stack_pop()
+        changes = interp.stack_pop()
+        date = interp.stack_pop()
+
+        field_changes = select_field_changes(field, changes)
+        change = change_containing_date(field_changes, date)
+        result = None
+        if change and change['date'].date() >= since_date:
             result = change['to']
         interp.stack_push(result)
 

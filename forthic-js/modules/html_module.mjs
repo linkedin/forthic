@@ -37,6 +37,8 @@ class HtmlModule extends Module {
         this.add_module_word("CLASS>ELEMENTS", this.word_CLASS_to_ELEMENTS);
 
         // Javascript-only
+        this.add_module_word("BODY", this.word_BODY);
+        this.add_module_word("TEXT-NODE", this.word_TEXT_NODE);
         this.add_module_word("EVENT", this.word_EVENT);
         this.add_module_word("DISPATCH", this.word_DISPATCH);
 
@@ -158,6 +160,18 @@ class HtmlModule extends Module {
         let canvas = interp.stack_pop();
         let result = null;
         if (canvas)   result = canvas.getContext(kind);
+        interp.stack_push(result);
+    }
+
+    // ( -- body )
+    word_BODY(interp) {
+        interp.stack_push(document.body);
+    }
+
+    // ( str -- TextNode )
+    word_TEXT_NODE(interp) {
+        let str = interp.stack_pop();
+        let result = document.createTextNode(str);
         interp.stack_push(result);
     }
 
@@ -615,16 +629,28 @@ COMMON-TYPES "FDEFINE-ELEMENT INTERPRET" FOREACH
 : ADD-LISTENER   <ADD-LISTENER POP;
 
 ["word" "args"] VARIABLES
+# NOTE: This is the older version of server execution that requires doing a "JSON>" call for each argument
 : S-INTERPRET      SERVER-PROMISE "ALERT" <CATCH AWAIT;  # ( forthic -- server_response )
 : S-FORTHIC        (word ! args !) [args @ ">JSON QUOTED" MAP word @] FLATTEN CONCAT;
 : S-RUN            S-FORTHIC S-INTERPRET;  # ( args word -- server_response )
+
+# NOTE: This is the newer version of server execution. It automatically adds the "JSON>" calls so any
+#       Forthic word on the server can be called naturally
+: SERVER-INTERPRET   SERVER-PROMISE "ALERT" <CATCH AWAIT;  # ( forthic -- server_response )
+: SERVER-RUN   (word ! args !) [args @  ">JSON QUOTED  ' JSON>' CONCAT" MAP  word @] FLATTEN " " JOIN  SERVER-INTERPRET;
+
+["javascript" "src"] VARIABLES
+: SCRIPT-JS   "script" ELEMENT "type" "module" <ATTR! javascript @ TEXT-NODE <APPEND;
+: RUN-JS   (javascript !) BODY  SCRIPT-JS APPEND;
 
 COMMON-TYPES EXPORT
 
  ["SVG-NS" "SVG-ELEMENT" "SVG" "BUSY-OVERLAY" "BUSY" "NOT-BUSY"
   "ENABLE" "DISABLE" "ADD-LISTENER"
   "INNER-HTML!" "INNER-TEXT!" "APPEND"
-  "S-INTERPRET" "S-FORTHIC" "S-RUN"] EXPORT
+  "S-INTERPRET" "S-FORTHIC" "S-RUN"
+  "SERVER-INTERPRET" "SERVER-RUN"
+  "RUN-JS" "SCRIPT-JS"] EXPORT
 `;
 
 

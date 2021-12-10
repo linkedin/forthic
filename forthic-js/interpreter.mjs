@@ -66,7 +66,8 @@ class EndArrayWord extends Word {
     execute(interp) {
         var items = []
         var item = interp.stack_pop()
-        // TODO: Check that this doesn't infinite loop
+
+        // NOTE: This won't infinite loop because interp.stack_pop() will eventually fail
         while (1) {
             if (item instanceof Token && item.type == TOK_START_ARRAY) break;
             items.push(item);
@@ -252,7 +253,7 @@ class Interpreter {
         self.count_word(word);
         word.execute(self);
     }
-    
+
     handle_start_array_token(token) {
         this.handle_word(new PushValueWord("<start_array_token>", token));
     }
