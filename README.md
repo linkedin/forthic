@@ -42,3 +42,5 @@ make test-js
 # Tests both
 make test-all
 ```
+## Articles
+LinkedIn Article on how to use the Jira module https://www.linkedin.com/pulse/hello-forthic-abdul-sheik
