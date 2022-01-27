@@ -955,6 +955,10 @@ Given a datetime object, returns associated unix timestamp.
 
 Given a unix timestamp, returns associated datetime object.
 
+### STR>DATETIME
+`( str -- datetime )`
+
+Attempts to parse a string as a date/time. Raises error if format is unrecognized.
 
 ## Reference: Math Words
 

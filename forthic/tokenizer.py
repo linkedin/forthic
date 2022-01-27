@@ -1,5 +1,5 @@
 from .tokens import StartArrayToken, EndArrayToken, StartDefinitionToken, EndDefinitionToken,\
-    CommentToken, StartModuleToken, EndModuleToken, StringToken, WordToken, EOSToken, Token
+    StartMemoToken, CommentToken, StartModuleToken, EndModuleToken, StringToken, WordToken, EOSToken, Token
 from typing import List
 
 
@@ -55,6 +55,12 @@ class Tokenizer:
             return False
         return self.input_string[index + 1] == char and self.input_string[index + 2] == char
 
+    def is_start_memo(self, index: int) -> bool:
+        if index + 1 >= len(self.input_string):
+            return False
+        result = self.input_string[index] == "@" and self.input_string[index + 1] == ":"
+        return result
+
     def transition_from_START(self) -> Token:
         """Tokenization is implemented as a state machine. This is the entry point.
         """
@@ -67,6 +73,9 @@ class Tokenizer:
                 return self.transition_from_COMMENT()
             elif char == ':':
                 return self.transition_from_START_DEFINITION()
+            elif self.is_start_memo(self.position - 1):
+                self.position += 1   # Skip over ":" in "@:"
+                return self.transition_from_START_MEMO()
             elif char == ';':
                 return EndDefinitionToken()
             elif char == '[':
@@ -109,7 +118,20 @@ class Tokenizer:
 
         raise InvalidDefinitionError("Got EOS in START_DEFINITION")
 
-    def transition_from_GATHER_DEFINITION_NAME(self) -> StartDefinitionToken:
+    def transition_from_START_MEMO(self) -> StartMemoToken:
+        while self.position < len(self.input_string):
+            char = self.input_string[self.position]
+            self.position += 1
+
+            if self.is_whitespace(char):
+                continue
+            else:
+                self.position -= 1
+                return self.transition_from_GATHER_MEMO_NAME()
+
+        raise InvalidDefinitionError("Got EOS in START_MEMO")
+
+    def gather_definition_name(self) -> None:
         while self.position < len(self.input_string):
             char = self.input_string[self.position]
             self.position += 1
@@ -121,7 +143,15 @@ class Tokenizer:
                 raise InvalidDefinitionError(f"Definitions can't have '{char}' in them")
             else:
                 self.token_string += char
+        return
+
+    def transition_from_GATHER_DEFINITION_NAME(self) -> StartDefinitionToken:
+        self.gather_definition_name()
         return StartDefinitionToken(self.token_string)
+
+    def transition_from_GATHER_MEMO_NAME(self) -> StartMemoToken:
+        self.gather_definition_name()
+        return StartMemoToken(self.token_string)
 
     def transition_from_GATHER_MODULE(self) -> StartModuleToken:
         while self.position < len(self.input_string):

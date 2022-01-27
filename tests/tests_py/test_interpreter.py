@@ -80,6 +80,34 @@ class TestInterpreter(unittest.TestCase):
         word = module_A.find_word("NOTHING")
         self.assertIsNotNone(word)
 
+    def test_memo(self):
+        interp = Interpreter()
+        interp.run("@: MY-MEMO   ;")
+        for name in ["MY-MEMO", "MY-MEMO!", "MY-MEMO!@"]:
+            word = interp.app_module.find_word(name)
+            self.assertIsNotNone(word)
+
+        # Test storing a value and retrieving it
+        interp.run("41 MY-MEMO")
+        interp.run("MY-MEMO")
+        self.assertEqual(interp.stack[-1], 41)
+
+        # Test refreshing a value
+        interp.stack = []
+        interp.run("81 MY-MEMO!")
+        self.assertEqual(len(interp.stack), 0)
+        interp.run("MY-MEMO")
+        self.assertEqual(interp.stack[-1], 81)
+
+        # Test !@
+        interp.stack = []
+        interp.run("101 MY-MEMO!@")
+        self.assertEqual(len(interp.stack), 1)
+        self.assertEqual(interp.stack[-1], 101)
+        interp.stack = []
+        interp.run("MY-MEMO")
+        self.assertEqual(interp.stack[-1], 101)
+
     def test_word_scope(self):
         interp = Interpreter()
         interp.run("""

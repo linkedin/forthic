@@ -1,7 +1,7 @@
 import unittest
 from forthic.tokenizer import Tokenizer, DLE
 from forthic.tokens import StringToken, StartArrayToken, EndArrayToken, StartModuleToken,\
-    EndModuleToken, StartDefinitionToken, EndDefinitionToken, WordToken, EOSToken
+    EndModuleToken, StartDefinitionToken, EndDefinitionToken, StartMemoToken, WordToken, EOSToken
 
 def get_tokens(tokenizer):
     result = []
@@ -40,10 +40,10 @@ class TestTokenizer(unittest.TestCase):
     def test_basic(self):
         """Checks to see that all basic tokens are recognized
         """
-        tokenizer = Tokenizer("[ ] : DEFINITION ; { } '' WORD")
+        tokenizer = Tokenizer("[ ] : DEFINITION ; { } '' WORD  @: MEMO")
         tokens = get_tokens(tokenizer)
         expected = [StartArrayToken, EndArrayToken, StartDefinitionToken, EndDefinitionToken,
-                    StartModuleToken, EndModuleToken, StringToken, WordToken, EOSToken]
+                    StartModuleToken, EndModuleToken, StringToken, WordToken, StartMemoToken, EOSToken]
 
         self.assertEqual(len(expected), len(tokens))
 

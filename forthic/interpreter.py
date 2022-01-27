@@ -11,13 +11,14 @@ from .tokens import (
     EndModuleToken,
     StartDefinitionToken,
     EndDefinitionToken,
+    StartMemoToken,
     WordToken,
     EOSToken,
     Token,
 )
 from .tokenizer import Tokenizer
 
-from .module import Module, Word, PushValueWord
+from .module import Module, Word, PushValueWord, DefinitionWord
 from .global_module import GlobalModule
 from .profile import WordProfile
 from .interfaces import IInterpreter, IModule, IWord
@@ -68,31 +69,6 @@ class EndArrayWord(Word):
             item = interp.stack_pop()
         items.reverse()
         interp.stack_push(items)
-
-
-class DefinitionWord(Word):
-    """This represents a word that is defined from other words
-
-    A definition looks like this:
-    ```
-    : WORD-NAME   WORD1 WORD2 WORD3;
-    ```
-    The name of the defined word is `WORD-NAME`. When it is executed, `WORD1`, `WORD2`, and `WORD3` are
-    executed in that order.
-    """
-    def __init__(self, name: str):
-        super().__init__(name)
-        self.words: List[IWord] = []
-
-    def add_word(self, word: IWord):
-        """Adds a new word to the definition"""
-        self.words.append(word)
-
-    def execute(self, interp: IInterpreter) -> None:
-        for w in self.words:
-            interp.start_profile_word(w)
-            w.execute(interp)
-            interp.end_profile_word()
 
 
 class StartModuleWord(Word):
@@ -165,6 +141,7 @@ class Interpreter(IInterpreter):
         self.module_stack: List[IModule] = [self.app_module]
         self.registered_modules: Dict[str, Module] = {}
         self.is_compiling: bool = False
+        self.is_memo_definition: bool = False
         self.cur_definition: Optional[DefinitionWord] = None
         self._dev_mode: bool = False
 
@@ -335,6 +312,8 @@ class Interpreter(IInterpreter):
             self.handle_end_module_token(token)
         elif isinstance(token, StartDefinitionToken):
             self.handle_start_definition_token(token)
+        elif isinstance(token, StartMemoToken):
+            self.handle_start_memo_token(token)
         elif isinstance(token, EndDefinitionToken):
             self.handle_end_definition_token(token)
         elif isinstance(token, WordToken):
@@ -382,13 +361,25 @@ class Interpreter(IInterpreter):
             raise NestedDefinitionError()
         self.cur_definition = DefinitionWord(token.name)
         self.is_compiling = True
+        self.is_memo_definition = False
+
+    def handle_start_memo_token(self, token: StartMemoToken) -> None:
+        if self.is_compiling:
+            raise NestedDefinitionError()
+        self.cur_definition = DefinitionWord(token.name)
+        self.is_compiling = True
+        self.is_memo_definition = True
 
     def handle_end_definition_token(self, token: EndDefinitionToken) -> None:
         if not self.is_compiling:
             raise UnmatchedEndDefinitionError()
         if not self.cur_definition:
             raise InterpreterError("Cannot finish definition because no 'cur_definition'")
-        self.cur_module().add_word(self.cur_definition)
+
+        if self.is_memo_definition:
+            self.cur_module().add_memo_words(self.cur_definition)
+        else:
+            self.cur_module().add_word(self.cur_definition)
         self.is_compiling = False
 
     def handle_word_token(self, token: WordToken) -> None:

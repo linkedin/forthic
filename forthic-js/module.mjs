@@ -51,6 +51,25 @@ class PushValueWord extends Word {
     }
 }
 
+class DefinitionWord extends Word {
+    constructor(name) {
+        super(name);
+        this.words = [];
+    }
+
+    add_word(word) {
+        this.words.push(word);
+    }
+
+    async execute(interp) {
+        for (let i=0; i < this.words.length; i++) {
+            let word = this.words[i];
+            await word.execute(interp);
+        }
+    }
+}
+
+
 class ModuleWord extends Word {
     constructor(name, handler) {
         super(name);
@@ -76,6 +95,49 @@ class ImportedWord extends Word {
         await this.module_word.execute(interp);
         interp.module_stack_pop();
         return;
+    }
+}
+
+class ModuleMemoWord extends Word {
+    constructor(word) {
+        super(word.name);
+        this.word = word;
+        this.has_value = false;
+        this.value = null;
+    }
+
+    async refresh(interp) {
+        await this.word.execute(interp)
+        this.value = interp.stack_pop()
+        this.has_value = true
+    }
+
+    async execute(interp) {
+        if (!this.has_value)   await this.refresh(interp);
+        interp.stack_push(this.value)
+    }
+}
+
+class ModuleMemoBangWord extends Word {
+    constructor(memo_word) {
+        super(`${memo_word.name}!`);
+        this.memo_word = memo_word;
+    }
+
+    async execute(interp) {
+        await this.memo_word.refresh(interp)
+    }
+}
+
+class ModuleMemoBangAtWord extends Word {
+    constructor(memo_word) {
+        super(`${memo_word.name}!@`);
+        this.memo_word = memo_word;
+    }
+
+    async execute(interp) {
+        await this.memo_word.refresh(interp)
+        interp.stack_push(this.memo_word.value)
     }
 }
 
@@ -126,6 +188,13 @@ class Module {
 
     add_word(word) {
         this.words.push(word);
+    }
+
+    add_memo_words(word) {
+        const memo_word = new ModuleMemoWord(word)
+        this.words.push(memo_word)
+        this.words.push(new ModuleMemoBangWord(memo_word))
+        this.words.push(new ModuleMemoBangAtWord(memo_word))
     }
 
     add_exportable(names) {
@@ -201,4 +270,4 @@ class Module {
 }
 
 
-export { Module, Word, ModuleWord, PushValueWord };
+export { Module, Word, ModuleWord, PushValueWord, DefinitionWord };

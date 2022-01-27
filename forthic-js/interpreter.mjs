@@ -1,27 +1,9 @@
 import { TOK_STRING, TOK_COMMENT, TOK_START_ARRAY, TOK_END_ARRAY, TOK_START_MODULE, TOK_END_MODULE,
-         TOK_START_DEF, TOK_END_DEF, TOK_WORD, TOK_EOS,
+         TOK_START_DEF, TOK_END_DEF, TOK_START_MEMO, TOK_WORD, TOK_EOS,
          Token, Tokenizer } from './tokenizer.mjs';
-import { Module, Word, PushValueWord } from './module.mjs';
+import { Module, Word, PushValueWord, DefinitionWord } from './module.mjs';
 import { GlobalModule } from './global_module.mjs';
 
-
-class DefinitionWord extends Word {
-    constructor(name) {
-        super(name);
-        this.words = [];
-    }
-
-    add_word(word) {
-        this.words.push(word);
-    }
-
-    async execute(interp) {
-        for (let i=0; i < this.words.length; i++) {
-            let word = this.words[i];
-            await word.execute(interp);
-        }
-    }
-}
 
 class StartModuleWord extends Word {
     constructor(name) {
@@ -88,6 +70,7 @@ class Interpreter {
         this.module_stack = [this.app_module];
         this.registered_modules = {};
         this.is_compiling = false;
+        this.is_memo_definition = false;
         this.cur_definition = null;
 
         // Profiling support
@@ -226,6 +209,7 @@ class Interpreter {
         else if (token.type == TOK_START_MODULE) await this.handle_start_module_token(token);
         else if (token.type == TOK_END_MODULE) this.handle_end_module_token(token);
         else if (token.type == TOK_START_DEF) this.handle_start_definition_token(token);
+        else if (token.type == TOK_START_MEMO) this.handle_start_memo_token(token);
         else if (token.type == TOK_END_DEF) this.handle_end_definition_token(token);
         else if (token.type == TOK_WORD) await this.handle_word_token(token);
         else throw ("Unknown token: " + token);
@@ -270,11 +254,26 @@ class Interpreter {
         if (this.is_compiling) throw "Can't have nested definitions";
         this.cur_definition = new DefinitionWord(token.string);
         this.is_compiling = true;
+        this.is_memo_definition = false;
+    }
+
+    handle_start_memo_token(token) {
+        if (this.is_compiling) throw "Can't have nested definitions";
+        this.cur_definition = new DefinitionWord(token.string);
+        this.is_compiling = true;
+        this.is_memo_definition = true;
     }
 
     handle_end_definition_token(token) {
-        if (!this.is_compiling) throw "Unmatched end definition";
-        this.cur_module().add_word(this.cur_definition);
+        if (!this.is_compiling)   throw "Unmatched end definition";
+        if (!this.cur_definition) throw "Cannot finish definition because there is no 'cur_definition'"
+
+        if (this.is_memo_definition) {
+            this.cur_module().add_memo_words(this.cur_definition);
+        }
+        else {
+            this.cur_module().add_word(this.cur_definition);
+        }
         this.is_compiling = false;
     }
 

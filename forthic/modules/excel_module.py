@@ -1,5 +1,6 @@
 import base64
 import json
+import oauthlib.oauth2.rfc6749.errors
 from requests_oauthlib import OAuth2Session   # type: ignore
 from ..module import Module
 from ..interfaces import IInterpreter
@@ -8,6 +9,22 @@ from typing import List
 
 class ExcelError(RuntimeError):
     pass
+
+
+class ExpiredMSGraphOAuthToken(ExcelError):
+    pass
+
+
+def raises_ExpiredMSGraphOAuthToken(fn):
+    """Decorator that catches expiration errors and raises ExpiredMSGraphOAuthToken instead"""
+    def wrapper(*args, **kwargs):
+        res = None
+        try:
+            res = fn(*args, **kwargs)
+        except (oauthlib.oauth2.rfc6749.errors.TokenExpiredError, oauthlib.oauth2.rfc6749.errors.InvalidGrantError):
+            raise ExpiredMSGraphOAuthToken()
+        return res
+    return wrapper
 
 
 class ExcelModule(Module):
@@ -29,6 +46,7 @@ class ExcelModule(Module):
         self.add_module_word('TABLE-RECORDS', self.word_TABLE_RECORDS)
         self.add_module_word('ADD-TABLE-ROWS', self.word_ADD_TABLE_ROWS)
         self.add_module_word('UPDATE-RANGE', self.word_UPDATE_RANGE)
+        self.add_module_word("USED-RANGE", self.word_USED_RANGE)
 
     # ( creds_context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
@@ -40,6 +58,7 @@ class ExcelModule(Module):
         self.context_stack.pop()
 
     # (shared_url -- doc_info)
+    @raises_ExpiredMSGraphOAuthToken
     def word_WORKBOOK_INFO(self, interp: IInterpreter):
         shared_url = interp.stack_pop()
         msgraph_session = self.get_msgraph_session()
@@ -65,6 +84,7 @@ class ExcelModule(Module):
         interp.stack_push(result)
 
     # (workbook_info -- names)
+    @raises_ExpiredMSGraphOAuthToken
     def word_SHEET_NAMES(self, interp: IInterpreter):
         workbook_info = interp.stack_pop()
         drive_id = workbook_info['drive_id']
@@ -91,6 +111,7 @@ class ExcelModule(Module):
         interp.stack_push(result)
 
     # (workbook_info sheet_name -- names)
+    @raises_ExpiredMSGraphOAuthToken
     def word_TABLE_NAMES(self, interp: IInterpreter):
         sheet_name = interp.stack_pop()
         workbook_info = interp.stack_pop()
@@ -118,6 +139,7 @@ class ExcelModule(Module):
         interp.stack_push(result)
 
     # (workbook_info sheet_name table_name -- records)
+    @raises_ExpiredMSGraphOAuthToken
     def word_TABLE_RECORDS(self, interp: IInterpreter):
         table_name = interp.stack_pop()
         sheet_name = interp.stack_pop()
@@ -172,6 +194,7 @@ class ExcelModule(Module):
         interp.stack_push(result)
 
     # (workbook_info sheet_name table_name rows -- )
+    @raises_ExpiredMSGraphOAuthToken
     def word_ADD_TABLE_ROWS(self, interp: IInterpreter):
         rows = interp.stack_pop()
         table_name = interp.stack_pop()
@@ -198,6 +221,7 @@ class ExcelModule(Module):
             )
 
     # (workbook_info sheet_name range rows -- )
+    @raises_ExpiredMSGraphOAuthToken
     def word_UPDATE_RANGE(self, interp: IInterpreter):
         rows = interp.stack_pop()
         a1_range = interp.stack_pop()
@@ -222,6 +246,29 @@ class ExcelModule(Module):
             raise ExcelError(
                 f'Unable to update range {item_id}/{sheet_name}/{a1_range}: {response.text}'
             )
+
+    # (workbook_info sheet_name -- rows)
+    @raises_ExpiredMSGraphOAuthToken
+    def word_USED_RANGE(self, interp: IInterpreter):
+        sheet_name = interp.stack_pop()
+        workbook_info = interp.stack_pop()
+        drive_id = workbook_info['drive_id']
+        item_id = workbook_info['item_id']
+
+        msgraph_session = self.get_msgraph_session()
+        workbook_session_id = self.get_workbook_session_id(
+            drive_id, item_id, msgraph_session
+        )
+        api_url = f"drives/{drive_id}/items/{item_id}/workbook/worksheets/{sheet_name}/usedRange"
+        headers = {
+            "workbook-session-id": workbook_session_id
+        }
+        response = msgraph_session.get(api_url, headers=headers)
+        if response.status != 200:
+            raise RuntimeError(f"Unable to get used range {item_id}/{sheet_name}: {response.data}")
+        data = response.data
+        result = data.get('values')
+        interp.stack_push(result)
 
     # =================================
     # Helpers

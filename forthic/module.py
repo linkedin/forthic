@@ -36,6 +36,31 @@ class PushValueWord(Word):
         interp.stack_push(self.value)
 
 
+class DefinitionWord(Word):
+    """This represents a word that is defined from other words
+
+    A definition looks like this:
+    ```
+    : WORD-NAME   WORD1 WORD2 WORD3;
+    ```
+    The name of the defined word is `WORD-NAME`. When it is executed, `WORD1`, `WORD2`, and `WORD3` are
+    executed in that order.
+    """
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.words: List[IWord] = []
+
+    def add_word(self, word: IWord):
+        """Adds a new word to the definition"""
+        self.words.append(word)
+
+    def execute(self, interp: IInterpreter) -> None:
+        for w in self.words:
+            interp.start_profile_word(w)
+            w.execute(interp)
+            interp.end_profile_word()
+
+
 class ModuleWord(Word):
     """This is used when defining Forthic words in Python
 
@@ -72,6 +97,49 @@ class ImportedWord(Word):
         interp.module_stack_pop()
 
 
+class ModuleMemoWord(Word):
+    """This memoizes the execution of an expensive operation that returns a value
+    """
+    def __init__(self, word: IWord):
+        super().__init__(word.name)
+        self.word = word
+        self.has_value = False
+        self.value = None
+
+    def refresh(self, interp):
+        self.word.execute(interp)
+        self.value = interp.stack_pop()
+        self.has_value = True
+
+    def execute(self, interp: IInterpreter) -> None:
+        if not self.has_value:
+            self.refresh(interp)
+        interp.stack_push(self.value)
+
+
+class ModuleMemoBangWord(Word):
+    """This forces the update of a ModuleMemoWord
+    """
+    def __init__(self, word: ModuleMemoWord):
+        super().__init__(f"{word.name}!")
+        self.memo_word = word
+
+    def execute(self, interp: IInterpreter) -> None:
+        self.memo_word.refresh(interp)
+
+
+class ModuleMemoBangAtWord(Word):
+    """This forces the update of a ModuleMemoWord
+    """
+    def __init__(self, word: ModuleMemoWord):
+        super().__init__(f"{word.name}!@")
+        self.memo_word = word
+
+    def execute(self, interp: IInterpreter) -> None:
+        self.memo_word.refresh(interp)
+        interp.stack_push(self.memo_word.value)
+
+
 class Module(IModule):
     """A Module is a collection of variables and words
 
@@ -93,6 +161,19 @@ class Module(IModule):
     def add_word(self, word: IWord) -> None:
         """Adds a word to the module"""
         self.words.append(word)
+
+    def add_memo_words(self, word: IWord) -> None:
+        """Adds memo words to a module based on a core definition word
+
+        For a word named "MY-MEMO", this adds the following words:
+            * MY-MEMO  (memoizes the execution of the provided definition word)
+            * MY-MEMO!  (re-runs MY-MEMO to update its memoized value)
+            * MY-MEMO!@  (runs MY-MEMO! and returns then returns the new memo value)
+        """
+        memo_word = ModuleMemoWord(word)
+        self.words.append(memo_word)
+        self.words.append(ModuleMemoBangWord(memo_word))
+        self.words.append(ModuleMemoBangAtWord(memo_word))
 
     def add_module_word(self, word_name: str, word_func: Callable[[IInterpreter], None]) -> None:
         """Convenience function for adding exportable module words"""

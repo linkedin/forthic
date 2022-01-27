@@ -2,6 +2,7 @@ import re
 import json
 import urllib.parse
 from requests_oauthlib import OAuth2Session   # type: ignore
+import oauthlib.oauth2.rfc6749.errors
 from ..module import Module
 from ..interfaces import IInterpreter
 from typing import List, Any, Dict, Optional, Tuple
@@ -9,6 +10,22 @@ from typing import List, Any, Dict, Optional, Tuple
 
 class GsheetError(RuntimeError):
     pass
+
+
+class ExpiredGsheetOAuthToken(GsheetError):
+    pass
+
+
+def raises_ExpiredGsheetOAuthToken(fn):
+    """Decorator that catches expiration errors and raises ExpiredGsheetOAuthToken instead"""
+    def wrapper(*args, **kwargs):
+        res = None
+        try:
+            res = fn(*args, **kwargs)
+        except (oauthlib.oauth2.rfc6749.errors.TokenExpiredError, oauthlib.oauth2.rfc6749.errors.InvalidGrantError):
+            raise ExpiredGsheetOAuthToken()
+        return res
+    return wrapper
 
 
 FORTHIC = '''
@@ -98,6 +115,7 @@ class GsheetModule(Module):
         self.context_stack.pop()
 
     # ( gsheet_id -- info )
+    @raises_ExpiredGsheetOAuthToken
     def word_SHEET_INFO(self, interp: IInterpreter):
         gsheet_id = interp.stack_pop()
 
@@ -105,6 +123,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # ( url -- info )
+    @raises_ExpiredGsheetOAuthToken
     def word_URL_to_SHEET_INFO(self, interp: IInterpreter):
         url = interp.stack_pop()
         gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
@@ -112,6 +131,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # ( url -- info )
+    @raises_ExpiredGsheetOAuthToken
     def word_URL_to_TAB_INFO(self, interp: IInterpreter):
         url = interp.stack_pop()
         gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
@@ -125,6 +145,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # (url -- sheet_id range)
+    @raises_ExpiredGsheetOAuthToken
     def word_URL_to_SHEET_ID_slash_RANGE(self, interp: IInterpreter):
         url = interp.stack_pop()
 
@@ -148,6 +169,7 @@ class GsheetModule(Module):
         interp.stack_push(tab_title)
 
     # (url -- sheet_id tab_id)
+    @raises_ExpiredGsheetOAuthToken
     def word_URL_to_SHEET_ID_slash_TAB_ID(self, interp: IInterpreter):
         url = interp.stack_pop()
         gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
@@ -155,6 +177,7 @@ class GsheetModule(Module):
         interp.stack_push(tab_id)
 
     # ( gsheet_id range -- rows )
+    @raises_ExpiredGsheetOAuthToken
     def word_ROWS(self, interp: IInterpreter):
         spreadsheet_range = interp.stack_pop()
         spreadsheet_id = interp.stack_pop()
@@ -162,6 +185,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # ( gsheet_id range rows -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_ROWS_bang(self, interp: IInterpreter):
         rows = interp.stack_pop()
         spreadsheet_range = interp.stack_pop()
@@ -191,6 +215,7 @@ class GsheetModule(Module):
             )
 
     # ( gsheet_id range columns -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_COLUMNS_bang(self, interp: IInterpreter):
         columns = interp.stack_pop()
         spreadsheet_range = interp.stack_pop()
@@ -220,6 +245,7 @@ class GsheetModule(Module):
             )
 
     # ( gsheet_id range header -- Records )
+    @raises_ExpiredGsheetOAuthToken
     def word_RECORDS(self, interp: IInterpreter):
         header = interp.stack_pop()
         spreadsheet_range = interp.stack_pop()
@@ -276,6 +302,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # ( url -- conditional_formats )
+    @raises_ExpiredGsheetOAuthToken
     def word_CONDITIONAL_FORMATS(self, interp: IInterpreter):
         url = interp.stack_pop()
 
@@ -301,6 +328,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # ( url -- filters )
+    @raises_ExpiredGsheetOAuthToken
     def word_FILTERS(self, interp: IInterpreter):
         url = interp.stack_pop()
 
@@ -326,6 +354,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # ( url end_row -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_UPDATE_ALL_FILTER_END_ROWS(self, interp: IInterpreter):
         """Updates the end row of all filters in the sheet to the specified 1-based end_row"""
         end_row = interp.stack_pop()
@@ -376,6 +405,7 @@ class GsheetModule(Module):
             )
 
     # ( url -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_DELETE_CONDITIONAL_FORMATS(self, interp: IInterpreter):
         url = interp.stack_pop()
 
@@ -413,6 +443,7 @@ class GsheetModule(Module):
             )
 
     # ( url Range Format -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_REPEAT_CELL_FORMATS(self, interp: IInterpreter):
         g_format = interp.stack_pop()
         g_range = interp.stack_pop()
@@ -447,6 +478,7 @@ class GsheetModule(Module):
             )
 
     # ( url update_requests -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_BATCH_UPDATE(self, interp: IInterpreter):
         """Performs a batch update to a gsheet
         Params:
@@ -488,6 +520,7 @@ class GsheetModule(Module):
             )
 
     # ( url tab_title update_requests -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_BATCH_UPDATE_TAB(self, interp: IInterpreter):
         """Performs a batch update to a gsheet
         Params:
@@ -548,6 +581,7 @@ class GsheetModule(Module):
             )
 
     # ( url -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_CLEAR_SHEET_bang(self, interp: IInterpreter):
         url = interp.stack_pop()
 
@@ -577,6 +611,7 @@ class GsheetModule(Module):
             )
 
     # ( url tabname -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_CLEAR_TAB_bang(self, interp: IInterpreter):
         tabname = interp.stack_pop()
         url = interp.stack_pop()
@@ -618,6 +653,7 @@ class GsheetModule(Module):
             )
 
     # ( url title -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_ENSURE_TAB_bang(self, interp: IInterpreter):
         title = interp.stack_pop()
         url = interp.stack_pop()
@@ -666,6 +702,7 @@ class GsheetModule(Module):
     # ( url col_start row_start col_end row_end -- GsheetRange )
     #  col_start/col_end are letters
     #  row_start/row_end are 1-based numbers
+    @raises_ExpiredGsheetOAuthToken
     def word_RANGE(self, interp: IInterpreter):
         row_end = interp.stack_pop()
         col_end = interp.stack_pop()
@@ -738,6 +775,7 @@ class GsheetModule(Module):
         interp.stack_push(result)
 
     # ( url Range Rules -- )
+    @raises_ExpiredGsheetOAuthToken
     def word_ADD_CONDITIONAL_FORMAT_RULES(self, interp: IInterpreter):
         g_rules = interp.stack_pop()
         g_range = interp.stack_pop()
@@ -778,6 +816,7 @@ class GsheetModule(Module):
     # ( url range border_rec -- )
     # border_rec has fields (all optional): top, bottom, left, right
     # The values of this record are GsheetBorder objects
+    @raises_ExpiredGsheetOAuthToken
     def word_UPDATE_BORDERS(self, interp: IInterpreter):
         border_rec = interp.stack_pop()
         g_range = interp.stack_pop()

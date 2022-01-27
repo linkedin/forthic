@@ -1,5 +1,5 @@
 import { TOK_STRING, TOK_COMMENT, TOK_START_ARRAY, TOK_END_ARRAY, TOK_START_MODULE, TOK_END_MODULE,
-         TOK_START_DEF, TOK_END_DEF, TOK_WORD, TOK_EOS,
+         TOK_START_DEF, TOK_END_DEF, TOK_START_MEMO, TOK_WORD, TOK_EOS,
          Token, Tokenizer, DLE} from '../../forthic-js/tokenizer.mjs';
 import { run_tests } from './utils.mjs';
 
@@ -30,10 +30,10 @@ function is_string_token(token, string) {
 
 // Checks to see that all basic tokens are recognized
 function test_basic() {
-    let tokenizer = new Tokenizer("[ ] : DEFINITION ; { } '' WORD");
+    let tokenizer = new Tokenizer("[ ] : DEFINITION ; { } '' WORD  @: MEMO");
     let tokens = get_tokens(tokenizer);
     let expected = [TOK_START_ARRAY, TOK_END_ARRAY, TOK_START_DEF, TOK_END_DEF,
-                    TOK_START_MODULE, TOK_END_MODULE, TOK_STRING, TOK_WORD, TOK_EOS];
+                    TOK_START_MODULE, TOK_END_MODULE, TOK_STRING, TOK_WORD, TOK_START_MEMO, TOK_EOS];
 
     let result = tokens.every((token, index) => token.type == expected[index]);
     return result;

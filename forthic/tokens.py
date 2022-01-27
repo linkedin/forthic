@@ -38,6 +38,11 @@ class EndDefinitionToken(Token):
     pass
 
 
+class StartMemoToken(Token):
+    def __init__(self, name: str):
+        self.name: str = name
+
+
 class WordToken(Token):
     def __init__(self, name: str):
         self.name: str = name

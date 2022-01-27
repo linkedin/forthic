@@ -8,8 +8,9 @@ let TOK_START_MODULE = 5;
 let TOK_END_MODULE = 6;
 let TOK_START_DEF = 7;
 let TOK_END_DEF = 8;
-let TOK_WORD = 9;
-let TOK_EOS = 10;
+let TOK_START_MEMO = 9;
+let TOK_WORD = 10;
+let TOK_EOS = 11;
 
 class Token {
     constructor(type, string) {
@@ -62,6 +63,11 @@ class Tokenizer {
         return this.input_string[index+1] == char && this.input_string[index+2] == char;
     }
 
+    is_start_memo(index) {
+        if ((index + 1) >= this.input_string.length)   return false;
+        return this.input_string[index] == "@" && this.input_string[index + 1] == ":"
+    }
+
     transition_from_START() {
         while (this.position < this.input_string.length) {
             var char = this.input_string[this.position];
@@ -69,6 +75,10 @@ class Tokenizer {
             if (this.is_whitespace(char)) continue;
             else if (char == '#') return this.transition_from_COMMENT();
             else if (char == ':') return this.transition_from_START_DEFINITION();
+            else if (this.is_start_memo(this.position-1)) {
+                this.position += 1  // # Skip over ":" in "@:"
+                return this.transition_from_START_MEMO();
+            }
             else if (char == ';') return new Token(TOK_END_DEF, char);
             else if (char == '[') return new Token(TOK_START_ARRAY, char);
             else if (char == ']') return new Token(TOK_END_ARRAY, char);
@@ -113,7 +123,23 @@ class Tokenizer {
         throw "Got EOS in START_DEFINITION";
     }
 
-    transition_from_GATHER_DEFINITION_NAME() {
+    transition_from_START_MEMO() {
+        while (this.position < this.input_string.length) {
+            var char = this.input_string[this.position];
+            this.position += 1;
+
+            if (this.is_whitespace(char)) continue;
+            else if (this.is_quote(char)) throw "Definitions shouldn't have quotes in them";
+            else {
+                this.position -= 1;
+                return this.transition_from_GATHER_MEMO_NAME();
+            }
+        }
+
+        throw "Got EOS in START_MEMO";
+    }
+
+    gather_definition_name() {
         while (this.position < this.input_string.length) {
             var char = this.input_string[this.position];
             this.position += 1;
@@ -124,7 +150,16 @@ class Tokenizer {
                 throw "Definitions can't have '" + char +"' in them";
             this.token_string += char;
         }
+    }
+
+    transition_from_GATHER_DEFINITION_NAME() {
+        this.gather_definition_name()
         return new Token(TOK_START_DEF, this.token_string)
+    }
+
+    transition_from_GATHER_MEMO_NAME() {
+        this.gather_definition_name()
+        return new Token(TOK_START_MEMO, this.token_string)
     }
 
     transition_from_GATHER_MODULE() {
@@ -187,5 +222,5 @@ class Tokenizer {
 
 
 export { TOK_STRING, TOK_COMMENT, TOK_START_ARRAY, TOK_END_ARRAY, TOK_START_MODULE,
-         TOK_END_MODULE, TOK_START_DEF, TOK_END_DEF, TOK_WORD, TOK_EOS,
+         TOK_END_MODULE, TOK_START_DEF, TOK_END_DEF, TOK_START_MEMO, TOK_WORD, TOK_EOS,
          Token, Tokenizer, DLE };

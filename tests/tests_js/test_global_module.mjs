@@ -3,7 +3,7 @@ import { run_tests, stack_top, assert, arrays_equal } from './utils.mjs';
 
 async function test_literal() {
     let interp = new Interpreter();
-    await interp.run("true  2  3.14 2020-06-05 9:00 11:30 PM 22:15 AM")
+    await interp.run("TRUE  2  3.14 2020-06-05 9:00 11:30 PM 22:15 AM")
 
     if (interp.stack[0] != true)   return false;
     if (interp.stack[1] != 2)      return false;

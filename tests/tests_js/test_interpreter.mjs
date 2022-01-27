@@ -84,6 +84,40 @@ async function test_definition() {
     return true;
 }
 
+
+async function test_memo() {
+    let interp = new Interpreter();
+    await interp.run("@: MY-MEMO   ;");
+    ["MY-MEMO", "MY-MEMO!", "MY-MEMO!@"].forEach(name => {
+        let word = interp.app_module.find_word(name);
+        if (!word)   return false;
+    })
+
+    // Test storing a value and retrieving it
+    await interp.run("41 MY-MEMO")
+    await interp.run("MY-MEMO")
+    if (interp.stack[0] != 41)   return false
+
+    // Test refreshing a value
+    interp.stack = []
+    await interp.run("81 MY-MEMO!")
+    if (interp.stack.length != 0)   return false
+    await interp.run("MY-MEMO")
+    if (interp.stack[0] != 81)   return false
+
+    // # Test !@
+    interp.stack = []
+    await interp.run("101 MY-MEMO!@")
+    if (interp.stack.length != 1)   return false
+    if (interp.stack[0] != 101)   return false
+    interp.stack = []
+    await interp.run("MY-MEMO")
+    if (interp.stack[0] != 101)   return false
+
+    return true;
+}
+
+
 async function test_scope() {
     let interp = new Interpreter();
     await interp.run(`
@@ -103,7 +137,7 @@ async function test_open_module() {
             : MESSAGE   "Hello (from mymodule)";
         }
         : MESSAGE   {mymodule MESSAGE };
-        MESSAGE     
+        MESSAGE
     `);
     if (interp.stack[0] != "Hello (from mymodule)") return false;
 
@@ -155,6 +189,7 @@ let tests = {
     "test_empty_array": test_empty_array,
     "test_start_module": test_start_module,
     "test_definition": test_definition,
+    "test_memo": test_memo,
     "test_open_module": test_open_module,
     "test_scope": test_scope,
     "test_word": test_word,

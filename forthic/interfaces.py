@@ -27,6 +27,10 @@ class IModule:
         """Adds a `word` to a module"""
         pass
 
+    def add_memo_words(self, word: IWord) -> None:
+        """Adds memo words based on `word` to a module"""
+        pass
+
 
 class IInterpreter:
     """A Forthic interpreter runs Forthic strings
