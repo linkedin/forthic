@@ -6,9 +6,11 @@ class Variable:
     """Represents a Forthic variable"""
     def __init__(self, value: Any = None):
         self.value = value
+        self.has_value = False
 
     def set_value(self, val):
         self.value = val
+        self.has_value = True
 
     def get_value(self):
         return self.value

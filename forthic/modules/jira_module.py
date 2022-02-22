@@ -588,11 +588,12 @@ class JiraModule(Module):
             )
         return result
 
-    def search(self, jql: str, fields: List[str], expand: List[str] = []):
+    def search(self, jql: str, fields_: List[str], expand: List[str] = []):
         """Uses jql to search Jira, returning records with the specified fields"""
         if jql.strip() == '':
             raise JiraError('JQL must not be blank')
 
+        fields = fields_.copy()
         context = self.current_context()
 
         # key always comes back in the results. Specifying it will cause the value to be nulled out

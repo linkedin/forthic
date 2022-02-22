@@ -35,6 +35,11 @@ Returns the value of a variable.
 
 Sets a value of a variable, leaving value on stack.
 
+### <!
+`( value variable -- variable )`
+
+Sets a value of a variable, leaving the variable on stack.
+
 ### INTERPRET
 `( string -- ? )`
 
@@ -151,6 +156,24 @@ empty string is returned.
 
 Interprets a screen with the specified name. Screens may load other screens, but if an infinite load is detected, an error will be raised.
 
+## Reference: Lambda words
+
+### LAMBDA
+`( forthic_str -- Lambda )`
+
+Converts a Forthic string into a Lambda object. Lambdas represent the execution of a Forthic string and can be
+converted into other Lambdas with new behaviors (e.g., gathering execution errors rather than raising them)
+
+### NULL-ON-ERROR-LAMBDA
+`( Lambda -- Lambda )`
+
+Converts a Lambda into one that pushes `NULL` onto the stack on exception, re-rasing that exception.
+
+### ACCUM-ERROR-LAMBDA
+`( Lambda list_variable -- Lambda )`
+
+Converts a Lambda into one that catches exceptions and pushes them onto the specified `list_variable`. If there
+was no exception, `NULL` is pushed onto `list_variable`.
 
 ## Reference: Array/Record words
 
@@ -595,9 +618,16 @@ Pops an item from the parameter stack and throws it away.
 ### DUP
 `( a -- a a )`
 
-Duplicates the top element of the stack. For the Python and Javascript host
-languages, the duplicated element is a reference to the original element.
+Duplicates the top element of the stack.
 
+For the Python and Javascript host languages, the duplicated element is a reference to the original element.
+
+### N-DUP
+`( a num -- a ... a )`
+
+Pops the top element of the stack and pushes `num` duplicates of it onto the stack.
+
+For the Python and Javascript host languages, the duplicated element is a reference to the original element.
 
 ### SWAP
 `( a b -- b a )`

@@ -1,7 +1,7 @@
 import unittest
 import datetime
 import pytz
-from forthic.interpreter import Interpreter
+from forthic.interpreter import Interpreter, UnknownWordError
 from forthic.tokenizer import DLE
 from forthic.global_module import GlobalModuleError
 
@@ -54,6 +54,49 @@ class TestGlobalModule(unittest.TestCase):
         interp.run("""'{module-A  : MESSAGE   "Hi" ;}' INTERPRET""")
         interp.run("{module-A MESSAGE}")
         self.assertEqual(interp.stack[-1], 'Hi')
+
+    def test_lambda(self):
+        interp = Interpreter()
+        interp.run("'2 +' LAMBDA")
+        my_lambda = interp.stack_pop()
+
+        interp.run("5")
+        interp.stack_push(my_lambda)
+        interp.run("INTERPRET")
+        self.assertEqual(interp.stack[-1], 7)
+
+    def test_accum_error_lambda(self):
+        interp = Interpreter()
+        interp.run("""
+        : WORDS   ['1' 'garbage' '2' '3'];
+        ["errors"] VARIABLES
+        [] errors !
+        : MY-INTERPRET   "INTERPRET" LAMBDA errors ACCUM-ERROR-LAMBDA;
+        WORDS MY-INTERPRET FOREACH
+        """)
+
+        interp.run("errors @")
+        errors = interp.stack_pop()
+        non_null_errors = [e for e in errors if e is not None]
+        self.assertEqual(4, len(errors))
+        self.assertEqual(1, len(non_null_errors))
+        self.assertIsInstance(errors[1], UnknownWordError)
+
+    def test_null_on_error_lambda(self):
+        interp = Interpreter()
+        interp.run("""
+        : WORDS   ['1' 'garbage' '2' '3'];
+        ["errors"] VARIABLES
+        [] errors !
+        : MY-INTERPRET   "INTERPRET" LAMBDA  NULL-ON-ERROR-LAMBDA errors ACCUM-ERROR-LAMBDA;
+        WORDS MY-INTERPRET MAP
+        """)
+
+        interp.run("errors @")
+        errors = interp.stack_pop()
+        self.assertIsInstance(errors[1], UnknownWordError)
+
+        self.assertEqual(interp.stack[-1], [1, None, 2, 3])
 
     def test_memo(self):
         interp = Interpreter()

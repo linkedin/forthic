@@ -12,7 +12,9 @@ import io
 import csv
 from collections import defaultdict
 from collections.abc import Mapping
+
 from .module import Word, Module, PushValueWord
+from .flambda import Lambda, NullOnErrorLambda, AccumErrorLambda
 from .profile import ProfileAnalyzer
 from .interfaces import IInterpreter
 
@@ -34,6 +36,7 @@ class InvalidTimeError(GlobalModuleError):
     pass
 
 
+# DEPRECATED: Replace this with `@:`
 class MemoWord(Word):
     def __init__(self, name, varname):
         super().__init__(name)
@@ -86,6 +89,7 @@ class GlobalModule(Module):
         self.add_module_word('!', self.word_bang)
         self.add_module_word('@', self.word_at)
         self.add_module_word('!@', self.word_bang_at)
+        self.add_module_word('<!', self.word_l_bang)
         self.add_module_word('INTERPRET', self.word_INTERPRET)
         self.add_module_word('MEMO', self.word_MEMO)
         self.add_module_word('EXPORT', self.word_EXPORT)
@@ -96,6 +100,12 @@ class GlobalModule(Module):
         self.add_module_word('SCREEN!', self.word_SCREEN_bang)
         self.add_module_word('SCREEN', self.word_SCREEN)
         self.add_module_word('LOAD-SCREEN', self.word_LOAD_SCREEN)
+
+        # ----------------
+        # Lambda words
+        self.add_module_word('LAMBDA', self.word_LAMBDA)
+        self.add_module_word('NULL-ON-ERROR-LAMBDA', self.word_NULL_ON_ERROR_LAMBDA)
+        self.add_module_word('ACCUM-ERROR-LAMBDA', self.word_ACCUM_ERROR_LAMBDA)
 
         # ----------------
         # Array/Record words
@@ -147,6 +157,7 @@ class GlobalModule(Module):
         # Stack words
         self.add_module_word('POP', self.word_POP)
         self.add_module_word('DUP', self.word_DUP)
+        self.add_module_word('N-DUP', self.word_N_DUP)
         self.add_module_word('SWAP', self.word_SWAP)
 
         # ----------------
@@ -368,15 +379,46 @@ class GlobalModule(Module):
         variable.value = value
         interp.stack_push(variable.value)
 
-    # ( string -- ? )
-    def word_INTERPRET(self, interp: IInterpreter):
-        """Pops a string and interprets it"""
-        string = interp.stack_pop()
+    # ( value variable -- variable )
+    def word_l_bang(self, interp: IInterpreter):
+        """Set the value of a variable and then pushes variable onto the stack"""
+        variable = interp.stack_pop()
+        value = interp.stack_pop()
+        variable.value = value
+        interp.stack_push(variable)
 
-        if not string:
+    # ( forthic -- Lambda )
+    def word_LAMBDA(self, interp: IInterpreter):
+        """Converts a forthic string to a Lambda"""
+        forthic = interp.stack_pop()
+
+        result = Lambda(forthic)
+        interp.stack_push(result)
+
+    # ( lambda -- Lambda )
+    def word_NULL_ON_ERROR_LAMBDA(self, interp: IInterpreter):
+        """Converts a lambda into one that pushes NULL onto the stack on error and re-raises the error"""
+        flambda = interp.stack_pop()
+        result = NullOnErrorLambda(flambda)
+        interp.stack_push(result)
+
+    # ( lambda variable -- Lambda )
+    def word_ACCUM_ERROR_LAMBDA(self, interp: IInterpreter):
+        """Converts a lambda into one that executes in a try/except block, accumulating errors into the specified variable"""
+        variable = interp.stack_pop()
+        flambda = interp.stack_pop()
+        result = AccumErrorLambda(flambda, variable)
+        interp.stack_push(result)
+
+    # ( object -- ? )
+    def word_INTERPRET(self, interp: IInterpreter):
+        """Pops a string/Lambda and interprets it"""
+        object = interp.stack_pop()
+
+        if not object:
             return
 
-        interp.run(string)
+        execute(interp, object)
 
     # ( name forthic -- )
     def word_MEMO(self, interp: IInterpreter):
@@ -691,7 +733,7 @@ class GlobalModule(Module):
         result = defaultdict(list)
         for v in values:
             interp.stack_push(v)
-            interp.run(forthic)
+            execute(interp, forthic)
             group = interp.stack_pop()
             result[group].append(v)
 
@@ -719,7 +761,7 @@ class GlobalModule(Module):
             value = values[i]
             interp.stack_push(key)
             interp.stack_push(value)
-            interp.run(forthic)
+            execute(interp, forthic)
             group = interp.stack_pop()
             result[group].append(value)
 
@@ -775,14 +817,14 @@ class GlobalModule(Module):
             for i in range(len(items)):
                 item = items[i]
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
                 value = interp.stack_pop()
                 result.append(value)
         else:
             result = {}
             for k, item in items.items():
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
                 value = interp.stack_pop()
                 result[k] = value
 
@@ -804,7 +846,7 @@ class GlobalModule(Module):
                 item = items[i]
                 interp.stack_push(i)
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
                 value = interp.stack_pop()
                 result.append(value)
         else:
@@ -812,7 +854,7 @@ class GlobalModule(Module):
             for k, item in items.items():
                 interp.stack_push(k)
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
                 value = interp.stack_pop()
                 result[k] = value
 
@@ -860,14 +902,14 @@ class GlobalModule(Module):
         def process_item(item):
             try:
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
             except Exception as e:
                 interp.stack_push(item)
                 interp.stack_push(e)
-                interp.run(error_forthic)
+                execute(interp, error_forthic)
 
         def should_stop():
-            interp.run(stop_forthic)
+            execute(interp, stop_forthic)
             res = interp.stack_pop()
             return res
 
@@ -875,7 +917,7 @@ class GlobalModule(Module):
             process_item(item)
             if should_stop():
                 return
-        interp.run(done_forthic)
+        execute(interp, done_forthic)
 
     # ( array1 array2 -- array )
     # ( record1 record2 -- record )
@@ -921,7 +963,7 @@ class GlobalModule(Module):
                 value2 = container2[i] if i < len(container2) else None
                 interp.stack_push(value1)
                 interp.stack_push(value2)
-                interp.run(forthic)
+                execute(interp, forthic)
                 res = interp.stack_pop()
                 result.append(res)
         else:
@@ -929,7 +971,7 @@ class GlobalModule(Module):
             for k, v in container1.items():
                 interp.stack_push(v)
                 interp.stack_push(container2.get(k))
-                interp.run(forthic)
+                execute(interp, forthic)
                 res = interp.stack_pop()
                 result[k] = res
 
@@ -1129,7 +1171,7 @@ class GlobalModule(Module):
             result: Any = []
             for item in container:
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
                 should_select = interp.stack_pop()
                 if should_select:
                     result.append(item)
@@ -1137,7 +1179,7 @@ class GlobalModule(Module):
             result = {}
             for k, v in container.items():
                 interp.stack_push(v)
-                interp.run(forthic)
+                execute(interp, forthic)
                 should_select = interp.stack_pop()
                 if should_select:
                     result[k] = v
@@ -1160,7 +1202,7 @@ class GlobalModule(Module):
                 item = container[i]
                 interp.stack_push(i)
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
                 should_select = interp.stack_pop()
                 if should_select:
                     result.append(item)
@@ -1169,7 +1211,7 @@ class GlobalModule(Module):
             for k, v in container.items():
                 interp.stack_push(k)
                 interp.stack_push(v)
-                interp.run(forthic)
+                execute(interp, forthic)
                 should_select = interp.stack_pop()
                 if should_select:
                     result[k] = v
@@ -1307,7 +1349,7 @@ class GlobalModule(Module):
 
         def forthic_func(val):
             interp.stack_push(val)
-            interp.run(forthic)
+            execute(interp, forthic)
             res = interp.stack_pop()
             return res
 
@@ -1475,13 +1517,13 @@ class GlobalModule(Module):
             interp.stack_push(initial)
             for item in container:
                 interp.stack_push(item)
-                interp.run(forthic)
+                execute(interp, forthic)
             result = interp.stack_pop()
         else:
             interp.stack_push(initial)
             for _, v in container.items():
                 interp.stack_push(v)
-                interp.run(forthic)
+                execute(interp, forthic)
             result = interp.stack_pop()
 
         interp.stack_push(result)
@@ -1495,6 +1537,13 @@ class GlobalModule(Module):
         a = interp.stack_pop()
         interp.stack_push(a)
         interp.stack_push(a)
+
+    # ( a num -- a ... a )
+    def word_N_DUP(self, interp: IInterpreter):
+        num = interp.stack_pop()
+        a = interp.stack_pop()
+        for _ in range(num):
+            interp.stack_push(a)
 
     # ( a b -- b a )
     def word_SWAP(self, interp: IInterpreter):
@@ -1700,7 +1749,7 @@ class GlobalModule(Module):
             }
             result.append(node_item)
             interp.stack_push(item)
-            interp.run(child_items_forthic)
+            execute(interp, child_items_forthic)
             children = interp.stack_pop()
             for c in children:
                 traverse(c, depth + 1)
@@ -1778,7 +1827,7 @@ class GlobalModule(Module):
         default_forthic = interp.stack_pop()
         value = interp.stack_pop()
         if value is None or value == '':
-            interp.run(default_forthic)
+            execute(interp, default_forthic)
             value = interp.stack_pop()
         interp.stack_push(value)
 
@@ -1791,7 +1840,7 @@ class GlobalModule(Module):
             item = interp.stack_pop()
             interp.stack_push(item)
 
-            interp.run(forthic)
+            execute(interp, forthic)
             res = interp.stack_pop()
 
             # Push original item and result
@@ -2507,7 +2556,7 @@ def drill_for_value(record, fields):
 def run_returning_error(interp, forthic):
     result = None
     try:
-        interp.run(forthic)
+        execute(interp, forthic)
     except Exception as e:
         result = e
     return result
@@ -2530,14 +2579,15 @@ def foreach(interp, return_errors=False):
             if return_errors:
                 errors.append(run_returning_error(interp, forthic))
             else:
-                interp.run(forthic)
+                execute(interp, forthic)
+
     else:
         for _, item in container.items():
             interp.stack_push(item)
             if return_errors:
                 errors.append(run_returning_error(interp, forthic))
             else:
-                interp.run(forthic)
+                execute(interp, forthic)
 
     return errors
 
@@ -2560,7 +2610,7 @@ def foreach_w_key(interp, return_errors=False):
             if return_errors:
                 errors.append(run_returning_error(interp, forthic))
             else:
-                interp.run(forthic)
+                execute(interp, forthic)
     else:
         for k, item in container.items():
             interp.stack_push(k)
@@ -2568,6 +2618,14 @@ def foreach_w_key(interp, return_errors=False):
             if return_errors:
                 errors.append(run_returning_error(interp, forthic))
             else:
-                interp.run(forthic)
+                execute(interp, forthic)
 
     return errors
+
+
+def execute(interp: IInterpreter, object: Union[str, Lambda]):
+    if isinstance(object, str):
+        interp.run(object)
+    else:
+        object.execute(interp)
+    return
