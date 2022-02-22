@@ -413,12 +413,12 @@ class GlobalModule(Module):
     # ( object -- ? )
     def word_INTERPRET(self, interp: IInterpreter):
         """Pops a string/Lambda and interprets it"""
-        object = interp.stack_pop()
+        obj = interp.stack_pop()
 
-        if not object:
+        if not obj:
             return
 
-        execute(interp, object)
+        execute(interp, obj)
 
     # ( name forthic -- )
     def word_MEMO(self, interp: IInterpreter):
