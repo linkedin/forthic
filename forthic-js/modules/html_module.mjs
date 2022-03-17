@@ -639,9 +639,8 @@ COMMON-TYPES "FDEFINE-ELEMENT INTERPRET" FOREACH
 : SERVER-INTERPRET   SERVER-PROMISE "ALERT" <CATCH AWAIT;  # ( forthic -- server_response )
 : SERVER-RUN   (word ! args !) [args @  ">JSON QUOTED  ' JSON>' CONCAT" MAP  word @] FLATTEN " " JOIN  SERVER-INTERPRET;
 
-["javascript" "src"] VARIABLES
-: SCRIPT-JS   "script" ELEMENT "type" "module" <ATTR! javascript @ TEXT-NODE <APPEND;
-: RUN-JS   (javascript !) BODY  SCRIPT-JS APPEND;
+: SCRIPT-JS   "script" ELEMENT "type" "module" <ATTR! SWAP TEXT-NODE <APPEND;   # (js -- script)
+: RUN-JS      BODY SWAP SCRIPT-JS APPEND;   # (js -- )
 
 COMMON-TYPES EXPORT
 
@@ -650,7 +649,8 @@ COMMON-TYPES EXPORT
   "INNER-HTML!" "INNER-TEXT!" "APPEND"
   "S-INTERPRET" "S-FORTHIC" "S-RUN"
   "SERVER-INTERPRET" "SERVER-RUN"
-  "RUN-JS" "SCRIPT-JS"] EXPORT
+  "RUN-JS" "SCRIPT-JS"
+] EXPORT
 `;
 
 

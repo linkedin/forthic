@@ -54,6 +54,7 @@ class GsheetModule(Module):
         self.add_module_word('PUSH-CONTEXT!', self.word_PUSH_CONTEXT_bang)
         self.add_module_word('POP-CONTEXT!', self.word_POP_CONTEXT_bang)
         self.add_module_word('SHEET-INFO', self.word_SHEET_INFO)
+        self.add_module_word('SHEET-PROPERTIES', self.word_SHEET_PROPERTIES)
         self.add_module_word('URL>SHEET-INFO', self.word_URL_to_SHEET_INFO)
         self.add_module_word('URL>TAB-INFO', self.word_URL_to_TAB_INFO)
         self.add_module_word('URL>SHEET-ID/RANGE', self.word_URL_to_SHEET_ID_slash_RANGE)
@@ -120,6 +121,14 @@ class GsheetModule(Module):
         gsheet_id = interp.stack_pop()
 
         result = self.get_sheet_info(gsheet_id)
+        interp.stack_push(result)
+
+    # ( gsheet_id -- properties )
+    @raises_ExpiredGsheetOAuthToken
+    def word_SHEET_PROPERTIES(self, interp: IInterpreter):
+        gsheet_id = interp.stack_pop()
+
+        result = self.get_spreadsheet_properties(gsheet_id)
         interp.stack_push(result)
 
     # ( url -- info )

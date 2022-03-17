@@ -596,9 +596,11 @@ class JiraModule(Module):
         fields = fields_.copy()
         context = self.current_context()
 
-        # key always comes back in the results. Specifying it will cause the value to be nulled out
+        # id and key always comes back in the results. Specifying it will cause the value to be nulled out
         if 'key' in fields:
             fields.remove('key')
+        if 'id' in fields:
+            fields.remove('id')
 
         normalized_fields = [self.normalize_field(f) for f in fields]
         batch_size = 200
@@ -642,7 +644,10 @@ class JiraModule(Module):
             issues = run(session)
 
         def issue_data_to_record(issue_data: Dict[str, Any]) -> Dict[str, Any]:
-            res = {'key': issue_data['key']}
+            res = {
+                'id': issue_data['id'],
+                'key': issue_data['key']
+            }
             # Map field back to what the user provided
             for field in fields:
                 normalized_field = self.normalize_field(field)
@@ -674,6 +679,13 @@ class JiraModule(Module):
         return result
 
 
+# TODO: The JiraContext needs to store info about the current ticket limit. It should also allow you to
+#       override this.
+#       The JiraContext should store information about the number of tickets in the last query (even if it
+#       didn't return all of them)
+#       There should also be an option to raise Exception on limit violation or return truncated results. I'm
+#       thinking that raising an Exception is the correct behavior
+#       Should define the __get__ and __set__ methods so we can use <REC! and REC@ to manipulate the context
 class JiraContext:
     """Override this and pass to PUSH-CONTEXT! in order to make Jira calls"""
 
