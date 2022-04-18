@@ -51,6 +51,7 @@ class GlobalModule extends Module {
         this.add_module_word("GROUP-BY", this.word_GROUP_BY);
         this.add_module_word("GROUP-BY-w/KEY", this.word_GROUP_BY_w_KEY);
         this.add_module_word("GROUPS-OF", this.word_GROUPS_OF);
+        this.add_module_word("INDEX", this.word_INDEX);
         this.add_module_word("MAP", this.word_MAP);
         this.add_module_word("MAP-w/KEY", this.word_MAP_w_KEY);
         this.add_module_word("FOREACH", this.word_FOREACH);
@@ -229,7 +230,7 @@ class GlobalModule extends Module {
     }
 
     to_int(str_val) {
-        var result = parseInt(str_val);
+        let result = parseInt(str_val);
         if (isNaN(result))       return null;
         if (result != str_val)   return null;
         return result;
@@ -237,7 +238,7 @@ class GlobalModule extends Module {
 
     to_float(str_val) {
         if (str_val.indexOf(".") == -1) return null;
-        var result = parseFloat(str_val);
+        let result = parseFloat(str_val);
         if (isNaN(result)) return null;
         else return result;
     }
@@ -484,7 +485,7 @@ class GlobalModule extends Module {
         }
 
         function invert_rec(rec) {
-            var res = {};
+            let res = {};
             Object.keys(rec).forEach(k => {
                 res[rec[k]] = k;
             });
@@ -493,7 +494,7 @@ class GlobalModule extends Module {
 
         let result = null;
         if (container instanceof Array) {
-            var set = {};
+            let set = {};
             container.forEach(item => {
                 set[item] = true;
             });
@@ -707,6 +708,31 @@ class GlobalModule extends Module {
         return
     }
 
+    // ( array forthic -- record )
+    async word_INDEX(interp) {
+        const forthic = interp.stack_pop();
+        const items = interp.stack_pop();
+
+        if (!items) {
+            interp.stack_push(items);
+            return;
+        }
+
+        let result = {};
+        for (let i=0; i < items.length; i++) {
+            let item = items[i];
+            interp.stack_push(item);
+            await interp.run(forthic);
+            let keys = interp.stack_pop();
+            keys.forEach(k => {
+                let lowercased_key = k.toLowerCase()
+                if (result[lowercased_key])   result[lowercased_key].push(item)
+                else                          result[lowercased_key] = [item]
+            })
+        }
+        interp.stack_push(result)
+    }
+
     // ( items word -- [ ? ] )
     async word_MAP(interp) {
         let string = interp.stack_pop();
@@ -717,13 +743,13 @@ class GlobalModule extends Module {
             return;
         }
 
-        var result = [];
+        let result = [];
         if (items instanceof Array) {
             for (let i=0; i < items.length; i++) {
                 let item = items[i];
                 interp.stack_push(item);
                 await interp.run(string);
-                var value = interp.stack_pop();
+                let value = interp.stack_pop();
                 result.push(value);
             }
         }
@@ -752,14 +778,14 @@ class GlobalModule extends Module {
             return;
         }
 
-        var result = [];
+        let result = [];
         if (items instanceof Array) {
             for (let i=0; i < items.length; i++) {
                 let item = items[i];
                 interp.stack_push(i);
                 interp.stack_push(item);
                 await interp.run(string);
-                var value = interp.stack_pop();
+                let value = interp.stack_pop();
                 result.push(value);
             };
         }
@@ -768,11 +794,11 @@ class GlobalModule extends Module {
             let keys = Object.keys(items);
             for (let i=0; i < keys.length; i++) {
                 let k = keys[i];
-                var item = items[k];
+                let item = items[k];
                 interp.stack_push(k);
                 interp.stack_push(item);
                 await interp.run(string);
-                var value = interp.stack_pop();
+                let value = interp.stack_pop();
                 result[k] = value;
             };
         }
@@ -797,7 +823,7 @@ class GlobalModule extends Module {
             let keys = Object.keys(items);
             for (let i=0; i < keys.length; i++) {
                 let k = keys[i];
-                var item = items[k];
+                let item = items[k];
                 interp.stack_push(item);
                 await interp.run(string);
             };
@@ -823,7 +849,7 @@ class GlobalModule extends Module {
             let keys = Object.keys(items);
             for (let i=0; i < keys.length; i++) {
                 let k = keys[i];
-                var item = items[k];
+                let item = items[k];
                 interp.stack_push(k);
                 interp.stack_push(item);
                 await interp.run(string);
@@ -1918,7 +1944,7 @@ class GlobalModule extends Module {
         let num_days = interp.stack_pop();
         let date = interp.stack_pop();
 
-        var result = new Date(date);
+        let result = new Date(date);
         result.setDate(result.getDate() + num_days);
         interp.stack_push(result);
     }
@@ -1928,7 +1954,7 @@ class GlobalModule extends Module {
         let r_date = interp.stack_pop();
         let l_date = interp.stack_pop();
         let ms_per_day = 1000*60*60*24;
-        var result = Math.round((l_date.getTime() - r_date.getTime())/ms_per_day);
+        let result = Math.round((l_date.getTime() - r_date.getTime())/ms_per_day);
         interp.stack_push(result);
     }
 
@@ -1975,7 +2001,7 @@ class GlobalModule extends Module {
         let items = interp.stack_pop();
 
         if (items instanceof Array) {
-            var sum = 0;
+            let sum = 0;
             items.forEach(item => {sum += item});
             interp.stack_push(sum);
         }
@@ -2531,7 +2557,7 @@ class GlobalModule extends Module {
     // ( value default_value -- value )
     word_DEFAULT(interp) {
         let default_value = interp.stack_pop();
-        var value = interp.stack_pop();
+        let value = interp.stack_pop();
         if (value === undefined || value === null || value === "")   value = default_value;
         interp.stack_push(value);
     }
@@ -2539,7 +2565,7 @@ class GlobalModule extends Module {
     // ( value default_forthic -- value )
     word_star_DEFAULT(interp) {
         let default_forthic = interp.stack_pop();
-        var value = interp.stack_pop();
+        let value = interp.stack_pop();
         if (value === undefined || value === null || value == "") {
             interp.run(default_forthic);
             value = interp.stack_pop();
@@ -2566,13 +2592,13 @@ class GlobalModule extends Module {
     async word_l_REPEAT(interp) {
         let num_times = interp.stack_pop();
         let string = interp.stack_pop();
-        for (var i=0; i < num_times; i++) {
+        for (let i=0; i < num_times; i++) {
            // Store item so we can push it back later
-           var item = interp.stack_pop();
+           let item = interp.stack_pop();
            interp.stack_push(item);
 
            await interp.run(string);
-           var res = interp.stack_pop();
+           let res = interp.stack_pop();
 
            // Push original item and result
            interp.stack_push(item);
@@ -2588,7 +2614,7 @@ class GlobalModule extends Module {
     word_to_FIXED(interp) {
         let num_places = interp.stack_pop();
         let value = interp.stack_pop();
-        var result = value;
+        let result = value;
         if (value === undefined || value === null)  result = '';
         else if (!isNaN(value)) result = value.toFixed(num_places);
         interp.stack_push(result);
@@ -2597,7 +2623,7 @@ class GlobalModule extends Module {
     // ( object -- json )
     word_to_JSON(interp) {
         let object = interp.stack_pop();
-        var result = JSON.stringify(object);
+        let result = JSON.stringify(object);
         interp.stack_push(result);
     }
 

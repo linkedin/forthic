@@ -267,6 +267,17 @@ original array.
 Given a record, returns an array of records with at most `n` key/value pairs
 from the original record.
 
+### INDEX
+`( array forthic -- array )`
+
+Given an array and `forthic` which takes an object and returns a list of keys for it, this returns a record
+from keys to list of objects with the corresponding keys. NOTE that all keys in the resulting record will be lower-cased.
+
+Example:
+```
+TICKETS "'Labels' REC@" INDEX
+```
+
 ### MAP
 `( array forthic -- array )`
 

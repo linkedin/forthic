@@ -119,6 +119,7 @@ class GlobalModule(Module):
         self.add_module_word('GROUP-BY', self.word_GROUP_BY)
         self.add_module_word('GROUP-BY-w/KEY', self.word_GROUP_BY_w_KEY)
         self.add_module_word('GROUPS-OF', self.word_GROUPS_OF)
+        self.add_module_word('INDEX', self.word_INDEX)
         self.add_module_word('MAP', self.word_MAP)
         self.add_module_word('MAP-w/KEY', self.word_MAP_w_KEY)
         self.add_module_word('FOREACH', self.word_FOREACH)
@@ -799,6 +800,25 @@ class GlobalModule(Module):
             keys = list(container.keys())
             key_groups = group_items(keys, size)
             result = [extract_rec(container, ks) for ks in key_groups]
+
+        interp.stack_push(result)
+
+    # ( array forthic -- record )
+    def word_INDEX(self, interp: IInterpreter):
+        forthic = interp.stack_pop()  # Returns a list of string keys
+        items = interp.stack_pop()
+
+        if not items:
+            interp.stack_push(items)
+            return
+
+        result = defaultdict(list)
+        for item in items:
+            interp.stack_push(item)
+            execute(interp, forthic)
+            keys = interp.stack_pop()
+            for k in keys:
+                result[k.lower()].append(item)
 
         interp.stack_push(result)
 

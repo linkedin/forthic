@@ -1,3 +1,4 @@
+from operator import index
 import unittest
 import datetime
 import pytz
@@ -438,6 +439,24 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(len(recs[0]), 3)
         self.assertEqual(len(recs[1]), 3)
         self.assertEqual(len(recs[2]), 1)
+
+    def test_INDEX(self):
+        interp = Interpreter()
+        interp.run("""
+        : |KEYS   "'key' REC@" MAP;
+        : TICKETS [
+            [['key'   101] ['Labels'  ['alpha' 'beta']]] REC
+            [['key'   102] ['Labels'  ['alpha' 'gamma']]] REC
+            [['key'   103] ['Labels'  ['alpha']]] REC
+            [['key'   104] ['Labels'  ['beta']]] REC
+        ];
+
+        TICKETS "'Labels' REC@" INDEX  "|KEYS" MAP
+        """)
+        index_record = interp.stack[0]
+        self.assertEqual(index_record['alpha'], [101, 102, 103])
+        self.assertEqual(index_record['beta'], [101, 104])
+        self.assertEqual(index_record['gamma'], [102])
 
     def test_map(self):
         interp = Interpreter()

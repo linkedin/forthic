@@ -439,6 +439,26 @@ async function test_groups_of() {
     return true;
 }
 
+async function test_index() {
+    let interp = new Interpreter();
+    await interp.run(`
+    : |KEYS   "'key' REC@" MAP;
+    : TICKETS [
+        [['key'   101] ['Labels'  ['alpha' 'beta']]] REC
+        [['key'   102] ['Labels'  ['alpha' 'gamma']]] REC
+        [['key'   103] ['Labels'  ['alpha']]] REC
+        [['key'   104] ['Labels'  ['beta']]] REC
+    ];
+
+    TICKETS "'Labels' REC@" INDEX  "|KEYS" MAP
+`)
+    let index_record = interp.stack[0];
+    assert(arrays_equal(index_record['alpha'], [101, 102, 103]));
+    assert(arrays_equal(index_record['beta'], [101, 104]));
+    assert(arrays_equal(index_record['gamma'], [102]));
+    return true;
+}
+
 async function test_map() {
     let interp = new Interpreter();
     await interp.run(`
@@ -1595,6 +1615,7 @@ let tests = {
     "test_group_by": test_group_by,
     "test_group_by_w_key": test_group_by_w_key,
     "test_groups_of": test_groups_of,
+    "test_index": test_index,
     "test_map": test_map,
     "test_map_w_key": test_map_w_key,
     "test_foreach": test_foreach,
