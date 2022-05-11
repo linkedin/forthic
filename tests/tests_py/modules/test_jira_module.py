@@ -128,8 +128,10 @@ class TestJiraModule(unittest.TestCase):
 
             # NOTE: Here is the changelog
             # [{'date': datetime.datetime(2020, 7, 25, 1, 36, 24, tzinfo=tzutc()), 'field': 'Risk_Factor', 'from': '', 'to': 'Blue'},
-            #  {'date': datetime.datetime(2020, 7, 25, 1, 38, 46, tzinfo=tzutc()), 'field': 'Risk_Factor', 'from': 'Blue', 'to': 'Green', 'from_': '32078', 'to_': '32075'},
-            #  {'date': datetime.datetime(2020, 8, 15, 1, 39, 5, tzinfo=tzutc()), 'field': 'Risk_Factor', 'from': 'Green', 'to': 'Yellow', 'from_': '32078', 'to_': '32075'}]
+            #  {'date': datetime.datetime(2020, 7, 25, 1, 38, 46, tzinfo=tzutc()), 'field': 'Risk_Factor',
+            #   'from': 'Blue', 'to': 'Green', 'from_': '32078', 'to_': '32075'},
+            #  {'date': datetime.datetime(2020, 8, 15, 1, 39, 5, tzinfo=tzutc()), 'field': 'Risk_Factor',
+            #   'from': 'Green', 'to': 'Yellow', 'from_': '32078', 'to_': '32075'}]
 
              2020-07-25 changes @ "Risk_Factor" 2020-07-01 jira.FIELD-AS-OF-SINCE
              2020-10-01 changes @ "Risk_Factor" 2020-07-01 jira.FIELD-AS-OF-SINCE

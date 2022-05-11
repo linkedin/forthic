@@ -3,6 +3,7 @@ from forthic.tokenizer import Tokenizer, DLE
 from forthic.tokens import StringToken, StartArrayToken, EndArrayToken, StartModuleToken,\
     EndModuleToken, StartDefinitionToken, EndDefinitionToken, StartMemoToken, WordToken, EOSToken
 
+
 def get_tokens(tokenizer):
     result = []
     token = None
@@ -59,7 +60,6 @@ class TestTokenizer(unittest.TestCase):
         self.assertTrue(is_word_token(tokens[0], "WORD"))
         self.assertIsInstance(tokens[1], EndDefinitionToken)
         self.assertTrue(is_word_token(tokens[2], "WORD2"))
-
 
     def test_start_module(self):
         tokenizer = Tokenizer("{ {my-mod")

@@ -1,16 +1,16 @@
 import json
 from forthic.modules.confluence_module import ConfluenceContext
 
+
 class ServerResponse:
     def __init__(self, string, status_code=200):
         self.json_string = string
         self.status_code = status_code
         self.text = ""
-    
+
     def json(self):
         result = json.loads(self.json_string)
         return result
-
 
 
 class ConfluenceTestContext(ConfluenceContext):
@@ -127,7 +127,7 @@ PAGE_INFO_RESPONSE = '''
 }
 '''
 
-NO_PAGE_INFO_RESPONSE ='''
+NO_PAGE_INFO_RESPONSE = '''
 {
     "results": [],
     "start": 0,
@@ -326,7 +326,7 @@ PAGE_INFO_w_ANCESTORS_RESPONSE = '''
 '''
 
 
-CREATE_PAGE_RESPONSE='''
+CREATE_PAGE_RESPONSE = '''
 {
     "id": "388386403",
     "type": "page",

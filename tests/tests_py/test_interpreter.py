@@ -4,6 +4,7 @@ from forthic.interpreter import Interpreter
 from forthic.module import Module, ModuleWord
 from tests.tests_py.sample_date_module import SampleDateModule
 
+
 class TestInterpreter(unittest.TestCase):
 
     def test_initial_state(self):
@@ -11,12 +12,10 @@ class TestInterpreter(unittest.TestCase):
         self.assertEqual(0, len(interp.stack))
         self.assertEqual("", interp.module_stack[0].name)
 
-
     def test_push_string(self):
         interp = Interpreter()
         interp.run("'Howdy'")
         self.assertEqual("Howdy", interp.stack[0])
-
 
     def test_comment(self):
         interp = Interpreter()
@@ -24,12 +23,10 @@ class TestInterpreter(unittest.TestCase):
         interp.run("#A comment")
         self.assertEqual(0, len(interp.stack))
 
-
     def test_empty_array(self):
         interp = Interpreter()
         interp.run("[]")
         self.assertEqual([], interp.stack[0])
-
 
     def test_start_module(self):
         interp = Interpreter()
@@ -61,7 +58,6 @@ class TestInterpreter(unittest.TestCase):
         interp.run("}}")
         self.assertEqual(1, len(interp.module_stack))
         self.assertEqual(interp.module_stack[0], interp.app_module)
-
 
     def test_definition(self):
         # Can define and find a word in the app module
@@ -161,7 +157,6 @@ class TestInterpreter(unittest.TestCase):
         if len(interp.stack) != 0:
             return False
         return True
-
 
     def test_use_module(self):
         interp = Interpreter()
