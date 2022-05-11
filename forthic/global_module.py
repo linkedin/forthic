@@ -20,7 +20,6 @@ from .interfaces import IInterpreter
 
 from typing import Optional, Union, Any, List
 
-# TEST
 DLE = chr(16)   # ASCII DLE char
 
 
