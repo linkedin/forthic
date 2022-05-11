@@ -1,10 +1,10 @@
-from operator import index
 import unittest
 import datetime
 import pytz
 from forthic.interpreter import Interpreter, UnknownWordError
 from forthic.tokenizer import DLE
 from forthic.global_module import GlobalModuleError
+
 
 class TestGlobalModule(unittest.TestCase):
     def test_literal(self):
@@ -114,11 +114,11 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(interp.stack[-1], 1)
 
         interp.run("COUNT! COUNT")
-        self.assertEqual(interp.stack[-1] , 2)
+        self.assertEqual(interp.stack[-1], 2)
         self.assertEqual(len(interp.stack), 3)
 
         interp.run("COUNT!@")
-        self.assertEqual(interp.stack[-1] , 3)
+        self.assertEqual(interp.stack[-1], 3)
 
     def test_rec(self):
         interp = Interpreter()
@@ -139,7 +139,7 @@ class TestGlobalModule(unittest.TestCase):
         'beta' REC@
         """)
         self.assertEqual(len(interp.stack), 1)
-        self.assertEqual(interp.stack[0] , 3)
+        self.assertEqual(interp.stack[0], 3)
 
     def test_l_rec_bang(self):
         # Case: Set value on a record
@@ -241,7 +241,6 @@ class TestGlobalModule(unittest.TestCase):
         """)
         self.assertEqual(len(interp.stack), 1)
         self.assertEqual(list(interp.stack[-1].keys()), ["b", "a"])
-
 
     def test_unique(self):
         interp = Interpreter()
@@ -777,7 +776,6 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(sorted(list(stack[0].keys())), ['a', 'b', 'c', 'd', 'f'])
         self.assertEqual(sorted(list(stack[0].values())), [1, 2, 3, 10, 40])
 
-
     def test_select(self):
         interp = Interpreter()
         interp.run("""
@@ -1134,7 +1132,6 @@ class TestGlobalModule(unittest.TestCase):
         stack = interp.stack
         self.assertEqual(stack[0], "HOWDY, Everyone!")
 
-
     def test_strip(self):
         interp = Interpreter()
         interp.run("""
@@ -1198,7 +1195,6 @@ class TestGlobalModule(unittest.TestCase):
         """)
         stack = interp.stack
         self.assertEqual(stack[0], "now/is the time")
-
 
     def test_default(self):
         interp = Interpreter()

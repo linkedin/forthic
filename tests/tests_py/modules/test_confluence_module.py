@@ -48,10 +48,11 @@ class TestConfluenceModule(unittest.TestCase):
         """)
 
     def test_pipe_ESCAPE_TABLE_CONTENT2(self):
-        self.interp.run("""   
+        self.interp.run("""
         '+*Q2 Objectives*+\r\n\r\nReduce tech debts, operational burdens and cost-to-serve' |ESCAPE-TABLE-CONTENT
         """)
         assert(self.interp.stack[0] == '+*Q2 Objectives*+\nReduce tech debts, operational burdens and cost-to-serve')
+
 
 if __name__ == '__main__':
     unittest.main()

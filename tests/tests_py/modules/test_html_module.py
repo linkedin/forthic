@@ -9,6 +9,7 @@ def get_interp():
     result.run('[["html" ""]] USE-MODULES')
     return result
 
+
 class TestHtmlModule(unittest.TestCase):
     def setUp(self):
         self.interp = get_interp()
@@ -45,7 +46,7 @@ class TestHtmlModule(unittest.TestCase):
         row @ CHILD-NODES LENGTH
         """)
         stack = self.interp.stack
-        self.assertEqual([1, True, 3], self.interp.stack)
+        self.assertEqual([1, True, 3], stack)
 
     def test_node_content(self):
         self.interp.run("""

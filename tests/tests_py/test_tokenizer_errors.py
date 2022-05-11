@@ -1,6 +1,7 @@
 import unittest
 from forthic.tokenizer import Tokenizer, UnterminatedStringError, InvalidDefinitionError
 
+
 class TestTokenizerErrors(unittest.TestCase):
     def test_unterminated_string(self):
         """Raise exception if strings are unterminated
@@ -8,13 +9,11 @@ class TestTokenizerErrors(unittest.TestCase):
         tokenizer = Tokenizer("'Unterminated")
         self.assertRaises(UnterminatedStringError, tokenizer.next_token)
 
-
     def test_start_definition_eos(self):
         """Can't have an empty definition
         """
         tokenizer = Tokenizer(":")
         self.assertRaises(InvalidDefinitionError, tokenizer.next_token)
-
 
     def test_start_definition_special_chars(self):
         """Can't have definition with Forthic special chars

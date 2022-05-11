@@ -1,17 +1,17 @@
 import json
 from forthic.modules.jira_module import JiraContext
 
+
 class ServerResponse:
     def __init__(self, string, status_code=200):
         self.json_string = string
         self.status_code = status_code
         self.text = ""
         self.ok = status_code < 300
-    
+
     def json(self):
         result = json.loads(self.json_string)
         return result
-
 
 
 class JiraTestContext(JiraContext):
@@ -55,14 +55,22 @@ class JiraTestContext(JiraContext):
 
 
 REST_API_2_FIELD_RESPONSE = '''
-[{"id":"issuekey","name":"Key","custom":false,"orderable":false,"navigable":true,"searchable":false,"clauseNames":["id","issue","issuekey","key"]},
-{"id":"assignee","name":"Assignee","custom":false,"orderable":true,"navigable":true,"searchable":true,"clauseNames":["assignee"],"schema":{"type":"user","system":"assignee"}},
-{"id":"summary","name":"Summary","custom":false,"orderable":true,"navigable":true,"searchable":true,"clauseNames":["summary"],"schema":{"type":"string","system":"summary"}},
-{"id":"project","name":"Project","custom":false,"orderable":false,"navigable":true,"searchable":true,"clauseNames":["project"],"schema":{"type":"project","system":"project"}},
-{"id":"reporter","name":"Reporter","custom":false,"orderable":true,"navigable":true,"searchable":true,"clauseNames":["reporter"],"schema":{"type":"user","system":"reporter"}},
-{"id":"issuetype","name":"Issue Type","custom":false,"orderable":true,"navigable":true,"searchable":true,"clauseNames":["issuetype","type"],"schema":{"type":"issuetype","system":"issuetype"}},
-{"id":"customfield_10460","name":"Risk_Factor","custom":true,"orderable":true,"navigable":true,"searchable":true,"clauseNames":["cf[10460]","Risk_Factor"],"schema":{"type":"option","custom":"com.atlassian.jira.plugin.system.customfieldtypes:select","customId":10460}},
-{"id":"timespent","name":"Time Spent","custom":false,"orderable":false,"navigable":true,"searchable":false,"clauseNames":["timespent"],"schema":{"type":"number","system":"timespent"}}]
+[{"id":"issuekey","name":"Key","custom":false,"orderable":false,"navigable":true,"searchable":false,
+"clauseNames":["id","issue","issuekey","key"]},
+{"id":"assignee","name":"Assignee","custom":false,"orderable":true,"navigable":true,"searchable":true,
+"clauseNames":["assignee"],"schema":{"type":"user","system":"assignee"}},
+{"id":"summary","name":"Summary","custom":false,"orderable":true,"navigable":true,"searchable":true,
+"clauseNames":["summary"],"schema":{"type":"string","system":"summary"}},
+{"id":"project","name":"Project","custom":false,"orderable":false,"navigable":true,"searchable":true,
+"clauseNames":["project"],"schema":{"type":"project","system":"project"}},
+{"id":"reporter","name":"Reporter","custom":false,"orderable":true,"navigable":true,"searchable":true,
+"clauseNames":["reporter"],"schema":{"type":"user","system":"reporter"}},
+{"id":"issuetype","name":"Issue Type","custom":false,"orderable":true,"navigable":true,"searchable":true,
+"clauseNames":["issuetype","type"],"schema":{"type":"issuetype","system":"issuetype"}},
+{"id":"customfield_10460","name":"Risk_Factor","custom":true,"orderable":true,"navigable":true,"searchable":true,
+"clauseNames":["cf[10460]","Risk_Factor"],"schema":{"type":"option","custom":"com.atlassian.jira.plugin.system.customfieldtypes:select","customId":10460}},
+{"id":"timespent","name":"Time Spent","custom":false,"orderable":false,"navigable":true,"searchable":false,
+"clauseNames":["timespent"],"schema":{"type":"number","system":"timespent"}}]
 '''
 
 SEARCH_RESPONSE1 = '''

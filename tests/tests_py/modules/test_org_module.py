@@ -38,11 +38,9 @@ class TestOrgModule(unittest.TestCase):
         items = [
             {"key": 101, "owner": "user101"},
             {"key": 102, "owner": "user102"},
-            
             {"key": 202, "owner": "user202"},
             {"key": 203, "owner": "user203"},
             {"key": 302, "owner": "mgr2"},
-
             {"key": 401, "owner": "user401"},
         ]
 
@@ -87,6 +85,7 @@ class TestOrgModule(unittest.TestCase):
         self.interp.run("['user101' 'mgr1' 'user203' 'director1'] 'vp1' org.CHAIN-KEY-FUNC SORT-w/KEY-FUNC")
         self.assertEqual(['director1', 'mgr1', 'user101', 'user203'], self.interp.stack[0])
 
+
 def get_context():
     def get_users_managers():
         res = [
@@ -96,8 +95,8 @@ def get_context():
             ["user201", "mgr2"],
             ["user202", "mgr2"],
             ["user203", "mgr2"],
-            ["mgr1",    "director1"],
-            ["mgr2",    "director1"],
+            ["mgr1", "director1"],
+            ["mgr2", "director1"],
             ["director1", "vp1"]
         ]
         return res
