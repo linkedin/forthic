@@ -8,6 +8,45 @@ class WikiStatusModule(Module):
     def __init__(self, interp: IInterpreter):
         super().__init__('wiki-status', interp, FORTHIC)
 
+        self.add_module_word('ADD-SECTIONS', self.word_ADD_SECTIONS)
+
+    # ( content section-headings -- content )
+    def word_ADD_SECTIONS(self, interp: IInterpreter):
+        """Breaks content up into sections based on specified header strings"""
+        headings = interp.stack_pop()
+        content = interp.stack_pop()
+
+        if not content:
+            interp.stack_push(content)
+            return
+
+        def is_heading(line):
+            return line.strip() in headings
+
+        # Add sections to content
+        is_first_heading = True
+        revised_lines = []
+        lines = content.split('\n')
+        for line in lines:
+            if is_heading(line):
+                if is_first_heading:
+                    revised_lines.append(line)
+                    revised_lines.append("{section}")
+                    is_first_heading = False
+                else:
+                    revised_lines.append("{section}")
+                    revised_lines.append(line)
+                    revised_lines.append("{section}")
+            else:
+                revised_lines.append(line)
+
+        # If we added a heading, close off the last section
+        if not is_first_heading:
+            revised_lines.append("{section}")
+
+        result = "\n".join(revised_lines)
+        interp.stack_push(result)
+
 
 FORTHIC = """
 [ "risk_factor" "project_status" "label" "status" ] VARIABLES
