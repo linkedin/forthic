@@ -578,6 +578,26 @@ async function test_foreach_w_key() {
     return true;
 }
 
+async function test_invert_keys() {
+    let interp = new Interpreter();
+    let record = {
+        "open": {
+            "manager1": [101],
+            "manager2": [201]
+        },
+        "closed": {
+            "manager1": [103]
+        }
+    }
+    interp.stack_push(record)
+    interp.run("INVERT-KEYS")
+    let result = interp.stack_pop()
+    assert(arrays_equal(result['manager1']['open'], [101]))
+    assert(arrays_equal(result['manager1']['closed'], [103]))
+    assert(arrays_equal(result['manager2']['open'], [201]))
+    return true;
+}
+
 
 async function test_zip() {
     let interp = new Interpreter();
@@ -1620,6 +1640,7 @@ let tests = {
     "test_map_w_key": test_map_w_key,
     "test_foreach": test_foreach,
     "test_foreach_w_key": test_foreach_w_key,
+    "test_invert_keys": test_invert_keys,
     "test_zip": test_zip,
     "test_zip_with": test_zip_with,
     "test_keys": test_keys,

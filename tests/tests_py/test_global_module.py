@@ -314,6 +314,22 @@ class TestGlobalModule(unittest.TestCase):
             result.append(rec)
         return result
 
+    def make_status_to_manager_to_ids(self):
+        result = {
+            "open": {
+                "manager1": [101, 102],
+                "manager2": [103]
+            },
+            "blocked": {
+                "manager3": [104]
+            },
+            "closed": {
+                "manager1": [10, 11],
+                "manager2": [12, 13]
+            }
+        }
+        return result
+
     def test_by_field(self):
         interp = Interpreter()
         interp.stack_push(self.make_records())
@@ -570,6 +586,28 @@ class TestGlobalModule(unittest.TestCase):
         self.assertIsNone(errors[3])
         res = interp.stack[-2]
         self.assertEqual(res, 5)
+
+    def test_invert_keys(self):
+        interp = Interpreter()
+        status_to_manager_to_ids = self.make_status_to_manager_to_ids()
+        interp.stack_push(status_to_manager_to_ids)
+        interp.run("INVERT-KEYS")
+        res = interp.stack_pop()
+        expected = {
+            "manager1": {
+                "open": [101, 102],
+                "closed": [10, 11]
+            },
+            "manager2": {
+                "open": [103],
+                "closed": [12, 13]
+            },
+            "manager3": {
+                "blocked": [104]
+            }
+        }
+
+        self.assertEqual(res, expected)
 
     def test_zip(self):
         interp = Interpreter()

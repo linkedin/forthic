@@ -126,6 +126,7 @@ class GlobalModule(Module):
         self.add_module_word('FOREACH>ERRORS', self.word_FOREACH_to_ERRORS)
         self.add_module_word('FOREACH-w/KEY>ERRORS', self.word_FOREACH_w_KEY_to_ERRORS)
         self.add_module_word('PROCESS-ITEMS', self.word_PROCESS_ITEMS)
+        self.add_module_word('INVERT-KEYS', self.word_INVERT_KEYS)
         self.add_module_word('ZIP', self.word_ZIP)
         self.add_module_word('ZIP-WITH', self.word_ZIP_WITH)
         self.add_module_word('KEYS', self.word_KEYS)
@@ -937,6 +938,16 @@ class GlobalModule(Module):
             if should_stop():
                 return
         execute(interp, done_forthic)
+
+    # ( record -- record )
+    # Swaps the order of nested keys in a record
+    def word_INVERT_KEYS(self, interp: IInterpreter):
+        record = interp.stack_pop()
+        result: Any = defaultdict(dict)
+        for first_key, sub_record in record.items():
+            for second_key, value in sub_record.items():
+                result[second_key][first_key] = value
+        interp.stack_push(result)
 
     # ( array1 array2 -- array )
     # ( record1 record2 -- record )

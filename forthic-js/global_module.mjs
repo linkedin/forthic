@@ -56,6 +56,7 @@ class GlobalModule extends Module {
         this.add_module_word("MAP-w/KEY", this.word_MAP_w_KEY);
         this.add_module_word("FOREACH", this.word_FOREACH);
         this.add_module_word("FOREACH-w/KEY", this.word_FOREACH_w_KEY);
+        this.add_module_word("INVERT-KEYS", this.word_INVERT_KEYS);
         this.add_module_word("ZIP", this.word_ZIP);
         this.add_module_word("ZIP-WITH", this.word_ZIP_WITH);
         this.add_module_word("KEYS", this.word_KEYS);
@@ -855,6 +856,21 @@ class GlobalModule extends Module {
                 await interp.run(string);
             };
         }
+    }
+
+    // ( record -- record )
+    word_INVERT_KEYS(interp) {
+        let record = interp.stack_pop()
+        let result = {}
+        Object.keys(record).forEach(first_key => {
+            let sub_record = record[first_key]
+            Object.keys(sub_record).forEach(second_key => {
+                let value = sub_record[second_key]
+                if (!result[second_key])   result[second_key] = {}
+                result[second_key][first_key] = value
+            })
+        })
+        interp.stack_push(result)
     }
 
     // ( array1 array2 -- array )

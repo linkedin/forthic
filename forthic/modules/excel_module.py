@@ -259,14 +259,14 @@ class ExcelModule(Module):
         workbook_session_id = self.get_workbook_session_id(
             drive_id, item_id, msgraph_session
         )
-        api_url = f"drives/{drive_id}/items/{item_id}/workbook/worksheets/{sheet_name}/usedRange"
+        api_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{item_id}/workbook/worksheets/{sheet_name}/usedRange"
         headers = {
             "workbook-session-id": workbook_session_id
         }
         response = msgraph_session.get(api_url, headers=headers)
-        if response.status != 200:
-            raise RuntimeError(f"Unable to get used range {item_id}/{sheet_name}: {response.data}")
-        data = response.data
+        if response.status_code != 200:
+            raise RuntimeError(f"Unable to get used range {item_id}/{sheet_name}: {response}")
+        data = response.json()
         result = data.get('values')
         interp.stack_push(result)
 

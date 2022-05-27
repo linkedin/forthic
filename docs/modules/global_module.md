@@ -337,6 +337,21 @@ The `forthic` string should expect an index/key and then the value.
 
 NOTE: This does not return any values
 
+### INVERT-KEYS
+`( record -- record )`
+
+Given a record with nested keys (i.e., a record whose fields are records), returns a new record with the first level keys
+and the second level keys reversed.
+
+Example:
+```
+[
+    ["alpha"  [["open"  1] ["closed" 2]] REC]
+    ["beta"   [["closed" 4]] REC]
+] REC
+
+INVERT-KEYS  # {open: {alpha: 1}, closed: {alpha: 2, beta: 4}}
+```
 
 ### ZIP
 `( array1 array2 -- array )`

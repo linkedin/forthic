@@ -71,21 +71,14 @@ class GsheetModule(Module):
         self.add_module_word('BATCH-UPDATE', self.word_BATCH_UPDATE)
         self.add_module_word('BATCH-UPDATE-TAB', self.word_BATCH_UPDATE_TAB)
 
-        self.add_module_word(
-            'CONDITIONAL-FORMATS', self.word_CONDITIONAL_FORMATS
-        )
-        self.add_module_word(
-            'DELETE-CONDITIONAL-FORMATS', self.word_DELETE_CONDITIONAL_FORMATS
-        )
+        self.add_module_word('CONDITIONAL-FORMATS', self.word_CONDITIONAL_FORMATS)
+        self.add_module_word('DELETE-CONDITIONAL-FORMATS', self.word_DELETE_CONDITIONAL_FORMATS)
 
-        self.add_module_word(
-            'REPEAT-CELL-FORMATS', self.word_REPEAT_CELL_FORMATS
-        )
+        self.add_module_word('REPEAT-CELL-RECORD', self.word_REPEAT_CELL_RECORD)
+        self.add_module_word('REPEAT-CELL-FORMATS', self.word_REPEAT_CELL_FORMATS)
 
         self.add_module_word('FILTERS', self.word_FILTERS)
-        self.add_module_word(
-            'UPDATE-ALL-FILTER-END-ROWS', self.word_UPDATE_ALL_FILTER_END_ROWS
-        )
+        self.add_module_word('UPDATE-ALL-FILTER-END-ROWS', self.word_UPDATE_ALL_FILTER_END_ROWS)
 
         # Support for batch updates
         self.add_module_word('RANGE', self.word_RANGE)
@@ -458,7 +451,7 @@ class GsheetModule(Module):
         g_range = interp.stack_pop()
         url = interp.stack_pop()
 
-        gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
+        gsheet_id, _ = self.get_gsheet_id_and_tab_id(url)
         context = self.get_context()
         gsheets_session = self.get_gsheets_session()
 
@@ -485,6 +478,23 @@ class GsheetModule(Module):
             raise GsheetError(
                 f'Problem repeating cell formats {gsheet_id}: {status.text}'
             )
+
+    # ( Range Format -- repeat_cell_record )
+    @raises_ExpiredGsheetOAuthToken
+    def word_REPEAT_CELL_RECORD(self, interp: IInterpreter):
+        g_format = interp.stack_pop()
+        g_range = interp.stack_pop()
+
+        # Matching this in the API -- "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+        fields = f"userEnteredFormat({','.join(g_format.get_data().keys())})"
+        result = {
+            'repeatCell': {
+                'range': g_range.get_data(),
+                'cell': {'userEnteredFormat': g_format.get_data()},
+                'fields': f'{fields}',
+            }
+        }
+        interp.stack_push(result)
 
     # ( url update_requests -- )
     @raises_ExpiredGsheetOAuthToken
