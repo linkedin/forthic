@@ -1107,10 +1107,10 @@ class GlobalModule(Module):
         rcontainer = interp.stack_pop()
         lcontainer = interp.stack_pop()
 
-        if not lcontainer:
+        if lcontainer is None:
             lcontainer = []
 
-        if not rcontainer:
+        if rcontainer is None:
             rcontainer = []
 
         def difference(left, right):
@@ -1138,10 +1138,10 @@ class GlobalModule(Module):
         rcontainer = interp.stack_pop()
         lcontainer = interp.stack_pop()
 
-        if not lcontainer:
+        if lcontainer is None:
             lcontainer = []
 
-        if not rcontainer:
+        if rcontainer is None:
             rcontainer = []
 
         if isinstance(rcontainer, list):
@@ -1164,10 +1164,10 @@ class GlobalModule(Module):
         rcontainer = interp.stack_pop()
         lcontainer = interp.stack_pop()
 
-        if not lcontainer:
+        if lcontainer is None:
             lcontainer = []
 
-        if not rcontainer:
+        if rcontainer is None:
             rcontainer = []
 
         if isinstance(rcontainer, list):
