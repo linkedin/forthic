@@ -62,6 +62,7 @@ class DatasetsModule(Module):
 
         self.add_module_word('DATASET', self.word_DATASET)
         self.add_module_word('KEYS>DATA', self.word_KEYS_to_DATA)
+        self.add_module_word('RECORDS', self.word_RECORDS)
         self.add_module_word('DATASET!', self.word_DATASET_bang)
         self.add_module_word('RECORDS!', self.word_RECORDS_bang)
 
@@ -84,7 +85,25 @@ class DatasetsModule(Module):
         interp.stack_push(result)
 
     # ( dataset_label data_keys -- records )
+    # NOTE: NULL results are filtered from the returned records
     def word_KEYS_to_DATA(self, interp: IInterpreter):
+        """Returns specific records from a dataset"""
+        data_keys = interp.stack_pop()
+        dataset_label = interp.stack_pop()
+
+        filepath = self.dataset_filepath(dataset_label)
+
+        dataset = self.load_dataset(filepath)
+        result = []
+        for key in data_keys:
+            value = dataset.get(key)
+            if value is not None:
+                result.append(dataset.get(key))
+        interp.stack_push(result)
+
+    # ( dataset_label data_keys -- records )
+    # NOTE: NULL results are *not* filtered from the returned records
+    def word_RECORDS(self, interp: IInterpreter):
         """Returns specific records from a dataset"""
         data_keys = interp.stack_pop()
         dataset_label = interp.stack_pop()
@@ -179,8 +198,7 @@ class DatasetsModule(Module):
 
 DATASETS_FORTHIC = '''
 ["key" "dataset_label"] VARIABLES
-: RECORDS   KEYS>DATA;
 : RECORD    (key ! dataset_label !) dataset_label @  [key @] RECORDS 0 NTH;
 
-["RECORDS" "RECORD"] EXPORT
+["RECORD"] EXPORT
 '''

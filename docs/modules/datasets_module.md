@@ -32,7 +32,7 @@ Retrieves a dataset associated with the specified label.
 ### RECORDS
 `( dataset_label keys -- records )`
 
-Retrieves records from the specified dataset with the specified keys.
+Retrieves records from the specified dataset with the specified keys. Missing records are returned as NULL.
 
 
 ### DATASET!
