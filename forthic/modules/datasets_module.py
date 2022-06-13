@@ -198,7 +198,7 @@ class DatasetsModule(Module):
 
 DATASETS_FORTHIC = '''
 ["key" "dataset_label"] VARIABLES
-: RECORD    (key ! dataset_label !) dataset_label @  [key @] RECORDS 0 NTH;
+: RECORD    (key ! dataset_label !) dataset_label @  [key @] KEYS>DATA 0 NTH;
 
 ["RECORD"] EXPORT
 '''
