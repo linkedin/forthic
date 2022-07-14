@@ -461,7 +461,7 @@ class JiraModule(Module):
             if first_change:
                 res = create_initial_change(field, first_change['from'])
             else:
-                value = ticket['fields'][normalized_field]
+                value = ticket['fields'].get(normalized_field)
                 string_value = str(self.simplify_value(field, value))
                 res = create_initial_change(field, string_value)
             return res
