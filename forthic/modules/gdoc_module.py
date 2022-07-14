@@ -100,8 +100,15 @@ class GdocModule(Module):
         updates = interp.stack_pop()
         doc_id = interp.stack_pop()
 
+        def is_empty_insert(update):
+            insertText = update.get('insertText')
+            if insertText and insertText['text'] == '':
+                return True
+            return False
+
+        non_empty_updates = [u for u in updates if not is_empty_insert(u)]
         gdoc_session = self.get_gdoc_session()
-        body_data = {'requests': updates}
+        body_data = {'requests': non_empty_updates}
         response = self.gdoc_post(gdoc_session, f'https://docs.googleapis.com/v1/documents/{doc_id}:batchUpdate', body_data)
         result = response.json()
         if "error" in result:
