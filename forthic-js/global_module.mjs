@@ -84,6 +84,7 @@ class GlobalModule extends Module {
         this.add_module_word("FLATTEN", this.word_FLATTEN);
         this.add_module_word("KEY-OF", this.word_KEY_OF);
         this.add_module_word("REDUCE", this.word_REDUCE);
+        this.add_module_word("CUMULATIVE-DIST", this.word_CUMULATIVE_DIST);
 
         // --------------------
         // Stack words
@@ -1658,6 +1659,62 @@ class GlobalModule extends Module {
         interp.stack_push(result)
     }
 
+    // ( records field breakpoints -- cumulative_distribution )
+    async word_CUMULATIVE_DIST(interp) {
+        let breakpoints = interp.stack_pop()
+        let field = interp.stack_pop()
+        let records = interp.stack_pop()
+
+        function get_breakpoint_index(breakpoints, value) {
+            const out_of_range_index = breakpoints.length + 1000  // Adding 1000 so it doesn't look like an "off by one" error :-)
+            if (value == undefined)   return out_of_range_index
+            let res = null
+            for (let i=0; i < breakpoints.length; i++) {
+                if (value <= breakpoints[i]) {
+                    res = i;
+                    break;
+                }
+            }
+            if (res == null)   res = out_of_range_index
+            return res
+        }
+
+        // Compute breakpoint indexes
+        let record_breakpoint_indexes = []
+        records.forEach(r => {
+            record_breakpoint_indexes.push(get_breakpoint_index(breakpoints, r[field]))
+        })
+
+        // Compute breakpoint counts
+        let breakpoint_counts = []
+        for (let i=0; i < breakpoints.length; i++)   breakpoint_counts.push(0)
+
+        record_breakpoint_indexes.forEach(breakpoint_index => {
+            for (let i=0; i < breakpoint_counts.length; i++) {
+                if (breakpoint_index <= i)   breakpoint_counts[i]++
+            }
+        })
+
+        // Compute breakpoint pcts
+        let breakpoint_pcts = []
+        let num_records = records.length
+        if (num_records > 0) {
+            breakpoint_pcts = breakpoint_counts.map(count => count/num_records*100.0)
+        }
+        else {
+            breakpoint_pcts = breakpoint_counts.map(count => 0.0)
+        }
+
+        let result = {
+            records: records,
+            field: field,
+            breakpoints: breakpoints,
+            record_breakpoint_indexes: record_breakpoint_indexes,
+            breakpoint_counts: breakpoint_counts,
+            breakpoint_pcts: breakpoint_pcts
+        }
+        interp.stack_push(result)
+    }
 
     // ( a -- )
     word_POP(interp) {

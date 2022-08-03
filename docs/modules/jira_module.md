@@ -253,3 +253,40 @@ Given a ticket record, extracts the a "field tag" from the specified field.
 `( string -- string )`
 
 Removes any field tag from the given string. A field tag has the form `[tag: content]`. This does not remove any wiki markup links of the form `[http...|text]`
+
+### SPRINTQUERY
+`(rapidViewId -- data)`
+
+Given the `rapidViewId` of a sprint board, this returns a record with the fields `rapidViewId` and `sprints`.
+The value of `sprints` is an array of sprint records with the following fields:
+
+* `id`: Sprint id
+* `name`: Name of sprint
+* `state`: State of sprint (e.g., `CLOSED`)
+
+
+### RAPID-CHARTS-SPRINTREPORT
+`(rapidViewId sprintId -- data)`
+
+Given the `rapidViewId` of a sprint board and a `sprintId`, this returns a record of sprint retrospective information:
+```
+{
+    "contents": {
+        "completedIssues": [],
+        "issuesNotCompletedInCurrentSprint": [],
+        "puntedIssues": [],
+        "issuesCompletedInAnotherSprint": [],
+        "completedIssuesInitialEstimateSum": {},
+        "completedIssuesEstimateSum": {},
+        "issuesNotCompletedInitialEstimateSum": {},
+        "issuesNotCompletedEstimateSum": {},
+        "allIssuesEstimateSum": {},
+        "puntedIssuesInitialEstimateSum": {},
+        "puntedIssuesEstimateSum": {},
+        "issuesCompletedInAnotherSprintInitialEstimateSum": {},
+        "issuesCompletedInAnotherSprintEstimateSum": {},
+        "issueKeysAddedDuringSprint": {}
+    },
+    "sprint": {}
+}
+```

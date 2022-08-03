@@ -14,6 +14,7 @@ class OrgModule(Module):
         self.add_module_word('POP-CONTEXT!', self.word_POP_CONTEXT_bang)
         self.add_module_word('FULL-ORG', self.word_FULL_ORG)
         self.add_module_word('ORG-MANAGERS', self.word_ORG_MANAGERS)
+        self.add_module_word('DIRECTS', self.word_DIRECTS)
         self.add_module_word('DIRECT-MANAGERS', self.word_DIRECT_MANAGERS)
         self.add_module_word('GROUP-BY-LEADS', self.word_GROUP_BY_LEADS)
         self.add_module_word('ITEM>LEAD', self.word_ITEM_to_LEAD)
@@ -47,6 +48,15 @@ class OrgModule(Module):
         manager = interp.stack_pop()
         org_context = self.current_context()
         result = org_context.org_managers(manager)
+        interp.stack_push(result)
+
+    # (manager -- usernames)
+    def word_DIRECTS(self, interp: IInterpreter):
+        """Returns usernames of direct reports of a manager
+        """
+        manager = interp.stack_pop()
+        org_context = self.current_context()
+        result = org_context.get_directs(manager)
         interp.stack_push(result)
 
     # (manager -- usernames)
@@ -149,8 +159,15 @@ class OrgContext:
                 res[p[0]] = p[1]
             return res
 
+        def make_manager_to_users() -> Dict[str, List[str]]:
+            res: Dict[str, List[str]] = collections.defaultdict(list)
+            for p in self.user_managers:
+                res[p[1]].append(p[0])
+            return res
+
         self.user_to_manager = make_user_to_manager()
         self.managers = list(set(self.user_to_manager.values()))
+        self.manager_to_users = make_manager_to_users()
 
         def gather_direct_managers() -> Dict[Optional[str], List[str]]:
             res = collections.defaultdict(list)
@@ -198,6 +215,13 @@ class OrgContext:
             lead = get_lead(username)
             if lead:
                 result.append(username)
+        return result
+
+    def get_directs(self, username: str) -> List[str]:
+        """Returns direct reports of a user"""
+        result = self.manager_to_users.get(username)
+        if result is None:
+            result = []
         return result
 
     def get_direct_managers(self, username: str) -> List[str]:

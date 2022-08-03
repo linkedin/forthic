@@ -153,6 +153,7 @@ class GlobalModule(Module):
         self.add_module_word('FLATTEN', self.word_FLATTEN)
         self.add_module_word('KEY-OF', self.word_KEY_OF)
         self.add_module_word('REDUCE', self.word_REDUCE)
+        self.add_module_word('CUMULATIVE-DIST', self.word_CUMULATIVE_DIST)
 
         # ----------------
         # Stack words
@@ -713,7 +714,14 @@ class GlobalModule(Module):
 
         result = defaultdict(list)
         for v in values:
-            result[v.get(field)].append(v)
+            field_value = None
+            if v is not None:
+                field_value = v.get(field)
+            if isinstance(field_value, list):
+                for fv in field_value:
+                    result[fv].append(v)
+            else:
+                result[field_value].append(v)
 
         interp.stack_push(result)
 
@@ -1558,6 +1566,59 @@ class GlobalModule(Module):
 
         interp.stack_push(result)
 
+    # ( records field breakpoints -- cumulative_distribution )
+    def word_CUMULATIVE_DIST(self, interp: IInterpreter):
+        breakpoints = interp.stack_pop()
+        field = interp.stack_pop()
+        records = interp.stack_pop()
+
+        sorted_breakpoints = sorted(breakpoints)
+
+        def get_breakpoint_index(breakpoints, value):
+            out_of_range_index = len(breakpoints) + 1000  # Adding 1000 so it doesn't look like an "off by one" error :-)
+            if value is None:
+                return out_of_range_index
+
+            res = None
+            for i, breakpoint_value in enumerate(breakpoints):
+                if value <= breakpoint_value:
+                    res = i
+                    break
+
+            if res is None:
+                res = out_of_range_index
+            return res
+
+        # Compute breakpoint indexes
+        record_breakpoint_indexes = []
+        for r in records:
+            record_breakpoint_indexes.append(get_breakpoint_index(sorted_breakpoints, r.get(field)))
+
+        # Compute breakpoint counts
+        breakpoint_counts = [0] * len(sorted_breakpoints)
+        for breakpoint_index in record_breakpoint_indexes:
+            for i in range(len(breakpoint_counts)):
+                if breakpoint_index <= i:
+                    breakpoint_counts[i] += 1
+
+        # Compute breakpoint pcts
+        breakpoint_pcts = [0.0] * len(sorted_breakpoints)
+        num_records = len(records)
+        if num_records > 0:
+            for i, count in enumerate(breakpoint_counts):
+                breakpoint_pcts[i] = count / num_records * 100.0
+
+        result = {
+            "records": records,
+            "field": field,
+            "breakpoints": breakpoints,
+            "record_breakpoint_indexes": record_breakpoint_indexes,
+            "breakpoint_counts": breakpoint_counts,
+            "breakpoint_pcts": breakpoint_pcts,
+        }
+        interp.stack_push(result)
+        return
+
     # ( item -- )
     def word_POP(self, interp: IInterpreter):
         interp.stack_pop()
@@ -2192,9 +2253,14 @@ class GlobalModule(Module):
         result = 0
         if isinstance(b, list):
             for num in b:
-                result += num
+                if b is not None:
+                    result += num
         else:
             a = interp.stack_pop()
+            if a is None:
+                a = 0
+            if b is None:
+                b = 0
             result = a + b
         interp.stack_push(result)
 

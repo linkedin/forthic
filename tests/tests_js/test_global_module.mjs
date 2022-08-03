@@ -1108,6 +1108,77 @@ async function test_reduce() {
     return true;
 }
 
+async function test_cumulative_dist() {
+    function get_sample_records() {
+        let res = []
+        for (let i=0; i < 20; i++) {
+            res.push({x: i})
+        }
+
+        // Add records with no "x" field
+        res.push({})
+        res.push({})
+        return res
+    }
+
+    // Inputs
+    let sample_records = get_sample_records()
+    let field = "x"
+    let breakpoints = [5, 10, 20]
+
+    // ---------------------------------------
+    // Normal case
+    let interp = new Interpreter();
+    interp.stack_push(sample_records)
+    interp.stack_push(field)
+    interp.stack_push(breakpoints)
+    interp.run("CUMULATIVE-DIST")
+    let result = interp.stack_pop()
+
+    // Should get inputs back
+    assert(arrays_equal(sample_records, result.records));
+    assert(field == result.field)
+    assert(arrays_equal(breakpoints, result.breakpoints));
+
+    // Record breakpoint indexes should be correct
+    let record_breakpoint_indexes = result.record_breakpoint_indexes
+    assert(0 == record_breakpoint_indexes[0])
+    assert(0 == record_breakpoint_indexes[5])
+    assert(1 == record_breakpoint_indexes[6])
+    assert(1 == record_breakpoint_indexes[10])
+    assert(2 == record_breakpoint_indexes[11])
+    assert(2 == record_breakpoint_indexes[19])
+    assert(1003 == record_breakpoint_indexes[20])  // Have x being NULL
+    assert(1003 == record_breakpoint_indexes[21])  // Have x being NULL
+
+    // Breakpoint counts should be correct
+    let breakpoint_counts = result.breakpoint_counts
+    assert(6 == breakpoint_counts[0])
+    assert(11 == breakpoint_counts[1])
+    assert(20 == breakpoint_counts[2])
+
+    // ---------------------------------------
+    // Empty records
+    interp.stack_push([])
+    interp.stack_push(field)
+    interp.stack_push(breakpoints)
+    interp.run("CUMULATIVE-DIST")
+    result = interp.stack_pop()
+    assert(arrays_equal([], result.record_breakpoint_indexes));
+    assert(arrays_equal([0, 0, 0], result.breakpoint_counts));
+
+    // ---------------------------------------
+    // Incorrect field
+    interp.stack_push(sample_records)
+    interp.stack_push("bad_field")
+    interp.stack_push(breakpoints)
+    interp.run("CUMULATIVE-DIST")
+    result = interp.stack_pop()
+    assert(arrays_equal([0, 0, 0], result.breakpoint_counts));
+
+    return true
+}
+
 async function test_pop() {
     let interp = new Interpreter();
     await interp.run(`
@@ -1665,6 +1736,7 @@ let tests = {
     "test_flatten": test_flatten,
     "test_key_of": test_key_of,
     "test_reduce": test_reduce,
+    "test_cumulative_dist": test_cumulative_dist,
 
     // Stack words
     "test_pop": test_pop,

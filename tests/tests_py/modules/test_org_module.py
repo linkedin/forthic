@@ -34,6 +34,16 @@ class TestOrgModule(unittest.TestCase):
         self.assertEqual(["director1", "mgr1", "mgr2"], sorted(self.interp.stack[1]))
         self.assertEqual(["director1", "vp1"], sorted(self.interp.stack[2]))
 
+    def test_DIRECTS(self):
+        self.interp.run("""
+        'mgr1' org.DIRECTS
+        'director1' org.DIRECTS
+        'vp1' org.DIRECTS
+        """)
+        self.assertEqual(["user101", "user102", "user103"], sorted(self.interp.stack[0]))
+        self.assertEqual(["mgr1", "mgr2"], sorted(self.interp.stack[1]))
+        self.assertEqual(["director1"], sorted(self.interp.stack[2]))
+
     def test_GROUP_BY_LEADS(self):
         items = [
             {"key": 101, "owner": "user101"},

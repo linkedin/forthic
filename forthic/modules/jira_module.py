@@ -48,6 +48,11 @@ class JiraModule(Module):
         self.add_module_word('REMOVE-FIELD-TAGS', self.word_REMOVE_FIELD_TAGS)
         self.add_module_word('<FIELD-TAG!', self.word_l_FIELD_TAG_bang)
 
+        # ----- Greenhopper words ----------------------------------------------------------------------------
+        self.add_module_word('SPRINTQUERY', self.word_SPRINTQUERY)
+        self.add_module_word('RAPID-CHARTS-SPRINTREPORT', self.word_RAPID_CHARTS_SPRINTREPORT)
+        self.add_module_word('RAPID-CHARTS-SCOPECHANGEBURNDOWNCHART', self.word_RAPID_CHARTS_SCOPECHANGEBURNDOWNCHART)
+
     # ( context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
         context = interp.stack_pop()
@@ -354,8 +359,52 @@ class JiraModule(Module):
         ticket[field] = field_value
         interp.stack_push(ticket)
 
+    # ( rapidViewId -- data )
+    def word_SPRINTQUERY(self, interp: IInterpreter):
+        rapid_view_id = interp.stack_pop()
+        context = self.current_context()
+        api_url = f"/rest/greenhopper/1.0/sprintquery/{rapid_view_id}"
+        res = context.requests_get(api_url)
+        if not res.ok:
+            raise JiraError(
+                f"Can't get sprintquery for rapid_view_id: {rapid_view_id}: {res.text}"
+            )
+        result = res.json()
+        interp.stack_push(result)
+
+    # ( rapidViewId sprintId -- data )
+    def word_RAPID_CHARTS_SPRINTREPORT(self, interp: IInterpreter):
+        sprint_id = interp.stack_pop()
+        rapid_view_id = interp.stack_pop()
+
+        context = self.current_context()
+        api_url = f"/rest/greenhopper/1.0/rapid/charts/sprintreport?rapidViewId={rapid_view_id}&sprintId={sprint_id}"
+        res = context.requests_get(api_url)
+        if not res.ok:
+            raise JiraError(
+                f"Can't get sprint report for rapid_view_id: {rapid_view_id}, sprint_id: {sprint_id}: {res.text}"
+            )
+        result = res.json()
+        interp.stack_push(result)
+
+    # ( rapidViewId sprintId -- data )
+    def word_RAPID_CHARTS_SCOPECHANGEBURNDOWNCHART(self, interp: IInterpreter):
+        sprint_id = interp.stack_pop()
+        rapid_view_id = interp.stack_pop()
+
+        context = self.current_context()
+        api_url = f"/rest/greenhopper/1.0/rapid/charts/scopechangeburndownchart.json?rapidViewId={rapid_view_id}&sprintId={sprint_id}"
+        res = context.requests_get(api_url)
+        if not res.ok:
+            raise JiraError(
+                f"Can't get scope burndown chart for rapid_view_id: {rapid_view_id}, sprint_id: {sprint_id}: {res.text}"
+            )
+        result = res.json()
+        interp.stack_push(result)
+
     # =================================
     # Helpers
+
     def current_context(self):
         if not self.context_stack:
             raise JiraError('Use jira.PUSH-CONTEXT! to provide a Jira context')

@@ -364,6 +364,14 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(len(grouped_rec["user2"]), 3)
         self.assertEqual(grouped, grouped_rec)
 
+        # Test grouping a list-valued field
+        interp.stack_push([{"id": 1, "attrs":["blue", "important"]}, {"id": 2, "attrs":["red"]}])
+        interp.run("'attrs' GROUP-BY-FIELD")
+        grouped_rec = interp.stack[-1]
+        self.assertEqual(1, grouped_rec["blue"][0]["id"])
+        self.assertEqual(1, grouped_rec["important"][0]["id"])
+        self.assertEqual(2, grouped_rec["red"][0]["id"])
+
     def test_group_by(self):
         interp = Interpreter()
         interp.stack_push(self.make_records())
@@ -1096,6 +1104,77 @@ class TestGlobalModule(unittest.TestCase):
         """)
         stack = interp.stack
         self.assertEqual(stack[0], 26)
+
+    def test_cumulative_dist(self):
+        def get_sample_records():
+            res = []
+            for i in range(20):
+                res.append({"x": i})
+
+            # Add records with no "x" field
+            res.append({})
+            res.append({})
+            return res
+
+        # Inputs
+        sample_records = get_sample_records()
+        field = "x"
+        breakpoints = [5, 10, 20]
+
+        # ---------------------------------------
+        # Normal case
+        interp = Interpreter()
+        interp.stack_push(sample_records)
+        interp.stack_push(field)
+        interp.stack_push(breakpoints)
+        interp.run("CUMULATIVE-DIST")
+        result = interp.stack_pop()
+
+        # Should get inputs back
+        self.assertEqual(result.get("records"), sample_records)
+        self.assertEqual(result.get("field"), field)
+        self.assertEqual(result.get("breakpoints"), breakpoints)
+
+        # Record breakpoint indexes should be correct
+        record_breakpoint_indexes = result.get("record_breakpoint_indexes")
+        self.assertEqual(0, record_breakpoint_indexes[0])
+        self.assertEqual(0, record_breakpoint_indexes[5])
+        self.assertEqual(1, record_breakpoint_indexes[6])
+        self.assertEqual(1, record_breakpoint_indexes[10])
+        self.assertEqual(2, record_breakpoint_indexes[11])
+        self.assertEqual(2, record_breakpoint_indexes[19])
+        self.assertEqual(1003, record_breakpoint_indexes[20])  # Have x being NULL
+        self.assertEqual(1003, record_breakpoint_indexes[21])  # Have x being NULL
+
+        # Breakpoint counts should be correct
+        breakpoint_counts = result.get("breakpoint_counts")
+        self.assertEqual(6, breakpoint_counts[0])
+        self.assertEqual(11, breakpoint_counts[1])
+        self.assertEqual(20, breakpoint_counts[2])
+
+        # ---------------------------------------
+        # Empty records
+        interp = Interpreter()
+        interp.stack_push([])
+        interp.stack_push(field)
+        interp.stack_push(breakpoints)
+        interp.run("CUMULATIVE-DIST")
+        result = interp.stack_pop()
+        self.assertEqual([], result.get("record_breakpoint_indexes"))
+        self.assertEqual([0, 0, 0], result.get("breakpoint_counts"))
+
+        # ---------------------------------------
+        # Incorrect field
+        interp = Interpreter()
+        interp.stack_push(sample_records)
+        interp.stack_push("bad_field")
+        interp.stack_push(breakpoints)
+        interp.run("CUMULATIVE-DIST")
+        result = interp.stack_pop()
+        self.assertEqual([1003] * 22, result.get("record_breakpoint_indexes"))
+        self.assertEqual([0, 0, 0], result.get("breakpoint_counts"))
+
+        return
 
     def test_pop(self):
         interp = Interpreter()

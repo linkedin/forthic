@@ -39,7 +39,12 @@ Returns all usernames that roll up to manager.
 ### DIRECT-MANAGERS
 `( manager -- usernames )`
 
-Returns all managers who directly report to a manager.
+Returns all managers who report directly to a manager.
+
+### DIRECTS
+`( manager -- usernames )`
+
+Returns `usernames` for everyone who report directly to a manager.
 
 
 ### GROUP-BY-LEADS

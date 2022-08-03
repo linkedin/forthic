@@ -632,6 +632,26 @@ Example:
 [1 2 3 4 5] 10 "+" REDUCE       # 25
 ```
 
+### CUMULATIVE-DIST
+`( records field breakpoints -- cumulative_distribution )`
+
+Given an array of `records`, a `field` that's part of those records, and a set of
+`breakpoints` (in ascending order), this computes the cumulative distribution
+of those records relative to the breakpoints. The return value is a record with the
+following fields:
+
+* `records`: The input records
+* `field`: The input field
+* `breakpoints`: The input breakpoints
+* `record_breakpoint_indexes`: This is an array that is 1-1 with the records array
+and which contains the breakpoint index for each record.
+This is the index of the breakpoint largest for which the record's field value
+is less than or equal to that breakpoint value.
+* `breakpoint_counts`: This is an array that is 1-1 with the `breakpoints` array
+and contains the number of records whose field values are less than or equal to
+the corresponding breakpoint.
+* `breakpoint_pcts`: This is like `breakpoint_counts` but is in terms of percent of total records
+
 
 ## Reference: Stack words
 These words directly affect the parameter stack.
