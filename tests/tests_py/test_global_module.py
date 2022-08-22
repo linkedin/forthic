@@ -507,6 +507,17 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(record[102], "IN PROGRESS")
         self.assertEqual(record[106], "CLOSED")
 
+        # Test map in module
+        interp.run("""
+        {my-module
+            : DOUBLE   2 *;
+            : RUN   [1 2 3 4 5] "DOUBLE" MAP;
+        }
+        {my-module RUN}
+        """)
+        array = interp.stack[-1]
+        self.assertEqual(array, [2, 4, 6, 8, 10])
+
     def test_map_w_key(self):
         interp = Interpreter()
         interp.run("""

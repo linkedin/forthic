@@ -24,14 +24,18 @@ class TestISOWeekModule(unittest.TestCase):
     def test_QUARTER_START(self):
         self.interp.run("""
         2022-08-09 isoweek.QUARTER-START
+        2022-07-04 isoweek.QUARTER-START
         """)
         self.assertEqual(datetime.date(2022, 7, 4), self.interp.stack[0])
+        self.assertEqual(datetime.date(2022, 7, 4), self.interp.stack[1])
 
     def test_QUARTER_END(self):
         self.interp.run("""
         2022-08-09 isoweek.QUARTER-END
+        2022-10-02 isoweek.QUARTER-END
         """)
         self.assertEqual(datetime.date(2022, 10, 2), self.interp.stack[0])
+        self.assertEqual(datetime.date(2022, 10, 2), self.interp.stack[1])
 
     def test_QUARTER_slash_YEAR(self):
         self.interp.run("""
