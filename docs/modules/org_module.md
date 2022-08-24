@@ -10,7 +10,7 @@ data.
 # NOTE: You must set up an OrgContext first
 
 'director1' org.FULL-ORG          # Returns all usernames reporting up to director1
-'director1' org.DIRECT-STAFF      # Returns all direct reports of director1
+'director1' org.DIRECTS           # Returns all direct reports of director1
 'director1' org.DIRECT-MANAGERS   # Returns all managers who directly report to director1
 'user1' org.MANAGER org.MANAGER   # Returns user1's manager's manager
 ```
