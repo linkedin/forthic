@@ -38,6 +38,7 @@ class ConfluenceModule(Module):
         self.add_module_word('RENDER', self.word_RENDER)
 
         self.add_module_word('UPSERT-PAGE', self.word_UPSERT_PAGE)
+        self.add_module_word('ADD-BLOG-POST', self.word_ADD_BLOG_POST)
 
     # ( context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
@@ -253,6 +254,34 @@ class ConfluenceModule(Module):
             update_page()
         else:
             create_page()
+
+    # NOTE: This has not been officially released yet and is subject to change
+    # ( space title content -- )
+    def word_ADD_BLOG_POST(self, interp: IInterpreter):
+        context = self.current_context()
+
+        content = interp.stack_pop()
+        title = interp.stack_pop()
+        space = interp.stack_pop()
+
+        def create_post():
+            request_data = {
+                'type': 'blogpost',
+                'title': title,
+                'space': {'key': space},
+                'body': {
+                    'storage': {'value': content, 'representation': 'wiki'}
+                },
+            }
+            api_url = '/wiki/cf/rest/api/content'
+            response = context.requests_post(api_url, json=request_data)
+            if response.status_code != 200:
+                raise ConfluenceError(
+                    f"Could not create post '{title}': {response.text}"
+                )
+
+        create_post()
+        return
 
     def current_context(self):
         if not self.context_stack:

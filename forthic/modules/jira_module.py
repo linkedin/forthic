@@ -2,6 +2,7 @@ import re
 import requests
 import datetime
 import pytz
+import base64
 from dateutil import parser
 from ..module import Module
 from ..global_module import drill_for_value
@@ -37,6 +38,7 @@ class JiraModule(Module):
         self.add_module_word('ADD-WATCHER', self.word_ADD_WATCHER)
         self.add_module_word('LINK-ISSUES', self.word_LINK_ISSUES)
         self.add_module_word('VOTES', self.word_VOTES)
+        self.add_module_word('ADD-ATTACHMENTS', self.word_ADD_ATTACHMENTS)
 
         self.add_module_word('CHANGELOG', self.word_CHANGELOG)
         self.add_module_word('FIELD-AS-OF', self.word_FIELD_AS_OF)
@@ -185,6 +187,35 @@ class JiraModule(Module):
         data = res.json()
         result = [voter.get('name') for voter in data['voters']]
         interp.stack_push(result)
+
+    # NOTE: This has not been officially released yet and is subject to change
+    # ( ticket_key attachments_rec -- )
+    #     attachment_rec is a dictionary mapping file name to file content. The content must be b64 encoded
+    def word_ADD_ATTACHMENTS(self, interp: IInterpreter):
+        attachments_rec = interp.stack_pop()
+        ticket_key = interp.stack_pop()
+        context = self.current_context()
+        headers = {
+            "Accept": "application/json",
+            "X-Atlassian-Token": "no-check"
+        }
+
+        api_url = f'/rest/api/2/issue/{ticket_key}/attachments'
+        for name, content in attachments_rec.items():
+            pieces = content.split(",")
+            bare_content = content
+            if len(pieces) == 2:
+                bare_content = pieces[1]
+            if len(pieces) > 2:
+                raise RuntimeError("Invalid base64 string")
+
+            decoded_content = base64.b64decode(bare_content)
+            files = {
+                "file": (name, decoded_content, "application-type")
+            }
+            res = context.requests_post(api_url, headers=headers, files=files)
+            if not res.ok:
+                raise JiraError(f"Unable to add attachment: {res.reason}")
 
     # ( ticket_key fields -- changes )
     def word_CHANGELOG(self, interp: IInterpreter):
@@ -794,7 +825,7 @@ class JiraContext:
             )
         return result
 
-    def requests_post(self, api_url, json=None, session=None):
+    def requests_post(self, api_url, json=None, session=None, headers=None, files=None):
         api_url_w_host = self.get_host() + api_url
         if session:
             result = session.post(
@@ -802,6 +833,8 @@ class JiraContext:
                 auth=(self.get_username(), self.get_password()),
                 json=json,
                 verify=self.get_cert_verify(),
+                headers=headers,
+                files=files,
             )
         else:
             result = requests.post(
@@ -809,6 +842,8 @@ class JiraContext:
                 auth=(self.get_username(), self.get_password()),
                 json=json,
                 verify=self.get_cert_verify(),
+                headers=headers,
+                files=files,
             )
         return result
 
