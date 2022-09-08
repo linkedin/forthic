@@ -16,6 +16,10 @@ class AirtableError(RuntimeError):
     pass
 
 
+class AirtableUnauthorized(RuntimeError):
+    pass
+
+
 MAX_ITERATIONS = 100
 
 
@@ -153,6 +157,8 @@ class AirtableCredsContext:
             headers=headers,
             verify=self.get_cert_verify(),
         )
+        if result.status_code == 401:
+            raise AirtableUnauthorized()
         return result
 
 
