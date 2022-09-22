@@ -256,13 +256,25 @@ class ConfluenceModule(Module):
             create_page()
 
     # NOTE: This has not been officially released yet and is subject to change
-    # ( space title content -- )
+    # ( space title content labels -- )
     def word_ADD_BLOG_POST(self, interp: IInterpreter):
         context = self.current_context()
 
+        labels = interp.stack_pop()
         content = interp.stack_pop()
         title = interp.stack_pop()
         space = interp.stack_pop()
+
+        def make_record_label(label):
+            return {
+                "prefix": "global",
+                "name": label
+            }
+
+        if labels:
+            label_records = [make_record_label(label) for label in labels]
+        else:
+            label_records = None
 
         def create_post():
             request_data = {
@@ -271,7 +283,7 @@ class ConfluenceModule(Module):
                 'space': {'key': space},
                 'body': {
                     'storage': {'value': content, 'representation': 'wiki'}
-                },
+                }
             }
             api_url = '/wiki/cf/rest/api/content'
             response = context.requests_post(api_url, json=request_data)
@@ -279,6 +291,17 @@ class ConfluenceModule(Module):
                 raise ConfluenceError(
                     f"Could not create post '{title}': {response.text}"
                 )
+
+            # Add labels
+            if label_records:
+                page_id = response.json()["id"]
+                label_api_url = f'/wiki/cf/rest/api/content/{page_id}/label'
+                response = context.requests_post(label_api_url, json=label_records)
+                if response.status_code != 200:
+                    raise ConfluenceError(
+                        f"Could not add labels to blog post '{title}': {response.text}"
+                    )
+            return
 
         create_post()
         return
