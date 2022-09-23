@@ -674,7 +674,7 @@ class GlobalModule(Module):
         else:
             result = {}
             for key in new_to_old:
-                result[key] = container[new_to_old[key]]
+                result[key] = container.get(new_to_old[key])
 
         interp.stack_push(result)
 

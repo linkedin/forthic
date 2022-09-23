@@ -54,7 +54,7 @@ class ISOWeekModule(Module):
         }
         day_of_week = self.get_day_of_week(date)
         end_week = quarter_to_week_num[quarter_num]
-        if quarter_num == 4 and self.is_long_year(date.tmtuple().tm_year):
+        if quarter_num == 4 and self.is_long_year(date.timetuple().tm_year):
             end_week = 53
 
         delta_days = 7 * (end_week - week_num) - (day_of_week - 1) + 6  # End of ISO Week is Sunday
