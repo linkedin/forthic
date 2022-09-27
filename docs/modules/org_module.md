@@ -82,7 +82,7 @@ If the root user is not in the chain, then only the chain up to effective root
 is returned.
 
 ### CHAIN-KEY-FUNC
-`( username root_username -- key_func )`
+`( root_username -- key_func )`
 
 Returns a key function that takes a username and returns the number of management levels to the root username. This can be used as the `KEY-FUNC` to the `SORT` word.
 

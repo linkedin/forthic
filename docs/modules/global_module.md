@@ -452,7 +452,7 @@ Given two records, returns a record of all key/vals in `record1` and all key/val
 
 
 ### SELECT
-`( array forthic array )`
+`( array forthic -- array )`
 
 `( record forthic -- record )`
 
@@ -468,7 +468,7 @@ Example:
 ```
 
 ### SELECT-w/KEY
-`( array forthic array )`
+`( array forthic -- array )`
 
 `( record forthic -- record )`
 

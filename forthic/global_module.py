@@ -2454,6 +2454,11 @@ class GlobalModule(Module):
         required_vals = interp.stack_pop()
         vals = interp.stack_pop()
 
+        if not vals:
+            vals = []
+        if not required_vals:
+            required_vals = []
+
         result = False
 
         for rv in required_vals:
