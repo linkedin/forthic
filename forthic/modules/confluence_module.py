@@ -354,6 +354,16 @@ def escape_table_content(content):
     return result
 
 
+def raise_status_error_if_needed(response):
+    if response.status_code < 400:
+        return
+
+    if response.status_code == 401:
+        raise ConfluenceError("Unauthorized request. Please check your Confluence credentials.")
+    else:
+        raise ConfluenceError(response.text)
+
+
 class ConfluenceContext:
     """Override this and pass to PUSH-CONTEXT! in order to make Confluence calls"""
 
@@ -365,6 +375,7 @@ class ConfluenceContext:
             auth=(self.get_username(), self.get_password()),
             verify=self.get_cert_verify(),
         )
+        raise_status_error_if_needed(result)
         return result
 
     def requests_post(self, api_url: str, json: Optional[str] = None):
@@ -375,6 +386,7 @@ class ConfluenceContext:
             json=json,
             verify=self.get_cert_verify(),
         )
+        raise_status_error_if_needed(result)
         return result
 
     def requests_put(self, api_url: str, json: Optional[str] = None):
@@ -385,6 +397,7 @@ class ConfluenceContext:
             json=json,
             verify=self.get_cert_verify(),
         )
+        raise_status_error_if_needed(result)
         return result
 
     def get_host(self):

@@ -234,14 +234,6 @@ class TestGlobalModule(unittest.TestCase):
         array = interp.stack[-1]
         self.assertEqual(array, [3, 2, 1])
 
-        # Reverse record (no-op for records)
-        interp = Interpreter()
-        interp.run("""
-        [["a" 1] ["b" 2]] REC  REVERSE
-        """)
-        self.assertEqual(len(interp.stack), 1)
-        self.assertEqual(list(interp.stack[-1].keys()), ["b", "a"])
-
     def test_unique(self):
         interp = Interpreter()
         interp.run("""

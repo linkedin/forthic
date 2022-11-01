@@ -512,14 +512,28 @@ class JiraModule(Module):
                                 'to_': item['to'],
                             }
                         )
+                    # NOTE: This is a bit of a hack to handle the fact that changes involving assignees behave
+                    #       differently from other fields. There may be more cases like this. The correct fix
+                    #       is to understand changelog more deeply and handle all cases consistently.
+                    elif "Assignee" in fields and item_field == 'assignee':
+                        result.append(
+                            {
+                                'date': parser.parse(history['created']),
+                                'field': item_field,
+                                'from': item['from'],
+                                'to': item['to'],
+                                'from_': item['from'],
+                                'to_': item['to'],
+                            }
+                        )
             return result
 
         changes = get_ticket_changes(ticket)
 
-        def get_first_change(field: str) -> Optional[Any]:
+        def get_first_change(field: str, normalized_field: str) -> Optional[Any]:
             res = None
             for c in changes:
-                if c['field'] == field:
+                if c['field'] in [field, normalized_field]:
                     res = c
                     break
             return res
@@ -536,7 +550,7 @@ class JiraModule(Module):
         def get_initial_change(field: str) -> Any:
             """This handles two cases: when a field has been set at least once, and when a field has never been set"""
             normalized_field = normalized_fields[fields.index(field)]
-            first_change = get_first_change(field)
+            first_change = get_first_change(field, normalized_field)
             res = None
             if first_change:
                 res = create_initial_change(field, first_change['from'])

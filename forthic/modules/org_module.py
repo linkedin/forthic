@@ -119,7 +119,10 @@ class OrgModule(Module):
 
         def result(username: str) -> int:
             chain = org_context.get_chain(username, root_username)
-            res = len(chain)
+            if username == root_username:
+                res = 0
+            else:
+                res = len(chain)
             return res
 
         interp.stack_push(result)

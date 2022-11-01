@@ -36,6 +36,12 @@ Pops an OrgContext from the org module's context stack and throws it away.
 Returns all usernames that roll up to manager.
 
 
+### ORG-MANAGERS
+`( manager -- usernames )`
+
+Returns all manager usernames that roll up to manager.
+
+
 ### DIRECT-MANAGERS
 `( manager -- usernames )`
 
