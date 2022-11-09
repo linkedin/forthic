@@ -139,6 +139,32 @@ The `link_type` must be one of the configured link types (e.g., "Dependency" or 
 Returns an array of usernames who have voted on the specified ticket.
 
 
+### COMMENTS
+`( ticket_key -- comments )`
+
+Returns an array of comments for the specified ticket
+
+
+### ADD-COMMENT
+`( ticket_key comment -- )`
+
+Adds a new comment to a ticket.
+
+
+### TRANSITIONS
+`( ticket_key -- transitions )`
+
+Returns an array of possible transitions for the specified ticket.
+
+
+### TRANSITION!
+`( ticket_key transition_id -- )`
+
+Sets the state of a ticket to the specified `transition_id`
+
+
+
+
 ### CHANGELOG
 `( ticket_key fields -- changes )`
 

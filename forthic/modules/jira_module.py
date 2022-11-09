@@ -39,6 +39,10 @@ class JiraModule(Module):
         self.add_module_word('LINK-ISSUES', self.word_LINK_ISSUES)
         self.add_module_word('VOTES', self.word_VOTES)
         self.add_module_word('ADD-ATTACHMENTS', self.word_ADD_ATTACHMENTS)
+        self.add_module_word('COMMENTS', self.word_COMMENTS)
+        self.add_module_word('ADD-COMMENT', self.word_ADD_COMMENT)
+        self.add_module_word('TRANSITIONS', self.word_TRANSITIONS)
+        self.add_module_word('TRANSITION!', self.word_TRANSITION_bang)
 
         self.add_module_word('CHANGELOG', self.word_CHANGELOG)
         self.add_module_word('FIELD-AS-OF', self.word_FIELD_AS_OF)
@@ -216,6 +220,64 @@ class JiraModule(Module):
             res = context.requests_post(api_url, headers=headers, files=files)
             if not res.ok:
                 raise JiraError(f"Unable to add attachment: {res.reason}")
+
+    # ( ticket_key -- comments )
+    def word_COMMENTS(self, interp: IInterpreter):
+        ticket_key = interp.stack_pop()
+        context = self.current_context()
+
+        api_url = f'/rest/api/2/issue/{ticket_key}/comment'
+        response = context.requests_get(api_url)
+        if not response.ok:
+            raise JiraError(f"Unable to get comments for {ticket_key}: {response.reason}")
+        result = response.json()['comments']
+        interp.stack_push(result)
+        return
+
+    # ( ticket_key comment -- )
+    def word_ADD_COMMENT(self, interp: IInterpreter):
+        comment = interp.stack_pop()
+        ticket_key = interp.stack_pop()
+        context = self.current_context()
+
+        req_data = {
+            'body': comment,
+        }
+        api_url = f'/rest/api/2/issue/{ticket_key}/comment'
+        response = context.requests_post(api_url, json=req_data)
+        if not response.ok:
+            raise JiraError(f"Unable to post comment for {ticket_key}: {response.reason}")
+        return
+
+    # ( ticket_key -- transitions )
+    def word_TRANSITIONS(self, interp: IInterpreter):
+        ticket_key = interp.stack_pop()
+
+        context = self.current_context()
+
+        api_url = f'/rest/api/2/issue/{ticket_key}/transitions'
+        response = context.requests_get(api_url)
+        if not response.ok:
+            raise JiraError(f"Unable to get transitions for {ticket_key}: {response.reason}")
+        result = response.json()['transitions']
+        interp.stack_push(result)
+        return
+
+    # ( ticket_key transition_id -- )
+    def word_TRANSITION_bang(self, interp: IInterpreter):
+        transition_id = interp.stack_pop()
+        ticket_key = interp.stack_pop()
+
+        context = self.current_context()
+
+        req_data = {
+            'transition': {"id": transition_id},
+        }
+        api_url = f'/rest/api/2/issue/{ticket_key}/transitions'
+        response = context.requests_post(api_url, json=req_data)
+        if not response.ok:
+            raise JiraError(f"Unable to transition {ticket_key}: {response.reason}")
+        return
 
     # ( ticket_key fields -- changes )
     def word_CHANGELOG(self, interp: IInterpreter):
