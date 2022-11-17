@@ -66,6 +66,22 @@ In the interpreter, definitions are stored in an array rather than a dictionary.
 3 DOUBLE      # [3 3]
 ```
 
+### Memoized Definitions
+A definition can be memo-ized by using `@:` instead of `:`. When a memoized definition is called for the first
+time, it behaves like an ordinary definition except that it stores a copy of the top of the stack. On subsequent
+calls, it simply returns that stored copy. The memoized value can be refreshed by calling the memoized definition
+with a `!` appended. For example:
+
+```
+@: TICKETS   JQL FIELDS jira.SEARCH;
+
+TICKETS   # Will do the Jira search and save a copy of the results
+TICKETS   # Will return the results from the previous call
+
+TICKETS!  # Will perform the Jira search again and save a new copy of the results
+TICKETS   # Will return the latest copy of the results
+```
+
 ## Modules
 All definitions are stored within Forthic modules. A Forthic application can use any number of modules, but two of them are special: the app module and the global module. The app module is the default module for a Forthic program. For a plain Forthic app, new definitions are added here. The global module contains all of the "built-in" Forthic words (like `SWAP`, `DUP`, `MAP`, `*`, `+`, etc.)
 
@@ -130,7 +146,7 @@ The `global` module defines the following types of words: base words, array/reco
 * `!` sets value of a variable
 * `@` gets value of a variable
 * `INTERPRET` runs a Forthic string
-* `MEMO` memoizes the results of a Forthic string
+* `MEMO` memoizes the results of a Forthic string (deprecated, use `@:` instead)
 * `EXPORT` makes words from the current module importable
 * `USE-MODULES` imports words from the specified modules
 * `REC` creates a record object (like a Python dictionary)
