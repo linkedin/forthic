@@ -8,8 +8,8 @@
     <meta name="theme-color" content="#000000" />
 
     <link rel="manifest" href="/static/react/react-app/manifest.json" />
-    <script defer="defer" src="/static/react/react-app/main.2d50e04b.js"></script>
-    <link href="/static/react/react-app/main.073c9b0a.css" rel="stylesheet">
+    <script defer="defer" src="/static/react/react-app/main.c5a2360a.js"></script>
+    <link href="/static/react/react-app/main.345ec4e7.css" rel="stylesheet">
 
     <script src="/static/js/react.production.min.js"></script>
     <script src="/static/js/react-dom.production.min.js"></script>
@@ -24,10 +24,10 @@
         window.basename = `{{basename}}`
     </script>
     <style>
-        {{css if css}}
+        {{css |safe if css}}
     </style>
     <script type="text/babel">
-        {{ jsx }}
+        {{ jsx |safe if jsx}}
     </script>
 </body>
 </html>

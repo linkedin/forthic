@@ -1,7 +1,7 @@
 import os
 import re
 from requests_oauthlib import OAuth2Session
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import markdown
 
 from forthic.interpreter import Interpreter
@@ -75,8 +75,9 @@ def main_page():
     return render_template('main.html', ex_infos=ex_infos)
 
 
-@app.route('/examples/<example>')
-def example(example):
+@app.route('/examples/<example>', strict_slashes=False)
+@app.route('/examples/<example>/<path:rest>', strict_slashes=False)
+def example(example, rest=None):
 
     def render_configured_page(array):
         page_type = array[0]
@@ -145,6 +146,41 @@ def example(example):
             pass
         else:
             raise RuntimeError(f'Unknown OAuth token type: {e.field}')
+
+
+@app.route('/examples/<example>/forthic', methods=["POST"])
+def example_forthic(example):
+    app_dir = f"{example}"
+
+    interp = get_interp(app_dir)
+    form = request.form
+    if request.is_json:
+        form = request.json
+    forthic = form['forthic']
+    fullstack_response = form.get('fullstack_response')
+
+    def run_forthic():
+        run_app_forthic(interp, app_dir)
+        interp.run(forthic)
+        try:
+            if fullstack_response:
+                res = interp.stack
+            else:
+                res = interp.stack_pop()
+        except:
+            res = None
+        return res
+
+    try:
+        res = run_forthic()
+        result = jsonify({'message': 'OK', 'result': res})
+    except RuntimeError as e:
+        result = jsonify(str(e))
+        result.status_code = 400
+    except Exception as e:
+        result = jsonify(str(e))
+        result.status_code = 500
+    return result
 
 
 @app.route('/update_password_form/<example>/<field>')
@@ -217,6 +253,7 @@ def get_example_forthic(example_dir):
     return result
 
 
+# TODO: Move this to a v1 directory
 def get_interp(app_dir):
     def configure_cache_module(interp):
         interp.register_module(CacheModule)
@@ -227,6 +264,7 @@ def get_interp(app_dir):
         js_path = '/static/forthic/forthic-js'
         interp.run(f"['html'] USE-MODULES '{js_path}' html.JS-PATH!")
 
+    # TODO: Figure out interpreter version based on main.forthic
     interp = Interpreter()
     interp.dev_mode = True
 
@@ -269,3 +307,39 @@ def get_google_token(creds, code):
         client_secret=client_secret,
     )
     return result
+
+
+def get_forthic_app_screens(app_dir):
+    screens_dir = f"{app_dir}/screens"
+    if not os.path.isdir(screens_dir):
+        return []
+
+    result = []
+    with os.scandir(screens_dir) as entries:
+        for entry in entries:
+            match = re.match("(.+)\.forthic", entry.name)
+            if entry.is_file() and match:
+                with open(f"{screens_dir}/{entry.name}") as f:
+                    screen_forthic = f.read()
+                    screen_name = match.group(1)
+                    result.append([screen_name, screen_forthic])
+    return result
+
+
+def get_app_forthic(app_dir):
+    forthic_file = f"{app_dir}/main.forthic"
+    with open(forthic_file) as f:
+        result = f.read()
+    return result
+
+def run_app_forthic(interp, app_dir):
+    """Runs the forthic in the app dir
+    """
+    # Store screens for this app in the app module
+    forthic_screens = get_forthic_app_screens(app_dir)
+    for s in forthic_screens:
+        interp.app_module.set_screen(s[0], s[1])
+
+    # Run the app_forthic and MAIN-PAGE
+    interp.run(get_app_forthic(app_dir))
+    return
