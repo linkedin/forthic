@@ -1,17 +1,45 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './index.css'
+import {RouterProvider} from "react-router-dom";
+import { Interpreter } from './forthic/interpreter';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+let INTERP;
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+// TODO: Read this from someplace during development
+let forthic = ""
+
+export function get_forthic() {
+  if (process.env.NODE_ENV === 'development') {
+      return forthic
+  }
+  else {
+      return window.FORTHIC
+  }
+}
+export async function get_interp() {
+  if (INTERP)   return INTERP
+
+  let result = new Interpreter()
+  let forthic = get_forthic()
+  // await result.register_module(new ReactModule())
+  // await result.register_module(new RechartsModule())
+  // await result.register_module(new TableModule())
+  await result.run(forthic)
+  INTERP = result
+  return result
+}
+
+setTimeout(async () => {
+  let interp = await get_interp()
+  await interp.run(`MAIN-ROUTER`)
+  let router = interp.stack_pop()
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(
+    <React.StrictMode>
+        <RouterProvider router={router} />
+    </React.StrictMode>
+  );
+})
+
