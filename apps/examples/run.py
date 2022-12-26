@@ -77,6 +77,23 @@ def main_page():
 
 @app.route('/examples/<example>')
 def example(example):
+
+    def render_configured_page(array):
+        page_type = array[0]
+
+        if page_type == "REACT":
+            [_, css, jsx, forthic] = array
+            res = render_template(
+                'react/react-app.html',
+                css=css,
+                jsx=jsx,
+                forthic=forthic,
+                basename=f"examples/{example}"
+            )
+        else:
+            res = f"Unknown page type: {page_type}"
+        return res
+
     try:
         directory = '.'
         example_dir = f'{directory}/{example}'
@@ -86,20 +103,25 @@ def example(example):
         example_forthic = get_example_forthic(example_dir)
         interp.run(example_forthic)
 
-        def get_html_output():
-            interp.run('MAIN-PAGE')
-            res = interp.stack_pop()
-            return res
+        interp.run('MAIN-PAGE')
+        res = interp.stack_pop()
 
-        overview = markdown.markdown(read_file(f'{example_dir}/overview.md'))
-        html_output = get_html_output()
-        result = render_template(
-            'example.html',
-            example=example,
-            overview=overview,
-            example_forthic=example_forthic,
-            html_output=html_output,
-        )
+        # TODO: If a string, render the example; otherwise, render react app
+        if isinstance(res, str):
+            overview = markdown.markdown(read_file(f'{example_dir}/overview.md'))
+            html_output = res
+            result = render_template(
+                'example.html',
+                example=example,
+                overview=overview,
+                example_forthic=example_forthic,
+                html_output=html_output,
+            )
+        elif isinstance(res, list):
+            result = render_configured_page(res)
+        else:
+            result = f"Unknown config: {res}"
+        return result
     except MissingSecretsFile:
         creds.ensure_secrets_file()
         return redirect(url_for('example', example=example))
@@ -123,7 +145,6 @@ def example(example):
             pass
         else:
             raise RuntimeError(f'Unknown OAuth token type: {e.field}')
-    return result
 
 
 @app.route('/update_password_form/<example>/<field>')
