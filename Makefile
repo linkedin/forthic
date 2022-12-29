@@ -3,8 +3,7 @@ SHELL := /bin/bash
 .PHONY: install-forthic test test-js credentials-server examples docs
 
 example-server: install-forthic
-	pushd apps/examples && ln -sf ../../../../forthic-js . && popd
-	source myenv/bin/activate && cd apps/examples && FLASK_APP=run.py FLASK_ENV=development flask run --port=8000
+	source myenv/bin/activate && cd apps/examples && FLASK_APP=run.py FLASK_DEBUG=true flask run --port=8000
 
 myenv:
 	python3 -m venv myenv

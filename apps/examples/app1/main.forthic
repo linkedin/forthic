@@ -87,4 +87,4 @@ function Sample(props) {
 ["quarter" "product"] VARIABLES
 : SAMPLE-PAGE-DATA   (product ! quarter !) [["PRODUCT"  product @] ["QUARTER" quarter @] ["value"  "GARBAGE" INTERPRET]] REC;
 
-: MAIN-PAGE   ["REACT"  CSS JSX REACT-FORTHIC];
+: MAIN-PAGE   ["REACT-APP/V1"  CSS JSX REACT-FORTHIC];
