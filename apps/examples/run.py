@@ -1,18 +1,19 @@
 import os
 import re
+import json
 from requests_oauthlib import OAuth2Session
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import markdown
 
-from forthic.interpreter import Interpreter
-import forthic.modules.jira_module as jira_module
-import forthic.modules.gsheet_module as gsheet_module
-import forthic.modules.excel_module as excel_module
-from forthic.modules.cache_module import CacheModule
-from forthic.modules.jinja_module import JinjaModule
-from forthic.modules.html_module import HtmlModule
-from forthic.modules.org_module import OrgModule
-from forthic.modules.confluence_module import ConfluenceModule
+from forthic.v2.interpreter import Interpreter
+import forthic.v2.modules.jira_module as jira_module
+import forthic.v2.modules.gsheet_module as gsheet_module
+import forthic.v2.modules.excel_module as excel_module
+from forthic.v2.modules.cache_module import CacheModule
+from forthic.v2.modules.jinja_module import JinjaModule
+from forthic.v2.modules.html_module import HtmlModule
+from forthic.v2.modules.org_module import OrgModule
+from forthic.v2.modules.confluence_module import ConfluenceModule
 from forthic.utils.creds import (
     Creds,
     MissingSecretsFile,
@@ -21,7 +22,7 @@ from forthic.utils.creds import (
     MissingOAuthToken,
 )
 from forthic.utils.errors import UnauthorizedError
-from example_contexts_module import ExampleContextsModule
+from example_contexts_module_v2 import ExampleContextsModuleV2
 
 # Allow us to use http locally
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -34,6 +35,11 @@ creds.ensure_key()
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.secret_key = creds.get_key()
+
+
+class UnknownInterpreterVersion(RuntimeError):
+    def __init__(self, app_dir, forthic_version):
+        super().__init__(f"Can't find Forthic version {forthic_version} for app {app_dir}")
 
 
 @app.after_request
@@ -82,10 +88,10 @@ def example(example, rest=None):
     def render_configured_page(array):
         page_type = array[0]
 
-        if page_type == "REACT":
+        if page_type == "REACT-APP/V1":
             [_, css, jsx, forthic] = array
             res = render_template(
-                'react/react-app.html',
+                'react/react-app/v1/main.html',
                 css=css,
                 jsx=jsx,
                 forthic=forthic,
@@ -167,7 +173,7 @@ def example_forthic(example):
                 res = interp.stack
             else:
                 res = interp.stack_pop()
-        except:
+        except RuntimeError:
             res = None
         return res
 
@@ -253,8 +259,32 @@ def get_example_forthic(example_dir):
     return result
 
 
-# TODO: Move this to a v1 directory
+def get_app_forthic_version(app_dir):
+    """Looks for a config.json file and returns the forthic_version field. Defaults to 'v2'"""
+    DEFAULT_VERSION = "v2"
+    file_path = f"{app_dir}/config.json"
+    if not os.path.exists(file_path):
+        return DEFAULT_VERSION
+
+    with open(file_path) as f:
+        contents = f.read()
+    config = json.loads(contents)
+    forthic_version = config.get("forthic_version")
+    if not forthic_version:
+        forthic_version = DEFAULT_VERSION
+    result = forthic_version
+    return result
+
+
 def get_interp(app_dir):
+    forthic_version = get_app_forthic_version(app_dir)
+    if (forthic_version == "v2"):
+        return get_interp_v2(app_dir)
+    else:
+        raise UnknownInterpreterVersion(app_dir, forthic_version)
+
+
+def get_interp_v2(app_dir):
     def configure_cache_module(interp):
         interp.register_module(CacheModule)
         interp.run(f"['cache'] USE-MODULES '{app_dir}' cache.CWD!")
@@ -276,7 +306,7 @@ def get_interp(app_dir):
     interp.register_module(jira_module.JiraModule)
     interp.register_module(JinjaModule)
     interp.register_module(ConfluenceModule)
-    interp.register_module(ExampleContextsModule)
+    interp.register_module(ExampleContextsModuleV2)
     interp.register_module(OrgModule)
     return interp
 
@@ -331,6 +361,7 @@ def get_app_forthic(app_dir):
     with open(forthic_file) as f:
         result = f.read()
     return result
+
 
 def run_app_forthic(interp, app_dir):
     """Runs the forthic in the app dir
