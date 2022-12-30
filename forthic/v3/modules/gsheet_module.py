@@ -1048,7 +1048,7 @@ class CredsContext:
 
 class GsheetElement:
     def __init__(self):
-        self.data: Dict[str, Any] = {}
+        self.data = {}
 
     def get_data(self):
         return self.data

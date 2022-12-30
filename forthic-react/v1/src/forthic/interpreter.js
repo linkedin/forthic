@@ -77,17 +77,11 @@ class Interpreter {
 
 
     async run(string) {
-        try {
-            let tokenizer = new Tokenizer(string);
-            var token = tokenizer.next_token();
-            while (token.type != TOK_EOS) {
-                await this.handle_token(token);
-                token = tokenizer.next_token();
-            }
-        }
-        catch (e) {
-            debugger
-            console.error(string, e);
+        let tokenizer = new Tokenizer(string);
+        var token = tokenizer.next_token();
+        while (token.type !== TOK_EOS) {
+            await this.handle_token(token);
+            token = tokenizer.next_token();
         }
     }
 
@@ -242,7 +236,7 @@ class Interpreter {
     }
 
     handle_comment_token(token) {
-        console.log("Comment:", token.string);
+        // console.log("Comment:", token.string);
     }
 
     handle_start_definition_token(token) {

@@ -14,6 +14,9 @@ from forthic.v2.modules.jinja_module import JinjaModule
 from forthic.v2.modules.html_module import HtmlModule
 from forthic.v2.modules.org_module import OrgModule
 from forthic.v2.modules.confluence_module import ConfluenceModule
+
+from forthic.v3.interpreter import Interpreter as InterpreterV3
+
 from forthic.utils.creds import (
     Creds,
     MissingSecretsFile,
@@ -280,6 +283,8 @@ def get_interp(app_dir):
     forthic_version = get_app_forthic_version(app_dir)
     if (forthic_version == "v2"):
         return get_interp_v2(app_dir)
+    elif (forthic_version == "v3"):
+        return get_interp_v3(app_dir)
     else:
         raise UnknownInterpreterVersion(app_dir, forthic_version)
 
@@ -294,7 +299,6 @@ def get_interp_v2(app_dir):
         js_path = '/static/forthic/forthic-js'
         interp.run(f"['html'] USE-MODULES '{js_path}' html.JS-PATH!")
 
-    # TODO: Figure out interpreter version based on main.forthic
     interp = Interpreter()
     interp.dev_mode = True
 
@@ -308,6 +312,32 @@ def get_interp_v2(app_dir):
     interp.register_module(ConfluenceModule)
     interp.register_module(ExampleContextsModuleV2)
     interp.register_module(OrgModule)
+    return interp
+
+
+def get_interp_v3(app_dir):
+    # def configure_cache_module(interp):
+    #     interp.register_module(CacheModule)
+    #     interp.run(f"['cache'] USE-MODULES '{app_dir}' cache.CWD!")
+
+    # def configure_html_module(interp):
+    #     interp.register_module(HtmlModule)
+    #     js_path = '/static/forthic/forthic-js'
+    #     interp.run(f"['html'] USE-MODULES '{js_path}' html.JS-PATH!")
+
+    interp = InterpreterV3()
+    interp.dev_mode = True
+
+    # configure_html_module(interp)
+    # configure_cache_module(interp)
+
+    # interp.register_module(gsheet_module.GsheetModule)
+    # interp.register_module(excel_module.ExcelModule)
+    # interp.register_module(jira_module.JiraModule)
+    # interp.register_module(JinjaModule)
+    # interp.register_module(ConfluenceModule)
+    # interp.register_module(ExampleContextsModuleV2)
+    # interp.register_module(OrgModule)
     return interp
 
 

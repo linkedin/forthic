@@ -11,10 +11,8 @@ import json
 import io
 import csv
 from collections import defaultdict
-from collections.abc import Mapping
 
-from .module import Word, Module, PushValueWord
-# from .flambda import Lambda, NullOnErrorLambda, AccumErrorLambda
+from .module import Module, PushValueWord
 from .profile import ProfileAnalyzer
 from .interfaces import IInterpreter
 
@@ -35,22 +33,7 @@ class InvalidTimeError(GlobalModuleError):
     pass
 
 
-# DEPRECATED: Replace this with `@:`
-class MemoWord(Word):
-    def __init__(self, name, varname):
-        super().__init__(name)
-        self.varname = varname
-
-    def execute(self, interp: IInterpreter):
-        # If varname is null, execute name!
-        interp.run(f'{self.varname} @')
-        var_value = interp.stack_pop()
-        if var_value is None:
-            interp.run(f'{self.name}!')
-
-        # Return value of variable
-        interp.run(f'{self.varname} @')
-
+# TODO: Ensure that None flows through all words properly
 
 class GlobalModule(Module):
     """This implements the standard `global` module words
@@ -60,7 +43,7 @@ class GlobalModule(Module):
     are words like "1", "2.5", "06-05-2021", etc.
 
     The `GlobalModule` also implements base words that might usually be built into the language, like
-    `MEMO`, `VARIABLES`, `!`, `@`, etc.
+    `VARIABLES`, `!`, `@`, etc.
 
     See `docs/modules/global_module.md` for detailed descriptions of each word.
     """
@@ -82,6 +65,16 @@ class GlobalModule(Module):
             self.to_time,
         ]
 
+        # Module Flags: These are all None but are settable for one-time use to change the behavior
+        # of module words
+        self.flags = {
+            "with_key": None,
+            "push_error": None,
+            "comparator": None,
+            "push_rest": None,
+            "depth": None,
+        }
+
         # ----------------
         # Base words
         self.add_module_word('VARIABLES', self.word_VARIABLES)
@@ -90,7 +83,6 @@ class GlobalModule(Module):
         self.add_module_word('!@', self.word_bang_at)
         self.add_module_word('<!', self.word_l_bang)
         self.add_module_word('INTERPRET', self.word_INTERPRET)
-        self.add_module_word('MEMO', self.word_MEMO)
         self.add_module_word('EXPORT', self.word_EXPORT)
         self.add_module_word('USE-MODULES', self.word_USE_MODULES)
         self.add_module_word('REC', self.word_REC)
@@ -99,12 +91,6 @@ class GlobalModule(Module):
         self.add_module_word('SCREEN!', self.word_SCREEN_bang)
         self.add_module_word('SCREEN', self.word_SCREEN)
         self.add_module_word('LOAD-SCREEN', self.word_LOAD_SCREEN)
-
-        # # ----------------
-        # # Lambda words
-        # self.add_module_word('LAMBDA', self.word_LAMBDA)
-        # self.add_module_word('NULL-ON-ERROR-LAMBDA', self.word_NULL_ON_ERROR_LAMBDA)
-        # self.add_module_word('ACCUM-ERROR-LAMBDA', self.word_ACCUM_ERROR_LAMBDA)
 
         # ----------------
         # Array/Record words
@@ -116,16 +102,11 @@ class GlobalModule(Module):
         self.add_module_word('BY-FIELD', self.word_BY_FIELD)
         self.add_module_word('GROUP-BY-FIELD', self.word_GROUP_BY_FIELD)
         self.add_module_word('GROUP-BY', self.word_GROUP_BY)
-        self.add_module_word('GROUP-BY-w/KEY', self.word_GROUP_BY_w_KEY)
+
         self.add_module_word('GROUPS-OF', self.word_GROUPS_OF)
         self.add_module_word('INDEX', self.word_INDEX)
         self.add_module_word('MAP', self.word_MAP)
-        self.add_module_word('MAP-w/KEY', self.word_MAP_w_KEY)
         self.add_module_word('FOREACH', self.word_FOREACH)
-        self.add_module_word('FOREACH-w/KEY', self.word_FOREACH_w_KEY)
-        self.add_module_word('FOREACH>ERRORS', self.word_FOREACH_to_ERRORS)
-        self.add_module_word('FOREACH-w/KEY>ERRORS', self.word_FOREACH_w_KEY_to_ERRORS)
-        self.add_module_word('PROCESS-ITEMS', self.word_PROCESS_ITEMS)
         self.add_module_word('INVERT-KEYS', self.word_INVERT_KEYS)
         self.add_module_word('ZIP', self.word_ZIP)
         self.add_module_word('ZIP-WITH', self.word_ZIP_WITH)
@@ -137,20 +118,19 @@ class GlobalModule(Module):
         self.add_module_word('INTERSECTION', self.word_INTERSECTION)
         self.add_module_word('UNION', self.word_UNION)
         self.add_module_word('SELECT', self.word_SELECT)
-        self.add_module_word('SELECT-w/KEY', self.word_SELECT_w_KEY)
         self.add_module_word('TAKE', self.word_TAKE)
         self.add_module_word('DROP', self.word_DROP)
         self.add_module_word('ROTATE', self.word_ROTATE)
-        self.add_module_word('ROTATE-ELEMENT', self.word_ROTATE_ELEMENT)
         self.add_module_word('SHUFFLE', self.word_SHUFFLE)
         self.add_module_word('SORT', self.word_SORT)
-        self.add_module_word('SORT-w/FORTHIC', self.word_SORT_w_FORTHIC)
-        self.add_module_word('SORT-w/KEY-FUNC', self.word_SORT_w_KEY_FUNC)
         self.add_module_word('FIELD-KEY-FUNC', self.word_FIELD_KEY_FUNC)
         self.add_module_word('NTH', self.word_NTH)
         self.add_module_word('LAST', self.word_LAST)
         self.add_module_word('UNPACK', self.word_UNPACK)
+
+        # TODO: We should be able to specify the depth that we flatten
         self.add_module_word('FLATTEN', self.word_FLATTEN)
+
         self.add_module_word('KEY-OF', self.word_KEY_OF)
         self.add_module_word('REDUCE', self.word_REDUCE)
         self.add_module_word('CUMULATIVE-DIST', self.word_CUMULATIVE_DIST)
@@ -159,7 +139,6 @@ class GlobalModule(Module):
         # Stack words
         self.add_module_word('POP', self.word_POP)
         self.add_module_word('DUP', self.word_DUP)
-        self.add_module_word('N-DUP', self.word_N_DUP)
         self.add_module_word('SWAP', self.word_SWAP)
 
         # ----------------
@@ -170,8 +149,8 @@ class GlobalModule(Module):
         self.add_module_word('/N', self.word_slash_N)
         self.add_module_word('/R', self.word_slash_R)
         self.add_module_word('/T', self.word_slash_T)
-        self.add_module_word('|LOWER', self.word_pipe_LOWER)
-        self.add_module_word('|UPPER', self.word_pipe_UPPER)
+        self.add_module_word('LOWERCASE', self.word_LOWERCASE)
+        self.add_module_word('UPPERCASE', self.word_UPPERCASE)
         self.add_module_word('|ASCII', self.word_pipe_ASCII)
         self.add_module_word('STRIP', self.word_STRIP)
         self.add_module_word('REPLACE', self.word_REPLACE)
@@ -185,9 +164,7 @@ class GlobalModule(Module):
 
         # ----------------
         # Tree words
-        self.add_module_word(
-            'TRAVERSE-DEPTH-FIRST', self.word_TRAVERSE_DEPTH_FIRST
-        )
+        self.add_module_word('TRAVERSE-DEPTH-FIRST', self.word_TRAVERSE_DEPTH_FIRST)
         self.add_module_word('SUBTREES', self.word_SUBTREES)
 
         # ----------------
@@ -200,8 +177,11 @@ class GlobalModule(Module):
         self.add_module_word('<REPEAT', self.word_l_REPEAT)
         self.add_module_word('IDENTITY', self.word_IDENTITY)
         self.add_module_word('>FIXED', self.word_to_FIXED)
+
+        # TODO: Add support for serializing dates and datetimes
         self.add_module_word('>JSON', self.word_to_JSON)
         self.add_module_word('JSON>', self.word_JSON_to)
+
         self.add_module_word('>TSV', self.word_to_TSV)
         self.add_module_word('TSV>', self.word_TSV_to)
         self.add_module_word('RECS>TSV', self.word_RECS_to_TSV)
@@ -226,19 +206,14 @@ class GlobalModule(Module):
         self.add_module_word('SATURDAY', self.word_SATURDAY)
         self.add_module_word('SUNDAY', self.word_SUNDAY)
         self.add_module_word('NEXT', self.word_NEXT)
-        self.add_module_word('+DAYS', self.word_plus_DAYS)
+
+        self.add_module_word('ADD-DAYS', self.word_ADD_DAYS)
         self.add_module_word('SUBTRACT-DATES', self.word_SUBTRACT_DATES)
         self.add_module_word('SUBTRACT-TIMES', self.word_SUBTRACT_TIMES)
         self.add_module_word('DATE>STR', self.word_DATE_to_STR)
-        self.add_module_word(
-            'DATE-TIME>DATETIME', self.word_DATE_TIME_to_DATETIME
-        )
-        self.add_module_word(
-            'DATETIME>TIMESTAMP', self.word_DATETIME_to_TIMESTAMP
-        )
-        self.add_module_word(
-            'TIMESTAMP>DATETIME', self.word_TIMESTAMP_to_DATETIME
-        )
+        self.add_module_word('DATE-TIME>DATETIME', self.word_DATE_TIME_to_DATETIME)
+        self.add_module_word('DATETIME>TIMESTAMP', self.word_DATETIME_to_TIMESTAMP)
+        self.add_module_word('TIMESTAMP>DATETIME', self.word_TIMESTAMP_to_DATETIME)
         self.add_module_word('STR>DATETIME', self.word_STR_to_DATETIME)
 
         # ----------------
@@ -268,6 +243,14 @@ class GlobalModule(Module):
         self.add_module_word('>FLOAT', self.word_to_FLOAT)
         self.add_module_word('UNIFORM-RANDOM', self.word_UNIFORM_RANDOM)
         self.add_module_word('RANGE-INDEX', self.word_RANGE_INDEX)
+
+        # ----------------
+        # Flag words
+        self.add_module_word('!PUSH-ERROR', self.word_bang_PUSH_ERROR)
+        self.add_module_word('!WITH-KEY', self.word_bang_WITH_KEY)
+        self.add_module_word('!COMPARATOR', self.word_bang_COMPARATOR)
+        self.add_module_word('!PUSH-REST', self.word_bang_PUSH_REST)
+        self.add_module_word('!DEPTH', self.word_bang_DEPTH)
 
         # ----------------
         # Profiling words
@@ -389,29 +372,6 @@ class GlobalModule(Module):
         variable.value = value
         interp.stack_push(variable)
 
-    # # ( forthic -- Lambda )
-    # def word_LAMBDA(self, interp: IInterpreter):
-    #     """Converts a forthic string to a Lambda"""
-    #     forthic = interp.stack_pop()
-
-    #     result = Lambda(forthic)
-    #     interp.stack_push(result)
-
-    # # ( lambda -- Lambda )
-    # def word_NULL_ON_ERROR_LAMBDA(self, interp: IInterpreter):
-    #     """Converts a lambda into one that pushes NULL onto the stack on error and re-raises the error"""
-    #     flambda = interp.stack_pop()
-    #     result = NullOnErrorLambda(flambda)
-    #     interp.stack_push(result)
-
-    # # ( lambda variable -- Lambda )
-    # def word_ACCUM_ERROR_LAMBDA(self, interp: IInterpreter):
-    #     """Converts a lambda into one that executes in a try/except block, accumulating errors into the specified variable"""
-    #     variable = interp.stack_pop()
-    #     flambda = interp.stack_pop()
-    #     result = AccumErrorLambda(flambda, variable)
-    #     interp.stack_push(result)
-
     # ( object -- ? )
     def word_INTERPRET(self, interp: IInterpreter):
         """Pops a string/Lambda and interprets it"""
@@ -421,30 +381,6 @@ class GlobalModule(Module):
             return
 
         execute(interp, obj)
-
-    # ( name forthic -- )
-    def word_MEMO(self, interp: IInterpreter):
-        forthic = interp.stack_pop()
-        name = interp.stack_pop()
-
-        name_bang = name + '!'
-        var_name = f'<memo_var_{name}>'
-
-        # Create variable
-        interp.run(f"['{var_name}'] VARIABLES")
-
-        # name! word
-        interp.run(
-            ': ' + name_bang + '   ' + forthic + ' ' + var_name + ' ! ;'
-        )
-
-        # name!@ word
-        name_bang_at = name + '!@'
-        interp.run(f': {name_bang_at}   {name_bang} {var_name} @;')
-
-        # name word
-        word = MemoWord(name, var_name)
-        interp.cur_module().add_word(word)
 
     # ( names -- )
     def word_EXPORT(self, interp: IInterpreter):
@@ -727,32 +663,14 @@ class GlobalModule(Module):
 
     # ( array forthic -- group_to_items )
     # ( record forthic -- group_to_items )
+    #
+    # Flagged behavior:
+    #    with_key: Pushes container key in addition to container value before executing Forthic
     def word_GROUP_BY(self, interp: IInterpreter):
         forthic = interp.stack_pop()
         container = interp.stack_pop()
 
-        if not container:
-            container = []
-
-        if isinstance(container, list):
-            values = container
-        else:
-            values = container.values()
-
-        result = defaultdict(list)
-        for v in values:
-            interp.stack_push(v)
-            execute(interp, forthic)
-            group = interp.stack_pop()
-            result[group].append(v)
-
-        interp.stack_push(result)
-
-    # ( array forthic -- group_to_items )
-    # ( record forthic -- group_to_items )
-    def word_GROUP_BY_w_KEY(self, interp: IInterpreter):
-        forthic = interp.stack_pop()
-        container = interp.stack_pop()
+        flags = self.get_flags()
 
         if not container:
             container = []
@@ -767,12 +685,13 @@ class GlobalModule(Module):
         result = defaultdict(list)
         for i in range(len(values)):
             key = keys[i]
-            value = values[i]
-            interp.stack_push(key)
-            interp.stack_push(value)
+            v = values[i]
+            if flags.get('with_key'):
+                interp.stack_push(key)
+            interp.stack_push(v)
             execute(interp, forthic)
             group = interp.stack_pop()
-            result[group].append(value)
+            result[group].append(v)
 
         interp.stack_push(result)
 
@@ -832,120 +751,98 @@ class GlobalModule(Module):
 
     # ( array forthic -- array )
     # ( record forthic -- record )
+    #
+    # Flagged behavior:
+    #    * with_key: Pushes key in addition to value
+    #    * push_error: If an error occurs while mapping over an element, push None onto the stack and gather the error.
+    #                  At the end of the mapping, push the errors onto the stack
     def word_MAP(self, interp: IInterpreter):
+        # Get the args
         forthic = interp.stack_pop()
         items = interp.stack_pop()
 
+        # Get flags
+        flags = self.get_flags()
+
+        depth = flags.get('depth')
+        if not depth:
+            depth = 0
+
+        # Early exit if no items
         if not items:
             interp.stack_push(items)
             return
 
-        result: Any = []
-        if isinstance(items, list):
+        # This maps the forthic over an item, storing errors if needed
+        def map_value(key, value, errors):
+            if flags.get('with_key'):
+                interp.stack_push(key)
+            interp.stack_push(value)
+
+            if flags.get('push_error'):
+                error = None
+                try:
+                    execute(interp, forthic)
+                except Exception as e:
+                    interp.stack_push(None)
+                    error = e
+                errors.append(error)
+            else:
+                execute(interp, forthic)
+
+            return interp.stack_pop()
+
+        # This recursively descends a record structure
+        def descend_record(record, depth, accum, errors):
+            for k, item in record.items():
+                if depth > 0:
+                    if isinstance(item, list):
+                        accum[k] = []
+                        descend_list(item, depth - 1, accum[k], errors)
+                    else:
+                        accum[k] = {}
+                        descend_record(item, depth - 1, accum[k], errors)
+                else:
+                    accum[k] = map_value(k, item, errors)
+            return accum
+
+        # This recursively descends a list
+        def descend_list(items, depth, accum, errors):
             for i in range(len(items)):
                 item = items[i]
-                interp.stack_push(item)
-                execute(interp, forthic)
-                value = interp.stack_pop()
-                result.append(value)
-        else:
-            result = {}
-            for k, item in items.items():
-                interp.stack_push(item)
-                execute(interp, forthic)
-                value = interp.stack_pop()
-                result[k] = value
+                if depth > 0:
+                    if isinstance(item, list):
+                        accum.append([])
+                        descend_list(item, depth - 1, accum[-1], errors)
+                    else:
+                        accum.append({})
+                        descend_record(item, depth - 1, accum[-1], errors)
+                else:
+                    accum.append(map_value(i, item, errors))
+            return accum
 
-        interp.stack_push(result)
-
-    # ( array forthic -- array )
-    # ( record forthic -- record )
-    def word_MAP_w_KEY(self, interp: IInterpreter):
-        forthic = interp.stack_pop()
-        items = interp.stack_pop()
-
-        if not items:
-            interp.stack_push(items)
-            return
-
+        errors: Any = []
         result: Any = []
         if isinstance(items, list):
-            for i in range(len(items)):
-                item = items[i]
-                interp.stack_push(i)
-                interp.stack_push(item)
-                execute(interp, forthic)
-                value = interp.stack_pop()
-                result.append(value)
+            result = descend_list(items, depth, [], errors)
         else:
-            result = {}
-            for k, item in items.items():
-                interp.stack_push(k)
-                interp.stack_push(item)
-                execute(interp, forthic)
-                value = interp.stack_pop()
-                result[k] = value
+            result = descend_record(items, depth, {}, errors)
 
+        # Return results
         interp.stack_push(result)
+        if flags.get('push_error'):
+            interp.stack_push(errors)
 
     # ( items forthic -- ? )
     # ( record forthic -- ? )
+    #
+    # Flagged behavior
+    #    * with_key: Pushes key in addition to value when executing Forthic
+    #    * push_error: After execution, push an array of errors onto stack corresponding to each element
+    #                  in the specified container
     def word_FOREACH(self, interp: IInterpreter):
-        foreach(interp)
-
-    # ( items forthic -- ? )
-    # ( record forthic -- ? )
-    def word_FOREACH_w_KEY(self, interp: IInterpreter):
-        foreach_w_key(interp)
-
-    # ( items forthic -- ? errors )
-    # ( record forthic -- ? errors )
-    def word_FOREACH_to_ERRORS(self, interp: IInterpreter):
-        errors = foreach(interp, return_errors=True)
-        interp.stack_push(errors)
-
-    # ( items forthic -- ? errors )
-    # ( record forthic -- ? errors )
-    def word_FOREACH_w_KEY_to_ERRORS(self, interp: IInterpreter):
-        errors = foreach_w_key(interp, return_errors=True)
-        interp.stack_push(errors)
-
-    # ( items forthic stop_forthic error_forthic done_forthic -- )
-    # Parameters:
-    #     items: An array of items to process
-    #     forthic: Forthic string to process an item
-    #     stop_forthic: Forthic string to see if processing should stop
-    #     error_forthic: Forthic string to run if there was an error during processing
-    #     done_forthic: Forthic string to run when done
-    def word_PROCESS_ITEMS(self, interp: IInterpreter):
-        done_forthic = interp.stack_pop()
-        error_forthic = interp.stack_pop()
-        stop_forthic = interp.stack_pop()
-        forthic = interp.stack_pop()
-        items = interp.stack_pop()
-
-        if not items:
-            items = []
-
-        def process_item(item):
-            try:
-                interp.stack_push(item)
-                execute(interp, forthic)
-            except Exception as e:
-                interp.stack_push(item)
-                interp.stack_push(e)
-                execute(interp, error_forthic)
-
-        def should_stop():
-            execute(interp, stop_forthic)
-            res = interp.stack_pop()
-            return res
-
-        for item in items:
-            process_item(item)
-            if should_stop():
-                return
-        execute(interp, done_forthic)
+        flags = self.get_flags()
+        foreach(interp, flags)
 
     # ( record -- record )
     # Swaps the order of nested keys in a record
@@ -1197,38 +1094,14 @@ class GlobalModule(Module):
 
     # ( larray forthic -- array )
     # ( lrecord forthic -- record )
+    #
+    # Flagged behavior:
+    #    with_key: Pushes key and value onto stack for evaluation
     def word_SELECT(self, interp: IInterpreter):
         forthic = interp.stack_pop()
         container = interp.stack_pop()
 
-        if not container:
-            interp.stack_push(container)
-            return
-
-        if isinstance(container, list):
-            result: Any = []
-            for item in container:
-                interp.stack_push(item)
-                execute(interp, forthic)
-                should_select = interp.stack_pop()
-                if should_select:
-                    result.append(item)
-        else:
-            result = {}
-            for k, v in container.items():
-                interp.stack_push(v)
-                execute(interp, forthic)
-                should_select = interp.stack_pop()
-                if should_select:
-                    result[k] = v
-
-        interp.stack_push(result)
-
-    # ( larray forthic -- array )
-    # ( lrecord forthic -- record )
-    def word_SELECT_w_KEY(self, interp: IInterpreter):
-        forthic = interp.stack_pop()
-        container = interp.stack_pop()
+        flags = self.get_flags()
 
         if not container:
             interp.stack_push(container)
@@ -1238,7 +1111,8 @@ class GlobalModule(Module):
             result: Any = []
             for i in range(len(container)):
                 item = container[i]
-                interp.stack_push(i)
+                if flags.get('with_key'):
+                    interp.stack_push(i)
                 interp.stack_push(item)
                 execute(interp, forthic)
                 should_select = interp.stack_pop()
@@ -1247,7 +1121,8 @@ class GlobalModule(Module):
         else:
             result = {}
             for k, v in container.items():
-                interp.stack_push(k)
+                if flags.get('with_key'):
+                    interp.stack_push(k)
                 interp.stack_push(v)
                 execute(interp, forthic)
                 should_select = interp.stack_pop()
@@ -1256,11 +1131,16 @@ class GlobalModule(Module):
 
         interp.stack_push(result)
 
-    # ( array n -- rest array )
-    # ( record n -- rest record )
+    # ( array n -- array )
+    # ( record n -- record )
+    #
+    # Flagged behavior:
+    #   * push_rest: This pushes the rest of the take container onto the stack
     def word_TAKE(self, interp: IInterpreter):
         n = interp.stack_pop()
         container = interp.stack_pop()
+
+        flags = self.get_flags()
 
         if not container:
             container = []
@@ -1275,8 +1155,9 @@ class GlobalModule(Module):
             taken = [container[k] for k in taken_keys]
             rest = [container[k] for k in rest_keys]
 
-        interp.stack_push(rest)
         interp.stack_push(taken)
+        if flags.get('push_rest'):
+            interp.stack_push(rest)
 
     # ( array n -- rest )
     # ( record n -- rest )
@@ -1317,27 +1198,6 @@ class GlobalModule(Module):
 
         interp.stack_push(result)
 
-    # ( array element -- array )
-    # ( record element -- record )
-    # Moves element to front of array
-    def word_ROTATE_ELEMENT(self, interp: IInterpreter):
-        element = interp.stack_pop()
-        container = interp.stack_pop()
-
-        if not container:
-            container = []
-
-        if isinstance(container, list):
-            result = container[:]
-            if element in result:
-                index = result.index(element)
-                value = result.pop(index)
-                result = [value] + result
-        else:
-            result = container
-
-        interp.stack_push(result)
-
     # ( array -- array )
     # ( record -- record )
     def word_SHUFFLE(self, interp: IInterpreter):
@@ -1359,66 +1219,62 @@ class GlobalModule(Module):
     def word_SORT(self, interp: IInterpreter):
         container = interp.stack_pop()
 
-        if not container:
-            container = []
-
-        def sort_record(record):
-            sorted_items = sorted(record.items(), key=lambda x: x[1])
-            res = {}
-            for pair in sorted_items:
-                res[pair[0]] = pair[1]
-            return res
-
-        if isinstance(container, list):
-            result = sorted(container[:])
-        else:
-            result = sort_record(container)
-
-        interp.stack_push(result)
-
-    # ( array forthic -- array )
-    # ( record forthic -- record )
-    def word_SORT_w_FORTHIC(self, interp: IInterpreter):
-        forthic = interp.stack_pop()
-        container = interp.stack_pop()
+        flags = self.get_flags()
+        comparator = flags['comparator']
 
         if not container:
             container = []
 
-        def forthic_func(val):
-            interp.stack_push(val)
-            execute(interp, forthic)
-            res = interp.stack_pop()
-            return res
+        # Sort using default item comparision
+        def sort_without_comparator():
+            def sort_record(record):
+                sorted_items = sorted(record.items(), key=lambda x: x[1])
+                res = {}
+                for pair in sorted_items:
+                    res[pair[0]] = pair[1]
+                return res
 
-        def sort_record(record):
-            sorted_items = sorted(record.items(), key=lambda x: forthic_func(x[1]))
-            res = {}
-            for pair in sorted_items:
-                res[pair[0]] = pair[1]
-            return res
+            if isinstance(container, list):
+                result = sorted(container[:])
+            else:
+                result = sort_record(container)
+            return result
 
-        if isinstance(container, list):
-            result = sorted(container[:], key=forthic_func)
+        # Sort using a forthic string
+        def sort_with_forthic(forthic):
+            def forthic_func(val):
+                interp.stack_push(val)
+                execute(interp, forthic)
+                res = interp.stack_pop()
+                return res
+
+            def sort_record(record):
+                sorted_items = sorted(record.items(), key=lambda x: forthic_func(x[1]))
+                res = {}
+                for pair in sorted_items:
+                    res[pair[0]] = pair[1]
+                return res
+
+            if isinstance(container, list):
+                result = sorted(container[:], key=forthic_func)
+            else:
+                result = sort_record(container)
+            return result
+
+        # Sort using a key func
+        def sort_with_key_func(key_func):
+            if isinstance(container, list):
+                result = sorted(container[:], key=key_func)
+            else:
+                result = container
+            return result
+
+        if isinstance(comparator, str):
+            result = sort_with_forthic(comparator)
+        elif callable(comparator):
+            result = sort_with_key_func(comparator)
         else:
-            result = sort_record(container)
-
-        interp.stack_push(result)
-
-    # ( array key_func -- array )
-    # ( record key_func -- record )
-    def word_SORT_w_KEY_FUNC(self, interp: IInterpreter):
-        key_func = interp.stack_pop()
-        container = interp.stack_pop()
-
-        if not container:
-            container = []
-
-        if isinstance(container, list):
-            result = sorted(container[:], key=key_func)
-        else:
-            result = container
-
+            result = sort_without_comparator()
         interp.stack_push(result)
 
     # ( field -- key_func )
@@ -1490,33 +1346,62 @@ class GlobalModule(Module):
     # ( nested_records -- record )
     def word_FLATTEN(self, interp: IInterpreter):
         nested = interp.stack_pop()
+        flags = self.get_flags()
 
         if not nested:
             nested = []
 
-        def flatten_array(items, accum=[]):
-            for i in items:
-                if isinstance(i, list):
-                    flatten_array(i)
+        depth = flags.get('depth')
+
+        def fully_flatten_array(items, accum):
+            for item in items:
+                if isinstance(item, list):
+                    fully_flatten_array(item, accum)
                 else:
-                    accum.append(i)
+                    accum.append(item)
             return accum
 
-        def flatten_record(record, res={}, keys=[]):
-            for k, v in record.items():
-                if isinstance(v, Mapping):
-                    flatten_record(v, res, keys + [k])
+        def flatten_array(items, depth, accum=[]):
+            if depth is None:
+                return fully_flatten_array(items, accum)
+
+            for item in items:
+                if depth > 0 and isinstance(item, list):
+                    flatten_array(item, depth - 1, accum)
                 else:
-                    key = '\t'.join(keys + [k])
-                    res[key] = v
+                    accum.append(item)
+            return accum
+
+        def add_to_record_result(item, keys, key, result):
+            new_key = '\t'.join(keys + [key])
+            result[new_key] = item
+
+        def fully_flatten_record(record, res, keys):
+            for k, item in record.items():
+                if isinstance(item, dict):
+                    fully_flatten_record(item, res, keys + [k])
+                else:
+                    add_to_record_result(item, keys, k, res)
+            return res
+
+        def flatten_record(record, depth, res={}, keys=[]):
+            if depth is None:
+                return fully_flatten_record(record, res, keys)
+
+            for k, item in record.items():
+                if depth > 0 and isinstance(item, dict):
+                    flatten_record(item, depth - 1, res, keys + [k])
+                else:
+                    add_to_record_result(item, keys, k, res)
             return res
 
         if isinstance(nested, list):
-            result = flatten_array(nested)
+            result = flatten_array(nested, depth)
         else:
-            result = flatten_record(nested)
+            result = flatten_record(nested, depth)
 
         interp.stack_push(result)
+        return
 
     # ( list item -- index )
     # ( record item -- key )
@@ -1629,13 +1514,6 @@ class GlobalModule(Module):
         interp.stack_push(a)
         interp.stack_push(a)
 
-    # ( a num -- a ... a )
-    def word_N_DUP(self, interp: IInterpreter):
-        num = interp.stack_pop()
-        a = interp.stack_pop()
-        for _ in range(num):
-            interp.stack_push(a)
-
     # ( a b -- b a )
     def word_SWAP(self, interp: IInterpreter):
         b = interp.stack[-1]
@@ -1695,7 +1573,7 @@ class GlobalModule(Module):
         interp.stack_push('\t')
 
     # ( string -- string )
-    def word_pipe_LOWER(self, interp: IInterpreter):
+    def word_LOWERCASE(self, interp: IInterpreter):
         string = interp.stack_pop()
 
         if not string:
@@ -1705,7 +1583,7 @@ class GlobalModule(Module):
         interp.stack_push(result)
 
     # ( string -- string )
-    def word_pipe_UPPER(self, interp: IInterpreter):
+    def word_UPPERCASE(self, interp: IInterpreter):
         string = interp.stack_pop()
 
         if not string:
@@ -2177,7 +2055,7 @@ class GlobalModule(Module):
         return result
 
     # ( date num_days -- date )
-    def word_plus_DAYS(self, interp: IInterpreter):
+    def word_ADD_DAYS(self, interp: IInterpreter):
         num_days = interp.stack_pop()
         date = interp.stack_pop()
         result = date + datetime.timedelta(num_days)
@@ -2565,6 +2443,32 @@ class GlobalModule(Module):
         interp.stack_push(result)
 
     # ( -- )
+    def word_bang_PUSH_ERROR(self, interp: IInterpreter):
+        self.flags["push_error"] = True
+
+    # ( -- )
+    def word_bang_WITH_KEY(self, interp: IInterpreter):
+        self.flags["with_key"] = True
+
+    # (comparator -- )
+    #
+    # `comparator` may be a Forthic string or a Python key function
+    def word_bang_COMPARATOR(self, interp: IInterpreter):
+        comparator = interp.stack_pop()
+        self.flags["comparator"] = comparator
+
+    # ( -- )
+    def word_bang_PUSH_REST(self, interp: IInterpreter):
+        self.flags["push_rest"] = True
+
+    # (depth -- )
+    #
+    # `depth` of 0 is the same as a regular MAP
+    def word_bang_DEPTH(self, interp: IInterpreter):
+        depth = interp.stack_pop()
+        self.flags["depth"] = depth
+
+    # ( -- )
     def word_PROFILE_START(self, interp: IInterpreter):
         interp.start_profiling()
 
@@ -2642,15 +2546,25 @@ class GlobalModule(Module):
         result = os.getlogin()
         interp.stack_push(result)
 
+    def get_flags(self):
+        flags = self.flags.copy()
+        self.flags = {}
+        return flags
+
 
 def drill_for_value(record, fields):
     """Descends into record using an array of fields, returning final value or None"""
     result = record
-    for f in fields:
-        if result is None:
-            break
-        else:
-            result = result.get(f)
+    try:
+        for f in fields:
+            if result is None:
+                return result
+            if isinstance(result, list):
+                result = result[f]
+            else:
+                result = result.get(f)
+    except Exception:
+        result = None
     return result
 
 
@@ -2663,8 +2577,7 @@ def run_returning_error(interp, forthic):
     return result
 
 
-def foreach(interp, return_errors=False):
-    """Helper to run FOREACH and FOREACH>ERRORS"""
+def foreach(interp, flags):
     forthic = interp.stack_pop()
     container = interp.stack_pop()
 
@@ -2676,52 +2589,27 @@ def foreach(interp, return_errors=False):
         items = container
         for i in range(len(items)):
             item = items[i]
+            if flags.get('with_key'):
+                interp.stack_push(i)
             interp.stack_push(item)
-            if return_errors:
+            if flags.get('push_error'):
                 errors.append(run_returning_error(interp, forthic))
             else:
                 execute(interp, forthic)
 
-    else:
-        for _, item in container.items():
-            interp.stack_push(item)
-            if return_errors:
-                errors.append(run_returning_error(interp, forthic))
-            else:
-                execute(interp, forthic)
-
-    return errors
-
-
-def foreach_w_key(interp, return_errors=False):
-    """Helper to run FOREACH-w/KEY and FOREACH-w/KEY>ERRORS"""
-    forthic = interp.stack_pop()
-    container = interp.stack_pop()
-
-    errors = []
-    if not container:
-        container = []
-
-    if isinstance(container, list):
-        items = container
-        for i in range(len(items)):
-            item = items[i]
-            interp.stack_push(i)
-            interp.stack_push(item)
-            if return_errors:
-                errors.append(run_returning_error(interp, forthic))
-            else:
-                execute(interp, forthic)
     else:
         for k, item in container.items():
-            interp.stack_push(k)
+            if flags.get('with_key'):
+                interp.stack_push(k)
             interp.stack_push(item)
-            if return_errors:
+            if flags.get('push_error'):
                 errors.append(run_returning_error(interp, forthic))
             else:
                 execute(interp, forthic)
 
-    return errors
+    if flags.get('push_error'):
+        interp.stack_push(errors)
+    return
 
 
 def execute(interp: IInterpreter, object: str):
@@ -2730,3 +2618,12 @@ def execute(interp: IInterpreter, object: str):
     else:
         object.execute(interp)
     return
+
+
+def execute_returning_error(interp: IInterpreter, object: str) -> Optional[Exception]:
+    result = None
+    try:
+        execute(interp, object)
+    except Exception as e:
+        result = e
+    return result

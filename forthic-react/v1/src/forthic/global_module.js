@@ -30,11 +30,23 @@ class MemoWord extends Word {
 }
 
 // ----- MODULE FLAGS --------------------------------------------------------------------------------------------------
-let OVERWRITE_FLAG = false
-let PUSH_ERRORS = false
+// Module Flags: These are all None but are settable for one-time use to change the behavior
+// of module words
+let FLAGS = {
+    with_key: null,
+    push_error: null,
+    comparator: null,
+    push_rest: null,
+    depth: null,
+}
 
-// TODO: Add module variables for WITH-KEY! and PUSH-ERROR!
-// TODO: Add some way to render errors without using the alert box
+// Retrieves current value of FLAGS and then clears flags
+function get_flags() {
+    let result = JSON.parse(JSON.stringify(FLAGS));
+    FLAGS = {}
+    return result
+}
+
 class GlobalModule extends Module {
     constructor(interp) {
         super("<GLOBAL>", interp);
@@ -67,13 +79,10 @@ class GlobalModule extends Module {
         this.add_module_word("BY-FIELD", this.word_BY_FIELD);
         this.add_module_word("GROUP-BY-FIELD", this.word_GROUP_BY_FIELD);
         this.add_module_word("GROUP-BY", this.word_GROUP_BY);
-        this.add_module_word("GROUP-BY-w/KEY", this.word_GROUP_BY_w_KEY);
         this.add_module_word("GROUPS-OF", this.word_GROUPS_OF);
         this.add_module_word("INDEX", this.word_INDEX);
         this.add_module_word("MAP", this.word_MAP);
-        this.add_module_word("MAP-w/KEY", this.word_MAP_w_KEY);
         this.add_module_word("FOREACH", this.word_FOREACH);
-        this.add_module_word("FOREACH-w/KEY", this.word_FOREACH_w_KEY);
         this.add_module_word("INVERT-KEYS", this.word_INVERT_KEYS);
         this.add_module_word("ZIP", this.word_ZIP);
         this.add_module_word("ZIP-WITH", this.word_ZIP_WITH);
@@ -193,6 +202,14 @@ class GlobalModule extends Module {
         this.add_module_word("UNIFORM-RANDOM", this.word_UNIFORM_RANDOM);
         this.add_module_word("RANGE-INDEX", this.word_RANGE_INDEX);
 
+        // ----------------
+        // Flag words
+        this.add_module_word('!PUSH-ERROR', this.word_bang_PUSH_ERROR)
+        this.add_module_word('!WITH-KEY', this.word_bang_WITH_KEY)
+        this.add_module_word('!COMPARATOR', this.word_bang_COMPARATOR)
+        this.add_module_word('!PUSH-REST', this.word_bang_PUSH_REST)
+        this.add_module_word('!DEPTH', this.word_bang_DEPTH)
+
         // --------------------
         // React words
         this.add_module_word("Element", this.word_Element);
@@ -226,11 +243,6 @@ class GlobalModule extends Module {
         this.add_module_word("PROFILE-TIMESTAMP", this.word_PROFILE_TIMESTAMP);
         this.add_module_word("PROFILE-END", this.word_PROFILE_END);
         this.add_module_word("PROFILE-DATA", this.word_PROFILE_DATA);
-
-        // --------------------
-        // Flag words
-        this.add_module_word("!OVERWRITE", this.word_bang_OVERWRITE);
-        this.add_module_word("!PUSH-ERRORS", this.word_bang_PUSH_ERRORS);
     }
 
     find_word(name) {
@@ -419,8 +431,7 @@ class GlobalModule extends Module {
         }
 
         let fields = [field];
-        if (field instanceof Array)
-            fields = field;
+        if (field instanceof Array)   fields = field;
         let result = drill_for_value(rec, fields);
         interp.stack_push(result);
     }
@@ -615,8 +626,16 @@ class GlobalModule extends Module {
         let result = {};
         values.forEach(v => {
             let field_val = v[field];
-            if (!result[field_val])   result[field_val] = [];
-            result[field_val].push(v);
+            if (field_val instanceof Array) {
+                for (const fv of field_val) {
+                    if (!result[fv])  result[fv] = []
+                    result[fv].push(v)
+                }
+            }
+            else {
+                if (!result[field_val])  result[field_val] = []
+                result[field_val].push(v)
+            }
         });
 
         interp.stack_push(result)
@@ -628,31 +647,7 @@ class GlobalModule extends Module {
         let forthic = interp.stack_pop();
         let container = interp.stack_pop();
 
-        if (!container)   container = [];
-
-        let values = [];
-        if (container instanceof Array)   values = container;
-        else                              values = Object.keys(container).map(k => container[k]);
-
-        let result = {};
-        for (let i=0; i < values.length; i++) {
-            let v = values[i];
-            interp.stack_push(v);
-            await interp.run(forthic);
-            let group = interp.stack_pop();
-            if (!result[group])   result[group] = [];
-            result[group].push(v);
-        }
-
-        interp.stack_push(result)
-        return
-    }
-
-    // ( array forthic -- group_to_items )
-    // ( record forthic -- group_to_items )
-    async word_GROUP_BY_w_KEY(interp) {
-        let forthic = interp.stack_pop();
-        let container = interp.stack_pop();
+        const flags = get_flags()
 
         if (!container)   container = [];
 
@@ -672,7 +667,7 @@ class GlobalModule extends Module {
         for(let i=0; i < values.length; i++) {
             let key = keys[i];
             let value = values[i];
-            interp.stack_push(key)
+            if (flags.with_key)   interp.stack_push(key)
             interp.stack_push(value)
             await interp.run(forthic)
             let group = interp.stack_pop();
@@ -749,90 +744,115 @@ class GlobalModule extends Module {
         interp.stack_push(result)
     }
 
-    // ( items word -- [ ? ] )
+    // ( items forthic -- [ ? ] )
     async word_MAP(interp) {
-        let string = interp.stack_pop();
+        let forthic = interp.stack_pop();
         let items = interp.stack_pop();
+
+        const flags = get_flags()
+        let depth = flags.depth
+        if (!depth)   depth = 0
 
         if (!items) {
             interp.stack_push(items);
             return;
         }
 
-        let result = [];
-        if (items instanceof Array) {
-            for (let i=0; i < items.length; i++) {
-                let item = items[i];
-                interp.stack_push(item);
-                await interp.run(string);
-                let value = interp.stack_pop();
-                result.push(value);
+        // This maps the forthic over an item, storing errors if needed
+        async function map_value(key, value, errors) {
+            if (flags.with_key)   interp.stack_push(key)
+            interp.stack_push(value)
+
+            if (flags.push_error) {
+                let error = null
+                try {
+                    // If this runs successfully, it would have pushed the result onto the stack
+                    await interp.run(forthic)
+                }
+                catch(e) {
+                    // Since this didn't run successfully, push null onto the stack
+                    interp.stack_push(null)
+                    error = e
+                }
+                errors.push(error)
             }
-        }
-        else {
-            result = {};
-            let keys = Object.keys(items);
-            for (let i=0; i < keys.length; i++) {
-                let k = keys[i];
-                let item = items[k];
-                interp.stack_push(item);
-                await interp.run(string);
-                let value = interp.stack_pop();
-                result[k] = value;
+            else {
+                await interp.run(forthic)
             }
+            return interp.stack_pop()
         }
+
+        // This recursively descends a record structure
+        async function descend_record(record, depth, accum, errors) {
+            let keys = Object.keys(record)
+            for (let i = 0; i < keys.length; i++) {
+                const k = keys[i];
+                const item = record[k]
+                if (depth > 0) {
+                    if (item instanceof Array) {
+                        accum[k] = []
+                        await descend_list(item, depth - 1, accum[k], errors)
+                    }
+                    else {
+                        accum[k] = {}
+                        await descend_record(item, depth - 1, accum[k], errors)
+                    }
+                }
+                else {
+                    accum[k] = await map_value(k, item, errors)
+                }
+            }
+
+            return accum
+        }
+
+        // This recursively descends a list
+        async function descend_list(items, depth, accum, errors) {
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i]
+                if (depth > 0) {
+                    if (item instanceof Array) {
+                        accum.push([])
+                        await descend_list(item, depth - 1, accum[accum.length - 1], errors)
+                    }
+                    else {
+                        accum.push({})
+                        await descend_record(item, depth - 1, accum[accum.length - 1], errors)
+                    }
+                }
+                else {
+                    accum.push(await map_value(i, item, errors))
+                }
+            }
+            return accum
+        }
+
+        let errors = []
+        let result
+        if (items instanceof Array)   result = await descend_list(items, depth, [], errors)
+        else                          result = await descend_record(items, depth, {}, errors)
+
+        // Return results
         interp.stack_push(result)
-    }
-
-    // ( items word -- [ ? ] )
-    async word_MAP_w_KEY(interp) {
-        let string = interp.stack_pop();
-        let items = interp.stack_pop();
-
-        if (!items) {
-            interp.stack_push(items);
-            return;
-        }
-
-        let result = [];
-        if (items instanceof Array) {
-            for (let i=0; i < items.length; i++) {
-                let item = items[i];
-                interp.stack_push(i);
-                interp.stack_push(item);
-                await interp.run(string);
-                let value = interp.stack_pop();
-                result.push(value);
-            };
-        }
-        else {
-            result = {};
-            let keys = Object.keys(items);
-            for (let i=0; i < keys.length; i++) {
-                let k = keys[i];
-                let item = items[k];
-                interp.stack_push(k);
-                interp.stack_push(item);
-                await interp.run(string);
-                let value = interp.stack_pop();
-                result[k] = value;
-            };
-        }
-        interp.stack_push(result)
+        if (flags.push_error)   interp.stack_push(errors)
     }
 
     // ( items word -- ? )
     async word_FOREACH(interp) {
-        let string = interp.stack_pop()
+        let forthic = interp.stack_pop()
         let items = interp.stack_pop()
+        const flags = get_flags()
 
         if (!items)   items = [];
 
+        let errors = []
         if (items instanceof Array) {
             for (let i=0; i < items.length; i++) {
                 let item = items[i];
+                if (flags.with_key)   interp.stack_push(i);
                 interp.stack_push(item);
-                await interp.run(string);
+                if (flags.push_error)   errors.push(await execute_returning_error(interp, forthic))
+                else                    await interp.run(forthic)
             };
         }
         else {
@@ -840,37 +860,14 @@ class GlobalModule extends Module {
             for (let i=0; i < keys.length; i++) {
                 let k = keys[i];
                 let item = items[k];
+                if (flags.with_key)   interp.stack_push(k);
                 interp.stack_push(item);
-                await interp.run(string);
+                if (flags.push_error)   errors.push(await execute_returning_error(interp, forthic))
+                else                    await interp.run(forthic)
             };
         }
-    }
 
-    // ( items word -- ? )
-    async word_FOREACH_w_KEY(interp) {
-        let string = interp.stack_pop()
-        let items = interp.stack_pop()
-
-        if (!items)   items = [];
-
-        if (items instanceof Array) {
-            for (let i=0; i < items.length; i++) {
-                let item = items[i];
-                interp.stack_push(i);
-                interp.stack_push(item);
-                await interp.run(string);
-            };
-        }
-        else {
-            let keys = Object.keys(items);
-            for (let i=0; i < keys.length; i++) {
-                let k = keys[i];
-                let item = items[k];
-                interp.stack_push(k);
-                interp.stack_push(item);
-                await interp.run(string);
-            };
-        }
+        if (flags.push_error)   interp.stack_push(errors)
     }
 
     // ( record -- record )
@@ -1267,6 +1264,7 @@ class GlobalModule extends Module {
     word_TAKE(interp) {
         let n = interp.stack_pop();
         let container = interp.stack_pop();
+        const flags = get_flags()
 
         if (!container)   container = [];
 
@@ -1283,8 +1281,8 @@ class GlobalModule extends Module {
             rest = rest_keys.map(k => container[k]);
         }
 
-        interp.stack_push(rest);
         interp.stack_push(taken);
+        if (flags.push_rest)    interp.stack_push(rest);
     }
 
     // ( array n -- array )
@@ -1568,14 +1566,27 @@ class GlobalModule extends Module {
     // ( record -- record )
     word_FLATTEN(interp) {
         let nested = interp.stack_pop()
+        const flags = get_flags()
 
         if (!nested)   nested = [];
+        let depth = flags.depth
 
-        function flatten_array(items, accum=[]) {
-            items.forEach(i => {
-                if (i instanceof Array) flatten_array(i, accum);
-                else accum.push(i);
-            });
+        function fully_flatten_array(items, accum) {
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item instanceof Array)   fully_flatten_array(item, accum)
+                else                         accum.push(item)
+            }
+            return accum
+        }
+
+        function flatten_array(items, depth, accum=[]) {
+            if (depth === undefined)   return fully_flatten_array(items, accum)
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (depth > 0 && item instanceof Array)   flatten_array(item, depth - 1, accum)
+                else                                      accum.push(item)
+            }
             return accum;
         }
 
@@ -1584,26 +1595,39 @@ class GlobalModule extends Module {
             return keys.length > 0;
         }
 
-        function flatten_record(record, res={}, keys=[]) {
-            Object.keys(record).forEach(k => {
-                let v = record[k];
-                if (is_record(v)) {
-                    flatten_record(v, res, keys.concat([k]));
-                }
-                else {
-                    let key = keys.concat([k]).join("\t");
-                    res[key] = v;
-                }
-            });
+        function add_to_record_result(item, key, keys, result) {
+            let new_key = keys.concat([key]).join("\t");
+            result[new_key] = item;
+        }
+
+        function fully_flatten_record(record, res, keys) {
+            let record_keys = Object.keys(record)
+            for (const k of record_keys) {
+                let item = record[k];
+                if (is_record(item))   fully_flatten_record(item, res, keys.concat([k]))
+                else                   add_to_record_result(item, k, keys, res)
+            }
+            return res
+        }
+
+        function flatten_record(record, depth, res, keys) {
+            if (depth === undefined) return fully_flatten_record(record, res, keys)
+
+            let record_keys = Object.keys(record)
+            for (const k of record_keys) {
+                let item = record[k];
+                if (depth > 0 && is_record(item))   flatten_record(item, depth - 1, res, keys.concat([k]))
+                else                                add_to_record_result(item, k, keys, res)
+            }
             return res;
         }
 
         let result;
         if (nested instanceof Array) {
-            result = flatten_array(nested);
+            result = flatten_array(nested, depth);
         }
         else {
-            result = flatten_record(nested);
+            result = flatten_record(nested, depth, {}, []);
         }
 
         interp.stack_push(result)
@@ -2304,6 +2328,38 @@ class GlobalModule extends Module {
         interp.stack_push(result);
     }
 
+    // ( -- )
+    word_bang_PUSH_ERROR(interp) {
+        FLAGS.push_error = true
+    }
+
+    // ( -- )
+    word_bang_WITH_KEY(interp) {
+        FLAGS.with_key = true
+    }
+
+    // (comparator -- )
+    //
+    // `comparator` may be a Forthic string or a Python key function
+    word_bang_COMPARATOR(interp) {
+        let comparator = interp.stack_pop()
+        FLAGS.comparator = comparator
+    }
+
+    // ( -- )
+    word_bang_PUSH_REST(interp) {
+        FLAGS.push_rest = true
+    }
+
+    // (depth -- )
+    //
+    // NOTE: `depth` of 0 is the same not having set depth
+    word_bang_DEPTH(interp) {
+        let depth = interp.stack_pop()
+        FLAGS.depth = depth
+    }
+
+
     // (element_name -- element)
     word_Element(interp) {
         const element_name = interp.stack_pop()
@@ -2610,16 +2666,6 @@ class GlobalModule extends Module {
         interp.stack_push(result)
     }
 
-    // ( -- )
-    word_bang_OVERWRITE(interp) {
-        OVERWRITE_FLAG = true
-    }
-
-    // ( -- )
-    word_bang_PUSH_ERRORS(interp) {
-        PUSH_ERRORS = true
-    }
-
     // ( -- null )
     word_NULL(interp) {
         interp.stack_push(null);
@@ -2737,6 +2783,8 @@ function drill_for_value(record, fields) {
     return result
 }
 
+
+
 function get_qparam(name) {
     const search_params = new URLSearchParams(window.location.search)
     return search_params.get(name)
@@ -2753,5 +2801,17 @@ function del_qparam(name) {
     search_params.delete(name)
     window.location.search = search_params.toString()
 }
+
+async function execute_returning_error(interp, forthic) {
+    let result = null
+    try {
+        await interp.run(forthic)
+    }
+    catch(e) {
+        result = e
+    }
+    return result
+}
+
 
 export { GlobalModule };
