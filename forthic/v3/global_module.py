@@ -151,7 +151,7 @@ class GlobalModule(Module):
         self.add_module_word('/T', self.word_slash_T)
         self.add_module_word('LOWERCASE', self.word_LOWERCASE)
         self.add_module_word('UPPERCASE', self.word_UPPERCASE)
-        self.add_module_word('|ASCII', self.word_pipe_ASCII)
+        self.add_module_word('ASCII', self.word_ASCII)
         self.add_module_word('STRIP', self.word_STRIP)
         self.add_module_word('REPLACE', self.word_REPLACE)
         self.add_module_word('RE-REPLACE', self.word_RE_REPLACE)
@@ -1593,7 +1593,7 @@ class GlobalModule(Module):
         interp.stack_push(result)
 
     # ( string -- string )
-    def word_pipe_ASCII(self, interp: IInterpreter):
+    def word_ASCII(self, interp: IInterpreter):
         string = interp.stack_pop()
 
         if not string:

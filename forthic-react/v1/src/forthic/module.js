@@ -3,7 +3,6 @@
 class Variable {
     constructor(value=null) {
         this.value = value;
-        this.value_stack = [];
     }
 
     set_value(val) {
@@ -12,16 +11,6 @@ class Variable {
 
     get_value() {
         return this.value;
-    }
-
-    push_value(val) {
-        this.value_stack.push(this.value);
-        this.value = val;
-    }
-
-    pop_value() {
-        if (this.value_stack.length == 0)   throw "Variable: pop_value underflow";
-        this.value = this.value_stack.pop();
     }
 }
 
