@@ -6,6 +6,7 @@ from forthic.v3.tokenizer import DLE
 from forthic.v3.global_module import GlobalModuleError
 
 
+
 class TestGlobalModule(unittest.TestCase):
     def test_literal(self):
         interp = Interpreter()
@@ -1331,10 +1332,10 @@ class TestGlobalModule(unittest.TestCase):
         stack = interp.stack
         self.assertEqual(stack[0], "howdy, everyone!")
 
-    def test_pipe_ascii(self):
+    def test_ascii(self):
         interp = Interpreter()
         interp.run("""
-        "“HOWDY, Everyone!”" |ASCII
+        "“HOWDY, Everyone!”" ASCII
         """)
         stack = interp.stack
         self.assertEqual(stack[0], "HOWDY, Everyone!")
@@ -1764,7 +1765,7 @@ class TestGlobalModule(unittest.TestCase):
         PROFILE-DATA
         """)
         stack = interp.stack
-        profile_data = stack[1]
+        profile_data = stack[-1]
         self.assertEqual(profile_data["word_counts"][0]["word"], "+")
         self.assertEqual(profile_data["word_counts"][0]["count"], 6)
 
