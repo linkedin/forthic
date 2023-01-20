@@ -1,0 +1,80 @@
+# apps/examples/react3
+#
+# This is an example of using a ForthicPage to define content that maintains state and
+# which can make Forthic calls to the server when query params change.
+
+# ----- CSS -------------------------------------------------------------------------------
+: CSS   '''
+''';
+
+# ----- JSX -------------------------------------------------------------------------------
+: JSX   '''
+''';
+
+# ----- REACT-FORTHIC -------------------------------------------------------------------------------
+: REACT-FORTHIC   '''
+: DIV                       "'div'" Element;
+: H1                        "'h1'" Element;
+: P                         "'p'" Element;
+
+# ===== HOME-ELEMENT
+# In order to use a ForthicPage, you need to create a module with the following definitions:
+#
+# * PAGE-DATA: This is an empty MEMO that's updated when the page data changes
+# * PAGE-STATE: This is an empty MEMO that reflects the page state
+# * PAGE-BROKER: This is a memo that holds a MessageBroker. The ForthicPage subscribes to messages from this
+#                broker to update the PAGE-STATE in response to the UI
+# * PAGE-DEFAULT-STATE: When the page is first rendered, this is the state
+# * PAGE-DEFAULT-QPARAMS: When the page is first rendered, these are the default query params
+# * PAGE-DATA-UPDATE:  When the query params change, this word is called by ForthicPage to get the new data
+# * PAGE-CONTENT: When ForthicPage needs to render content, it calls this word
+{SamplePage
+    # ----- Page data and state
+    @: PAGE-DATA    ;
+    @: PAGE-STATE   ;
+    @: PAGE-BROKER   MESSAGE-BROKER;
+
+    # ----- Default values
+    : PAGE-DEFAULT-STATE   [['beta'  246]] REC;
+    : PAGE-DEFAULT-QPARAMS   [
+        ["quarter"   "fy23q1"]
+        ["product"   "clocks"]
+    ] REC;
+
+    # ----- Refresh page data
+    : PAGE-DATA-UPDATE   ["quarter" QPARAM "product" QPARAM] "SAMPLE-PAGE-DATA" !PUSH-ERROR SERVER-INTERPRET;
+
+    # ----- Page content
+    : PAGE-CONTENT
+        DIV [
+            H1 "A sample ForthicPage" <CONTENT
+            P ["This is the page data that comes from the server based on the query params: " PAGE-DATA >JSON]<CONTENT
+            P ["This is the page state that the ForthicPage maintains: " PAGE-STATE >JSON] <CONTENT
+
+            P "The following button changes the page state when clicked" <CONTENT
+            "Button" Element "Do it" <CONTENT [
+                ["variant"   "outline-primary"]
+                ["onClick"  "{SamplePage PAGE-BROKER } [['alpha'  1234] ['beta' 'This was changed by the Do It button']] REC PUBLISH-MESSAGE" FCALLBACK]
+            ] REC <PROPS "fs-2" <<CLASSNAME
+    ] <CONTENT "p-3" <<CLASSNAME
+    ;
+}
+
+: HOME-ELEMENT   "SamplePage" ForthicPage;
+
+
+# ----- Routes and router
+: HOME-ROUTE   "/" HOME-ELEMENT Route;
+
+: MAIN-ROUTER   [HOME-ROUTE] Router;
+''';
+
+# ----- Server Forthic -----------------------------------------------------------------------------
+# The following words can be called during PAGE-DATA-UPDATE above to provide page data.
+# Substitute BAD-PAGE-DATA in the PAGE-DATA-UPDATE call above to see what happens when there's an error
+# during the server Forthic call.
+["quarter" "product"] VARIABLES
+: BAD-PAGE-DATA      (product ! quarter !) [["PRODUCT"  product @] ["QUARTER" quarter @] ["value"  "GARBAGE" INTERPRET]] REC;
+: SAMPLE-PAGE-DATA   (product ! quarter !) [["PRODUCT"  product @] ["QUARTER" quarter @] ["value"  "10" INTERPRET]] REC;
+
+: MAIN-PAGE   ["REACT-APP/V1"  CSS JSX REACT-FORTHIC];

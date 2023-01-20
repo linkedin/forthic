@@ -316,6 +316,13 @@ class TestGlobalModule(unittest.TestCase):
         grouped = interp.stack[0]
         self.assertEqual(grouped[104]['status'], "IN PROGRESS")
 
+    def test_by_field_with_nulls(self):
+        interp = Interpreter()
+        interp.stack_push(self.make_records() + [None, None])
+        interp.run("'key' BY-FIELD")
+        grouped = interp.stack[0]
+        self.assertEqual(grouped[104]['status'], "IN PROGRESS")
+
     def test_group_by_field(self):
         interp = Interpreter()
         interp.stack_push(self.make_records())
@@ -1012,6 +1019,14 @@ class TestGlobalModule(unittest.TestCase):
         stack = interp.stack
         self.assertEqual(len(stack[0]), 3)
         self.assertEqual(list(stack[0].keys()), ['b', 'c', 'a'])
+
+    def test_sort_with_null(self):
+        interp = Interpreter()
+        interp.run("""
+        [2 8 1 NULL 4 7 NULL 3] SORT
+        """)
+        stack = interp.stack
+        self.assertEqual(stack[0], [1, 2, 3, 4, 7, 8, None, None])
 
     def test_sort_w_forthic(self):
         interp = Interpreter()
