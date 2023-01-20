@@ -13,31 +13,16 @@ function ForthicPage(props) {
     const [page_state, set_page_state] = useState({})
     const [initialized, set_initialized] = useState(false)
 
-    window.exceptionHandler = (error) => {
-        set_page_state({...page_state, error})
-        console.error(error)
-    }
-
-    // This word is injected into the module for the ForthicPage to allow Forthic code to update the page state
-    // (page_state -- )
-    function word_UPDATE_PAGE_STATE_bang(interp) {
-        let _page_state = interp.stack_pop()
-        set_page_state(_page_state)
-    }
-
-    // First time init: Run PAGE-CONTENT and ensure that qparams have defaults
+    // First time init: Run PAGE-CONTENT, ensure that qparams have defaults, and subscribe to PAGE-BROKER
     useEffect(() => {
         if (initialized)   return
 
+        let page_broker;
+        let subscription;
         setTimeout(async () => {
             let interp = await get_interp()
 
-            // Add UPDATE-PAGE-STATE! to the module
-            let page_module = interp.cur_module().find_module(props.module_name)
-            page_module.add_module_word("UPDATE-PAGE-STATE!", word_UPDATE_PAGE_STATE_bang)
-            console.log(page_module)
-
-            await interp.run(`{${props.module_name} DEFAULT-QPARAMS DEFAULT-PAGE-STATE PAGE-CONTENT }`)
+            await interp.run(`{${props.module_name} PAGE-DEFAULT-QPARAMS PAGE-DEFAULT-STATE PAGE-CONTENT }`)
             const _content = interp.stack_pop()
             const _page_state = interp.stack_pop()
             const default_qparams = interp.stack_pop()
@@ -45,15 +30,24 @@ function ForthicPage(props) {
             set_page_state(_page_state)
             set_content(ensure_array(_content))
             ensure_search_params(default_qparams, search_params, set_search_params)
+
+            // Subscribe to message broker
+            await interp.run(`{${props.module_name} PAGE-BROKER }`)
+            page_broker = interp.stack_pop()
+            subscription = page_broker.subscribe((new_state) => set_page_state(prevState => { return {...prevState, ...new_state} }))
         })
         set_initialized(true)
+
+        return () => {
+            if (subscription)   page_broker.unsubscribe(subscription)
+        }
     }, [initialized, props.module_name, search_params, set_search_params]);
 
     // Update PAGE-DATA if search_params change
     useEffect(() => {
         setTimeout(async () => {
             let interp = await get_interp()
-            await interp.run(`{${props.module_name} UPDATED-PAGE-DATA}`)
+            await interp.run(`{${props.module_name} PAGE-DATA-UPDATE }`)
             const _page_data = interp.stack_pop()
             set_page_data(_page_data)
         })

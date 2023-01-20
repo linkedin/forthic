@@ -29,6 +29,31 @@ class MemoWord extends Word {
     }
 }
 
+class MessageBroker {
+  constructor() {
+    this.subscribers = {}
+  }
+
+  // Subscribes for a message, returning a subscription token
+  //
+  // `func` expects a message argument
+  subscribe(func) {
+    let subscription = Object.keys(this.subscribers).length + 1
+    this.subscribers[subscription] = func
+    return subscription
+  }
+
+  publish(message) {
+    for (const subscription of Object.keys(this.subscribers)) {
+      this.subscribers[subscription](message)
+    }
+  }
+
+  unsubscribe(subscription) {
+    delete this.subscribers[subscription]
+  }
+}
+
 // ----- MODULE FLAGS --------------------------------------------------------------------------------------------------
 // Module Flags: These are all None but are settable for one-time use to change the behavior
 // of module words
@@ -38,6 +63,7 @@ let FLAGS = {
     comparator: null,
     push_rest: null,
     depth: null,
+    overwrite: null
 }
 
 // Retrieves current value of FLAGS and then clears flags
@@ -211,6 +237,7 @@ class GlobalModule extends Module {
     this.add_module_word("!COMPARATOR", this.word_bang_COMPARATOR);
     this.add_module_word("!PUSH-REST", this.word_bang_PUSH_REST);
     this.add_module_word("!DEPTH", this.word_bang_DEPTH);
+    this.add_module_word("!OVERWRITE", this.word_bang_OVERWRITE);
 
     // --------------------
     // React words
@@ -235,6 +262,8 @@ class GlobalModule extends Module {
     this.add_module_word("URL-DECODE", this.word_URL_DECODE);
     this.add_module_word("QUOTE-CHAR", this.word_QUOTE_CHAR);
     this.add_module_word("QUOTED", this.word_QUOTED);
+    this.add_module_word("MESSAGE-BROKER", this.word_MESSAGE_BROKER);
+    this.add_module_word("PUBLISH-MESSAGE", this.word_PUBLISH_MESSAGE);
 
     // TODO: Remove this
     this.add_module_word("ASYNC-LOOP", this.word_ASYNC_LOOP);
@@ -605,7 +634,7 @@ class GlobalModule extends Module {
 
     let result = {};
     values.forEach((v) => {
-      result[v[field]] = v;
+      if (v)   result[v[field]] = v;
     });
 
     interp.stack_push(result);
@@ -765,13 +794,15 @@ class GlobalModule extends Module {
         try {
           // If this runs successfully, it would have pushed the result onto the stack
           await interp.run(forthic);
-        } catch (e) {
+        }
+        catch (e) {
           // Since this didn't run successfully, push null onto the stack
           interp.stack_push(null);
           error = e;
         }
         errors.push(error);
-      } else {
+      }
+      else {
         await interp.run(forthic);
       }
       return interp.stack_pop();
@@ -2300,6 +2331,12 @@ class GlobalModule extends Module {
     FLAGS.depth = depth;
   }
 
+  // ( bool -- )
+  word_bang_OVERWRITE(interp) {
+    let overwrite = interp.stack_pop();
+    FLAGS.overwrite = overwrite;
+  }
+
   // (element_name -- element)
   word_Element(interp) {
     const element_name = interp.stack_pop();
@@ -2344,6 +2381,7 @@ class GlobalModule extends Module {
   word_Route(interp) {
     let element_func = interp.stack_pop();
     let path = interp.stack_pop();
+    console.log(window.basename)
     let result = {
       path: window.basename + path,
       element: element_func(),
@@ -2416,6 +2454,7 @@ class GlobalModule extends Module {
   async word_SERVER_INTERPRET(interp) {
     const word = interp.stack_pop();
     const args = interp.stack_pop();
+    const flags = get_flags()
 
     function get_forthic_route() {
       return [window.location.origin, window.basename, "forthic"].join("/");
@@ -2441,14 +2480,10 @@ class GlobalModule extends Module {
         }
       })
       .catch(function (error) {
-        if (window.exceptionHandler) {
-          window.exceptionHandler({
-            type: "SERVER-INTERPRET",
-            forthic: word,
-            args: args,
-            error: error.response.data,
-          });
-        } else {
+        if (flags.push_error) {
+          interp.stack_push({error: error.response})
+        }
+        else {
           console.log(error);
           alert(`${error}: ${error.response.data}`);
         }
@@ -2476,17 +2511,16 @@ class GlobalModule extends Module {
     let string = interp.stack_pop();
     let element = interp.stack_pop();
 
+    const flags = get_flags();
+
     let props = element.props;
     if (!props) props = {};
     let className = props.className;
     if (!className) className = "";
 
-    if (OVERWRITE_FLAG === true) {
-      OVERWRITE_FLAG = false;
-      props.className = string;
-    } else {
-      props.className = className + " " + string;
-    }
+    if (flags.overwrite)   props.className = string;
+    else                   props.className = className + " " + string;
+
     element.props = props;
     interp.stack_push(element);
   }
@@ -2548,6 +2582,18 @@ class GlobalModule extends Module {
     }
     let result = `${DLE}${clean_string}${DLE}`;
     interp.stack_push(result);
+  }
+
+  // ( -- MessageBroker )
+  word_MESSAGE_BROKER(interp) {
+    interp.stack_push(new MessageBroker())
+  }
+
+  // ( MessageBroker message -- )
+  word_PUBLISH_MESSAGE(interp) {
+    const message = interp.stack_pop()
+    const broker = interp.stack_pop()
+    broker.publish(message)
   }
 
   // ( period_s fwhile_condition forthic -- )

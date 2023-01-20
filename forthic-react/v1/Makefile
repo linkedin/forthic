@@ -7,11 +7,10 @@ STATIC_DIR=../../apps/examples/static/react/$(APP_NAME)/v1
 run:
 	HTTPS=true BROWSER=none npm run start
 
-# TODO: Figure out how to substitute the compiled versions into the react template
 build:
 	npm run build
 	rm -rf $(STATIC_DIR); mkdir -p $(STATIC_DIR)
-	cp build/static/js/main*.js $(STATIC_DIR)
+	cp build/static/js/main*.js* $(STATIC_DIR)
 	cp build/static/css/main*.css $(STATIC_DIR)
 	cp build/manifest.json $(STATIC_DIR)
 	python3 update_template.py

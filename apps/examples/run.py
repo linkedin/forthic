@@ -84,8 +84,8 @@ def main_page():
     return render_template('main.html', ex_infos=ex_infos)
 
 
-@app.route('/examples/<example>', strict_slashes=False)
-@app.route('/examples/<example>/<path:rest>', strict_slashes=False)
+@app.route('/examples/<example>/')
+@app.route('/examples/<example>/<path:rest>')
 def example(example, rest=None):
 
     def render_configured_page(array):

@@ -630,7 +630,8 @@ class GlobalModule(Module):
 
         result = {}
         for v in values:
-            result[v.get(field)] = v
+            if v is not None:
+                result[v.get(field)] = v
 
         interp.stack_push(result)
 
@@ -1235,7 +1236,9 @@ class GlobalModule(Module):
                 return res
 
             if isinstance(container, list):
-                result = sorted(container[:])
+                non_nones = [item for item in container if item is not None]
+                nones = [item for item in container if item is None]
+                result = sorted(non_nones) + nones
             else:
                 result = sort_record(container)
             return result

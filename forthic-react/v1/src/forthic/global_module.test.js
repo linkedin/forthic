@@ -233,6 +233,13 @@ it('Can organize an array by field', async () => {
     expect(interp.stack[0][104]).toEqual({"assignee": "user2", "key": 104, "status": "IN PROGRESS"})
 });
 
+it('Can organize an array with NULLs by field', async () => {
+    let interp = new Interpreter()
+    interp.stack_push(make_records().concat([null, null]))
+    await interp.run("'key' BY-FIELD")
+    expect(interp.stack[0][104]).toEqual({"assignee": "user2", "key": 104, "status": "IN PROGRESS"})
+});
+
 it('Can group an array of items by field', async () => {
     let interp = new Interpreter()
     interp.stack_push(make_records())
@@ -842,6 +849,14 @@ it ('Can sort an array', async () => {
         [2 8 1 4 7 3] SORT
     `)
     expect(interp.stack[0]).toEqual([1, 2, 3, 4, 7, 8])
+})
+
+it ('Can sort an array with NULLs', async () => {
+    let interp = new Interpreter()
+    await interp.run(`
+        [2 8 1 NULL 4 7 NULL 3] SORT
+    `)
+    expect(interp.stack[0]).toEqual([1, 2, 3, 4, 7, 8, null, null])
 })
 
 it ('Can sort an array with a Forthic string', async () => {
