@@ -7,6 +7,9 @@ STATIC_DIR=../../apps/examples/static/react/$(APP_NAME)/v1
 run:
 	HTTPS=true BROWSER=none npm run start
 
+test:
+	npm run test
+
 build:
 	npm run build
 	rm -rf $(STATIC_DIR); mkdir -p $(STATIC_DIR)
