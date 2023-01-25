@@ -717,6 +717,24 @@ class TestGlobalModule(unittest.TestCase):
         length = interp.stack[0]
         self.assertEqual(length, 2)
 
+    def test_RANGE(self):
+        interp = Interpreter()
+        interp.run("""
+        : EVEN?   2 MOD  0 ==;
+        : ODD?    2 MOD  1 ==;
+        [1 2 3 4 5] "EVEN?" "ODD?" RANGE
+        """)
+        self.assertEqual(interp.stack[0], [1, 2])
+
+        # Test record
+        interp = Interpreter()
+
+        interp.run("""
+        [['a' 1] ['b' 2]] REC LENGTH
+        """)
+        length = interp.stack[0]
+        self.assertEqual(length, 2)
+
     def test_slice(self):
         interp = Interpreter()
         interp.run("""

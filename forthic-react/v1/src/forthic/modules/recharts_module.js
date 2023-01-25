@@ -74,7 +74,7 @@ class RechartsModule extends Module {
         this.add_exportable_word(new ModuleWord("CUMULATIVE-DIST>CHART-DATA", (interp) => this.word_CUMULATIVE_DIST_to_CHART_DATA(interp), self));
     }
 
-    // (content props tag -- Element)
+    // (tag -- Element)
     word_ELEMENT(interp) {
         const tag = interp.stack_pop()
         function Result() {

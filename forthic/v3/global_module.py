@@ -9,6 +9,7 @@ from dateutil import parser
 import urllib
 import json
 import io
+import markdown
 import csv
 from collections import defaultdict
 
@@ -113,6 +114,7 @@ class GlobalModule(Module):
         self.add_module_word('KEYS', self.word_KEYS)
         self.add_module_word('VALUES', self.word_VALUES)
         self.add_module_word('LENGTH', self.word_LENGTH)
+        self.add_module_word('RANGE', self.word_RANGE)
         self.add_module_word('SLICE', self.word_SLICE)
         self.add_module_word('DIFFERENCE', self.word_DIFFERENCE)
         self.add_module_word('INTERSECTION', self.word_INTERSECTION)
@@ -127,10 +129,7 @@ class GlobalModule(Module):
         self.add_module_word('NTH', self.word_NTH)
         self.add_module_word('LAST', self.word_LAST)
         self.add_module_word('UNPACK', self.word_UNPACK)
-
-        # TODO: We should be able to specify the depth that we flatten
         self.add_module_word('FLATTEN', self.word_FLATTEN)
-
         self.add_module_word('KEY-OF', self.word_KEY_OF)
         self.add_module_word('REDUCE', self.word_REDUCE)
         self.add_module_word('CUMULATIVE-DIST', self.word_CUMULATIVE_DIST)
@@ -263,6 +262,7 @@ class GlobalModule(Module):
         # ----------------
         # Python-only words
         self.add_module_word('CURRENT-USER', self.word_CURRENT_USER)
+        self.add_module_word('MARKDOWN>HTML', self.word_MARKDOWN_to_HTML)
 
     def find_word(self, name: str):
         """Searches the global module for a word, trying literals if no word can be found"""
@@ -654,6 +654,10 @@ class GlobalModule(Module):
             field_value = None
             if v is not None:
                 field_value = v.get(field)
+
+            if field_value is None:
+                field_value = ""
+
             if isinstance(field_value, list):
                 for fv in field_value:
                     result[fv].append(v)
@@ -955,6 +959,39 @@ class GlobalModule(Module):
 
         interp.stack_push(result)
 
+    # ( array fstart fend -- indices )
+    # Returns start and end indices of a range bounded where fstart and fend are true
+    def word_RANGE(self, interp: IInterpreter):
+        fend = interp.stack_pop()
+        fstart = interp.stack_pop()
+        array = interp.stack_pop()
+
+        if not array:
+            array = []
+
+        start_found = False
+        end_found = False
+
+        start_index = None
+        end_index = None
+        for index, item in enumerate(array):
+            if not start_found:
+                interp.stack_push(item)
+                execute(interp, fstart)
+                start_found = interp.stack_pop()
+                if start_found:
+                    start_index = index
+
+            if start_found and not end_found:
+                interp.stack_push(item)
+                execute(interp, fend)
+                end_found = interp.stack_pop()
+                if end_found:
+                    end_index = index
+                    break
+
+        interp.stack_push([start_index, end_index])
+
     # ( array start end -- array )
     # ( record start end -- record )
     def word_SLICE(self, interp: IInterpreter):
@@ -1221,7 +1258,7 @@ class GlobalModule(Module):
         container = interp.stack_pop()
 
         flags = self.get_flags()
-        comparator = flags['comparator']
+        comparator = flags.get('comparator')
 
         if not container:
             container = []
@@ -2547,6 +2584,12 @@ class GlobalModule(Module):
     # ( -- username )
     def word_CURRENT_USER(self, interp: IInterpreter):
         result = os.getlogin()
+        interp.stack_push(result)
+
+    # ( markdown -- html)
+    def word_MARKDOWN_to_HTML(self, interp: IInterpreter):
+        markdown_content = interp.stack_pop()
+        result = markdown.markdown(markdown_content)
         interp.stack_push(result)
 
     def get_flags(self):

@@ -782,6 +782,24 @@ class TestGlobalModule(unittest.TestCase):
         length = interp.stack[0]
         self.assertEqual(length, 2)
 
+    def test_RANGE(self):
+        interp = Interpreter()
+        interp.run("""
+        : EVEN?   2 MOD  0 ==;
+        : ODD?    2 MOD  1 ==;
+        [1 2 3 4 5] "EVEN?" "ODD?" RANGE
+        """)
+        self.assertEqual(interp.stack[0], [1, 2])
+
+        # Test record
+        interp = Interpreter()
+
+        interp.run("""
+        [['a' 1] ['b' 2]] REC LENGTH
+        """)
+        length = interp.stack[0]
+        self.assertEqual(length, 2)
+
     def test_slice(self):
         interp = Interpreter()
         interp.run("""
@@ -1152,14 +1170,28 @@ class TestGlobalModule(unittest.TestCase):
         record = stack[0]
         self.assertEqual(sorted(list(record.keys())), ['a', 'b\talpha\tduo', 'b\talpha\tuno', 'c'])
 
-    def test_FLATTEN_one_level_array(self):
+    def test_FLATTEN_depth(self):
         interp = Interpreter()
         interp.run("""
             [ [ [0 1] [2 3] ]
               [ [4 5]       ] ] 1 !DEPTH FLATTEN
         """)
-        array = interp.stack[0]
-        self.assertEqual(array, [[0, 1] , [2, 3], [4, 5]])
+        array = interp.stack[-1]
+        self.assertEqual(array, [[0, 1], [2, 3], [4, 5]])
+
+        interp.run("""
+            [ [ [0 1] [2 3] ]
+              [ [4 5]       ] ] 0 !DEPTH FLATTEN
+        """)
+        array = interp.stack[-1]
+        self.assertEqual(array, [[[0, 1] , [2, 3]], [[4, 5]]])
+
+        interp.run("""
+            [ [ [0 1] [2 3] ]
+              [ [4 5]       ] ] 2 !DEPTH FLATTEN
+        """)
+        array = interp.stack[-1]
+        self.assertEqual(array, [0, 1, 2, 3, 4, 5])
         return
 
     def test_FLATTEN_one_level_record(self):
