@@ -4,7 +4,9 @@ import axios from 'axios';
 import ForthicPage from './elements/ForthicPage';
 import { Module, Word, PushValueWord } from './module';
 import { ensure_array, render_content_array } from './utils';
-import {UserNav, UserBreadcrumbNav, UserTypeahead} from './elements/UserNav'
+import { UserNav, UserBreadcrumbNav, UserTypeahead } from './elements/UserNav'
+import RecordsTable from './elements/RecordsTable'
+import TicketsModal from './elements/TicketsModal'
 
 // React Bootstrap
 import Accordion from 'react-bootstrap/Accordion'
@@ -26,7 +28,7 @@ import DropdownButton from 'react-bootstrap/DropdownButton'
 import Fade from 'react-bootstrap/Fade'
 import Figure from 'react-bootstrap/Figure'
 import FloatingLabel from 'react-bootstrap/FloatingLabel'
-import Form from 'react-bootstrap/Form'  // NOTE: Form has *lots* of stuff in it
+import Form from 'react-bootstrap/Form'
 import Image from 'react-bootstrap/Image'
 import InputGroup from 'react-bootstrap/InputGroup'
 import ListGroup from 'react-bootstrap/ListGroup'
@@ -119,6 +121,8 @@ const REACT_BOOTSTRAP_NAME_TO_ELEMENT = {
 
 const NAME_TO_ELEMENT = {
     ...REACT_BOOTSTRAP_NAME_TO_ELEMENT,
+    RecordsTable,
+    TicketsModal,
     UserBreadcrumbNav,
     UserTypeahead,
     UserNav
@@ -126,23 +130,6 @@ const NAME_TO_ELEMENT = {
 
 
 let DLE = String.fromCharCode(16);  // ASCII char for "Data Link Escape" used as an untypeable quote
-
-class MemoWord extends Word {
-    constructor(name, varname) {
-        super(name);
-        this.varname = varname;
-    }
-
-    async execute(interp) {
-        // If varname is null, execute name!
-        await interp.run(this.varname + " @");
-        let var_value = interp.stack_pop();
-        if (!var_value)   await interp.run(this.name + "!");
-
-        // Return value of variable
-        await interp.run(this.varname + " @");
-    }
-}
 
 class MessageBroker {
   constructor() {
@@ -207,9 +194,6 @@ class GlobalModule extends Module {
     this.add_module_word("!@", this.word_bang_at);
     this.add_module_word("INTERPRET", this.word_INTERPRET);
 
-    // TODO: Remove this
-    this.add_module_word("MEMO", this.word_MEMO);
-
     this.add_module_word("EXPORT", this.word_EXPORT);
     this.add_module_word("USE-MODULES", this.word_USE_MODULES);
     this.add_module_word("REC", this.word_REC);
@@ -236,6 +220,7 @@ class GlobalModule extends Module {
     this.add_module_word("KEYS", this.word_KEYS);
     this.add_module_word("VALUES", this.word_VALUES);
     this.add_module_word("LENGTH", this.word_LENGTH);
+    this.add_module_word("RANGE", this.word_RANGE);
     this.add_module_word("SLICE", this.word_SLICE);
     this.add_module_word("DIFFERENCE", this.word_DIFFERENCE);
     this.add_module_word("INTERSECTION", this.word_INTERSECTION);
@@ -273,7 +258,7 @@ class GlobalModule extends Module {
     this.add_module_word("/T", this.word_slash_T);
     this.add_module_word("LOWERCASE", this.word_LOWERCASE);
     this.add_module_word("UPPERCASE", this.word_UPPERCASE);
-    this.add_module_word("|ASCII", this.word_pipe_ASCII);
+    this.add_module_word("ASCII", this.word_ASCII);
     this.add_module_word("STRIP", this.word_STRIP);
     this.add_module_word("REPLACE", this.word_REPLACE);
     this.add_module_word("RE-MATCH", this.word_RE_MATCH);
@@ -292,7 +277,6 @@ class GlobalModule extends Module {
     this.add_module_word(">JSON", this.word_to_JSON);
     this.add_module_word("JSON>", this.word_JSON_to);
     this.add_module_word(".s", this.word_dot_s);
-    this.add_module_word(".p", this.word_dot_p);
 
     // --------------------
     // Date/time words
@@ -369,7 +353,10 @@ class GlobalModule extends Module {
     this.add_module_word("QPARAMS!", this.word_QPARAMS_bang);
     this.add_module_word("DEL-QPARAM!", this.word_DEL_QPARAM_bang);
     this.add_module_word("console.log", this.word_console_log);
+    this.add_module_word("window.open", this.word_window_open);
     this.add_module_word("SERVER-INTERPRET", this.word_SERVER_INTERPRET);
+    this.add_module_word("MESSAGE-BROKER", this.word_MESSAGE_BROKER);
+    this.add_module_word("PUBLISH-MESSAGE", this.word_PUBLISH_MESSAGE);
 
     // --------------------
     // Misc words (js-specific)
@@ -377,11 +364,6 @@ class GlobalModule extends Module {
     this.add_module_word("URL-DECODE", this.word_URL_DECODE);
     this.add_module_word("QUOTE-CHAR", this.word_QUOTE_CHAR);
     this.add_module_word("QUOTED", this.word_QUOTED);
-    this.add_module_word("MESSAGE-BROKER", this.word_MESSAGE_BROKER);
-    this.add_module_word("PUBLISH-MESSAGE", this.word_PUBLISH_MESSAGE);
-
-    // TODO: Remove this
-    this.add_module_word("ASYNC-LOOP", this.word_ASYNC_LOOP);
 
     // --------------------
     // Profiling words
@@ -495,30 +477,6 @@ class GlobalModule extends Module {
   async word_INTERPRET(interp) {
     let string = interp.stack_pop();
     if (string) await interp.run(string);
-  }
-
-  // ( name forthic -- )
-  async word_MEMO(interp) {
-    let forthic = interp.stack_pop();
-    let name = interp.stack_pop();
-    let name_bang = name + "!";
-    let var_name = `<memo_var_${name}>`;
-
-    // Create variable
-    await interp.run(`['${var_name}'] VARIABLES  NULL ${var_name} !`);
-
-    // name! word
-    await interp.run(
-      ": " + name_bang + "   " + forthic + " " + var_name + " ! ;"
-    );
-
-    // name!@ word
-    let name_bang_at = name + "!@";
-    await interp.run(`: ${name_bang_at}   ${name_bang} ${var_name} @;`);
-
-    // name word
-    let word = new MemoWord(name, var_name);
-    interp.cur_module().add_word(word);
   }
 
   // ( names -- )
@@ -1151,6 +1109,45 @@ class GlobalModule extends Module {
     }
 
     interp.stack_push(result);
+  }
+
+  // ( array fstart fend -- indices )
+  async word_RANGE(interp) {
+    const fend = interp.stack_pop()
+    const fstart = interp.stack_pop()
+    const array = interp.stack_pop()
+
+    if (!array)   array = []
+
+    let start_found = false
+    let end_found = false
+
+    let start_index = null
+    let end_index = null
+
+    for (let index = 0; index < array.length; index++) {
+        const item = array[index]
+
+        if (!start_found) {
+            interp.stack_push(item)
+            await interp.run(fstart)
+            start_found = interp.stack_pop()
+            if (start_found)   {
+                start_index = index
+            }
+        }
+
+        if (start_found && !end_found) {
+            interp.stack_push(item)
+            await interp.run(fend)
+            end_found = interp.stack_pop()
+            if (end_found)   {
+                end_index = index
+                break
+            }
+        }
+    }
+    interp.stack_push([start_index, end_index])
   }
 
   // ( array start end -- array )
@@ -1865,7 +1862,7 @@ class GlobalModule extends Module {
   }
 
   // ( string -- string )
-  word_pipe_ASCII(interp) {
+  word_ASCII(interp) {
     let string = interp.stack_pop();
     let result = "";
     for (let i = 0; i < string.length; i++) {
@@ -2479,19 +2476,6 @@ class GlobalModule extends Module {
     interp.stack_push(Result);
   }
 
-  // (props -- Button)
-  // NOTE: The label for the button is the "label" field in the props
-  word_Button(interp) {
-    const props = interp.stack_pop();
-    const label = props.label;
-
-    function Result() {
-      return React.createElement(Button, props, [label]);
-    }
-
-    interp.stack_push(Result);
-  }
-
   // (path element_func -- route_record)
   word_Route(interp) {
     let element_func = interp.stack_pop();
@@ -2558,10 +2542,17 @@ class GlobalModule extends Module {
     del_qparam(varname);
   }
 
-  // ( string -- )
+  // ( string -- string )
   word_console_log(interp) {
     let string = interp.stack_pop();
     console.log(string);
+    interp.stack_push(string)
+  }
+
+  // ( url -- )
+  word_window_open(interp) {
+    let url = interp.stack_pop();
+    window.open(url)
   }
 
   // ( args word -- ? )
@@ -2643,20 +2634,7 @@ class GlobalModule extends Module {
   // (forthic -- callback_function)
   word_FCALLBACK(interp) {
     let forthic = interp.stack_pop();
-
-    // Condition forthic if the callback is defined within a module:
-    //
-    //     We need to do this because the module stack when the callback is called may be different from
-    //     the one it was defined in.
-    //
-    //     The top of the module stack is the module of this definition (i.e., the "react" module)
-    //     The module before that is the module the `forthic` callback is defined in
-    //     The app module is always the first module on the stack and has "" as its name
-    const callback_module = interp.module_stack[interp.module_stack.length - 2];
-    let modularized_forthic = forthic;
-    if (callback_module.name !== "") {
-      modularized_forthic = `{${callback_module.name} ${forthic}}`;
-    }
+    const modularized_forthic = modularize_forthic(interp, forthic)
 
     async function result(data) {
       interp.stack_push(data);
@@ -2709,24 +2687,6 @@ class GlobalModule extends Module {
     const message = interp.stack_pop()
     const broker = interp.stack_pop()
     broker.publish(message)
-  }
-
-  // ( period_s fwhile_condition forthic -- )
-  async word_ASYNC_LOOP(interp) {
-    let forthic = interp.stack_pop();
-    let fwhile_condition = interp.stack_pop();
-    let period_s = interp.stack_pop();
-
-    async function run_loop() {
-      console.log("Looping...");
-      await interp.run(forthic);
-      await interp.run(fwhile_condition);
-      let while_condition = interp.stack_pop();
-      if (while_condition) {
-        setTimeout(run_loop, period_s * 1000);
-      }
-    }
-    await run_loop();
   }
 
   // ( -- )
@@ -2866,12 +2826,6 @@ class GlobalModule extends Module {
     debugger;
   }
 
-  // ( text -- )
-  word_dot_p(interp) {
-    let text = interp.stack_pop();
-    console.log(text);
-  }
-
   // ( a b -- a - b )
   word_minus(interp) {
     let b = interp.stack_pop();
@@ -2879,6 +2833,24 @@ class GlobalModule extends Module {
     interp.stack_push(a - b);
   }
 }
+
+
+function modularize_forthic(interp, forthic) {
+    // Condition forthic if the callback is defined within a module:
+    //
+    //     We need to do this because the module stack when the callback is called may be different from
+    //     the one it was defined in.
+    //
+    //     The top of the module stack is the module of this definition
+    //     The app module is always the first module on the stack and has "" as its name
+    const callback_module = interp.module_stack[interp.module_stack.length - 1];
+    let modularized_forthic = forthic;
+    if (callback_module.name !== "") {
+      modularized_forthic = `{${callback_module.name} ${forthic}}`;
+    }
+    return modularized_forthic
+}
+
 
 // Descends into record using an array of fields, returning final value or null
 function drill_for_value(record, fields) {

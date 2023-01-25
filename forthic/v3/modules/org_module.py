@@ -10,8 +10,13 @@ class OrgModule(Module):
 
         self.org_contexts: List['OrgContext'] = []
 
+        self.flags = {
+            "with_lead": None,
+        }
+
         self.add_module_word('PUSH-CONTEXT!', self.word_PUSH_CONTEXT_bang)
         self.add_module_word('POP-CONTEXT!', self.word_POP_CONTEXT_bang)
+        self.add_module_word('ROOT-MANAGERS', self.word_ROOT_MANAGERS)
         self.add_module_word('FULL-ORG', self.word_FULL_ORG)
         self.add_module_word('ORG-MANAGERS', self.word_ORG_MANAGERS)
         self.add_module_word('DIRECTS', self.word_DIRECTS)
@@ -22,6 +27,8 @@ class OrgModule(Module):
         self.add_module_word('CHAIN', self.word_CHAIN)
         self.add_module_word('CHAIN-KEY-FUNC', self.word_CHAIN_KEY_FUNC)
         self.add_module_word('USERS-MANAGERS', self.word_USERS_MANAGERS)
+
+        self.add_module_word('!WITH-LEAD', self.word_bang_WITH_LEAD)
 
     # ( org_context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
@@ -34,12 +41,23 @@ class OrgModule(Module):
         """Restores previous context for org computations"""
         self.org_contexts.pop()
 
+    # ( -- username)
+    def word_ROOT_MANAGERS(self, interp: IInterpreter):
+        """Returns root manager of org context"""
+        org_context = self.current_context()
+        result = org_context.root_managers()
+        interp.stack_push(result)
+
     # (manager -- usernames)
     def word_FULL_ORG(self, interp: IInterpreter):
         """Returns all usernames reporting up to manager"""
         manager = interp.stack_pop()
         org_context = self.current_context()
+        flags = self.get_flags()
+
         result = org_context.full_org(manager)
+        if flags.get('with_lead'):
+            result = [manager] + result
         interp.stack_push(result)
 
     # (manager -- usernames)
@@ -47,7 +65,13 @@ class OrgModule(Module):
         """Returns all manager usernames reporting up to manager"""
         manager = interp.stack_pop()
         org_context = self.current_context()
+        flags = self.get_flags()
+
         result = org_context.org_managers(manager)
+
+        if not flags.get('with_lead'):
+            result = result[1:]
+
         interp.stack_push(result)
 
     # (manager -- usernames)
@@ -56,7 +80,11 @@ class OrgModule(Module):
         """
         manager = interp.stack_pop()
         org_context = self.current_context()
+        flags = self.get_flags()
+
         result = org_context.get_directs(manager)
+        if flags.get('with_lead'):
+            result = [manager] + result
         interp.stack_push(result)
 
     # (manager -- usernames)
@@ -67,7 +95,11 @@ class OrgModule(Module):
         """
         manager = interp.stack_pop()
         org_context = self.current_context()
+        flags = self.get_flags()
+
         result = org_context.get_direct_managers(manager)
+        if flags.get('with_lead'):
+            result = [manager] + result
         interp.stack_push(result)
 
     # ( items field leads default_lead -- record )
@@ -135,8 +167,17 @@ class OrgModule(Module):
         result = org_context.get_users_managers()
         interp.stack_push(result)
 
+    # ( -- )
+    def word_bang_WITH_LEAD(self, interp: IInterpreter):
+        self.flags["with_lead"] = True
+
     # =================================
     # Helpers
+    def get_flags(self):
+        flags = self.flags.copy()
+        self.flags = {}
+        return flags
+
     def current_context(self):
         if not self.org_contexts:
             raise RuntimeError(
@@ -153,7 +194,6 @@ class OrgContext:
         This information is used to construct a hierarchy.
         """
         self.get_users_managers = get_users_managers
-
         self.user_managers = self.get_users_managers()
 
         def make_user_to_manager() -> Dict[str, str]:
@@ -180,12 +220,17 @@ class OrgContext:
 
         self.direct_managers = gather_direct_managers()
 
+    def root_managers(self):
+        managers = list(set(self.user_to_manager.values()))
+        result = [m for m in managers if self.user_to_manager.get(m) is None]
+        return result
+
     def get_manager(self, username: str) -> Optional[str]:
         result = self.user_to_manager.get(username)
         return result
 
     def org_managers(self, root_manager: str) -> List[str]:
-        """Returns all managers that are part of a root_manager's org"""
+        """Returns all managers that are part of a root_manager's org, including the root_manager"""
         if root_manager not in self.direct_managers:
             return [root_manager]
 
@@ -234,7 +279,6 @@ class OrgContext:
             result = []
         result = result[:]
         result.sort()
-        result.append(username)
         return result
 
     def group_by_leads(self, items: List[Dict[str, Any]], field: str, leads: List[str], default_lead: str) -> Dict[str, List[Any]]:

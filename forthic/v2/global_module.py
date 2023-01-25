@@ -132,11 +132,13 @@ class GlobalModule(Module):
         self.add_module_word('KEYS', self.word_KEYS)
         self.add_module_word('VALUES', self.word_VALUES)
         self.add_module_word('LENGTH', self.word_LENGTH)
+        self.add_module_word('RANGE', self.word_RANGE)
         self.add_module_word('SLICE', self.word_SLICE)
         self.add_module_word('DIFFERENCE', self.word_DIFFERENCE)
         self.add_module_word('INTERSECTION', self.word_INTERSECTION)
         self.add_module_word('UNION', self.word_UNION)
         self.add_module_word('SELECT', self.word_SELECT)
+        self.add_module_word('SELECT-w/KEY', self.word_SELECT_w_KEY)
         self.add_module_word('SELECT-w/KEY', self.word_SELECT_w_KEY)
         self.add_module_word('TAKE', self.word_TAKE)
         self.add_module_word('DROP', self.word_DROP)
@@ -1056,6 +1058,39 @@ class GlobalModule(Module):
         result = len(container)
 
         interp.stack_push(result)
+
+    # ( array fstart fend -- indices )
+    # Returns start and end indices of a range bounded where fstart and fend are true
+    def word_RANGE(self, interp: IInterpreter):
+        fend = interp.stack_pop()
+        fstart = interp.stack_pop()
+        array = interp.stack_pop()
+
+        if not array:
+            array = []
+
+        start_found = False
+        end_found = False
+
+        start_index = None
+        end_index = None
+        for index, item in enumerate(array):
+            if not start_found:
+                interp.stack_push(item)
+                execute(interp, fstart)
+                start_found = interp.stack_pop()
+                if start_found:
+                    start_index = index
+
+            if start_found and not end_found:
+                interp.stack_push(item)
+                execute(interp, fend)
+                end_found = interp.stack_pop()
+                if end_found:
+                    end_index = index
+                    break
+
+        interp.stack_push([start_index, end_index])
 
     # ( array start end -- array )
     # ( record start end -- record )

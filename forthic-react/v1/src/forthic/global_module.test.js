@@ -662,7 +662,17 @@ it ('Can return the length of a record', async () => {
     expect(interp.stack[0]).toEqual(2)
 })
 
-it ('Can slice arrays Pythonically-ish', async () => {
+it ('Can find a range using Forthic predicates', async () => {
+    let interp = new Interpreter()
+    await interp.run(`
+        : EVEN?   2 MOD  0 ==;
+        : ODD?    2 MOD  1 ==;
+        [1 2 3 4 5] "EVEN?" "ODD?" RANGE
+    `)
+    expect(interp.stack[0]).toEqual([1, 2])
+})
+
+it ('Can slice arrays', async () => {
     let interp = new Interpreter()
     await interp.run(`
         ['x'] VARIABLES

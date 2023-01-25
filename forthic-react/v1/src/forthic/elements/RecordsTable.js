@@ -18,15 +18,15 @@ function RecordsTable(props) {
     //        col_className (optional): Classnames for total column
     //    pagination_info (optional): Record with the following fields
     //        page_size: Number of records to show in each page. Setting this enables pagination
-    //    wrapper_style (optional): Record with stylings for wrapper div. The pagination controls follow this div.
-    //    header_style (optional):  Record with stylings for th elements. You can use this to make a header sticky.
+    //    wrapper_className (optional): Adds a className to the wrapper div
+    //    header_className (optional): Adds a className to the th elements in the table header
     //    interp: Forthic interpreter
 
     const [sort_key, set_sort_key] = useState(null)
     const [sorted_records, set_sorted_records] = useState(props.records)
     const [page_offset, set_page_offset] = useState(0)
     const [page_records, set_page_records] = useState([])
-    let header_style = props.header_style ? props.header_style : {}
+    let header_className = props.header_className ? props.header_className : ""
 
     if (!props.records)       throw "RecordsTable needs a 'records' prop"
     if (!props.column_info)   throw "RecordsTable needs a 'column_info' prop"
@@ -126,7 +126,7 @@ function RecordsTable(props) {
         }
 
         function class_string() {
-            let className = ""
+            let className = header_className
             if (col_info.className) {
                 className = col_info.className
             }
@@ -134,16 +134,16 @@ function RecordsTable(props) {
             if (col_info.fsort)   return className + " clickable"
             else                  return className
         }
-        return <th style={header_style} scope="col" className={class_string()} onClick={() => handleClick()}>{res}&nbsp;{sort_indicator()}</th>
+        return <th scope="col" className={class_string()} onClick={() => handleClick()}>{res}&nbsp;{sort_indicator()}</th>
     }
 
     function total_col_head() {
         if (!props.total_info || props.total_info.total_col_label == undefined)   return
-        let className = "total-col"
+        let className = "total-col " + header_className
         if (props.total_info.col_className) {
             className = className + " " + props.total_info.col_className
         }
-        return <th style={header_style} className={className}>{props.total_info.total_col_label}</th>
+        return <th className={className}>{props.total_info.total_col_label}</th>
     }
 
     function record_row_cell(col_info, rec) {
@@ -155,7 +155,6 @@ function RecordsTable(props) {
             className = col_info.className
         }
 
-        console.log(col_info)
         let click_handler = () => {}
 
         if (col_info.fclick) {
@@ -345,13 +344,13 @@ function RecordsTable(props) {
         )
     }
 
-    let wrapper_style = props.wrapper_style ? props.wrapper_style : {}
+    let wrapper_className = props.wrapper_className ? props.wrapper_className : ""
     let className = "table " + props.className
 
     // Return the table
     return (
         <>
-        <div style={wrapper_style}>
+        <div className={wrapper_className}>
         <table className={className}>
             <thead>
                 <tr>
