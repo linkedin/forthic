@@ -4,11 +4,126 @@ import axios from 'axios';
 import ForthicPage from './elements/ForthicPage';
 import { Module, Word, PushValueWord } from './module';
 import { ensure_array, render_content_array } from './utils';
+import {UserNav, UserBreadcrumbNav, UserTypeahead} from './elements/UserNav'
+
+// React Bootstrap
+import Accordion from 'react-bootstrap/Accordion'
+import AccordionButton from 'react-bootstrap/AccordionButton'
+import Alert from 'react-bootstrap/Alert'
+import Badge from 'react-bootstrap/Badge'
+import Breadcrumb from 'react-bootstrap/Breadcrumb'
 import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup'
+import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
+import Card from 'react-bootstrap/Card'
+import Carousel from 'react-bootstrap/Carousel'
+import CloseButton from 'react-bootstrap/CloseButton'
+import Col from 'react-bootstrap/Col'
+import Collapse from 'react-bootstrap/Collapse'
+import Container from 'react-bootstrap/Container'
+import Dropdown from 'react-bootstrap/Dropdown'
+import DropdownButton from 'react-bootstrap/DropdownButton'
+import Fade from 'react-bootstrap/Fade'
+import Figure from 'react-bootstrap/Figure'
+import FloatingLabel from 'react-bootstrap/FloatingLabel'
+import Form from 'react-bootstrap/Form'  // NOTE: Form has *lots* of stuff in it
+import Image from 'react-bootstrap/Image'
+import InputGroup from 'react-bootstrap/InputGroup'
+import ListGroup from 'react-bootstrap/ListGroup'
+import Modal from 'react-bootstrap/Modal'
+import Nav from 'react-bootstrap/Nav'
+import Navbar from 'react-bootstrap/Navbar'
+import NavDropdown from 'react-bootstrap/NavDropdown'
+import NavItem from 'react-bootstrap/NavItem'
+import NavLink from 'react-bootstrap/NavLink'
+import Offcanvas from 'react-bootstrap/Offcanvas'
+import Overlay from 'react-bootstrap/Overlay'
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
+import Pagination from 'react-bootstrap/Pagination'
+import Placeholder from 'react-bootstrap/Placeholder'
+import Popover from 'react-bootstrap/Popover'
+import ProgressBar from 'react-bootstrap/ProgressBar'
+import Ratio from 'react-bootstrap/Ratio'
+import Row from 'react-bootstrap/Row'
+import Spinner from 'react-bootstrap/Spinner'
+import SplitButton from 'react-bootstrap/SplitButton'
+import Stack from 'react-bootstrap/Stack'
+import Tab from 'react-bootstrap/Tab'
+import Table from 'react-bootstrap/Table'
+import Tabs from 'react-bootstrap/Tabs'
+import Toast from 'react-bootstrap/Toast'
+import Tooltip from 'react-bootstrap/Tooltip'
+
+const REACT_BOOTSTRAP_NAME_TO_ELEMENT = {
+    Accordion,
+    AccordionButton,
+    Alert,
+    Badge,
+    Breadcrumb,
+    Button,
+    ButtonGroup,
+    ButtonToolbar,
+    Card,
+    Carousel,
+    CloseButton,
+    Col,
+    Collapse,
+    Container,
+    Dropdown,
+    "Dropdown.Toggle": Dropdown.Toggle,
+    "Dropdown.Item": Dropdown.Item,
+    "Dropdown.Divider": Dropdown.Divider,
+    DropdownButton,
+    Fade,
+    Figure,
+    FloatingLabel,
+    Form,
+    "Form.Group": Form.Group,
+    "Form.Label": Form.Label,
+    "Form.Control": Form.Control,
+    "Form.Text": Form.Text,
+    "Form.Check": Form.Check,
+    "Form.Select": Form.Select,
+    Image,
+    InputGroup,
+    ListGroup,
+    Modal,
+    Nav,
+    Navbar,
+    "Navbar.Brand": Navbar.Brand,
+    "Navbar.Collapse": Navbar.Collapse,
+    NavDropdown,
+    "NavDropdown.Item": NavDropdown.Item,
+    "NavDropdown.Divider": NavDropdown.Divider,
+    NavItem,
+    NavLink,
+    Offcanvas,
+    Overlay,
+    OverlayTrigger,
+    Pagination,
+    Placeholder,
+    Popover,
+    ProgressBar,
+    Ratio,
+    Row,
+    Spinner,
+    SplitButton,
+    Stack,
+    Tab,
+    Table,
+    Tabs,
+    Toast,
+    Tooltip
+}
+
 
 const NAME_TO_ELEMENT = {
-    Button
-}
+    ...REACT_BOOTSTRAP_NAME_TO_ELEMENT,
+    UserBreadcrumbNav,
+    UserTypeahead,
+    UserNav
+};
+
 
 let DLE = String.fromCharCode(16);  // ASCII char for "Data Link Escape" used as an untypeable quote
 
@@ -2356,7 +2471,7 @@ class GlobalModule extends Module {
 
       let res = React.createElement(
         element_class,
-        Result.props,
+        {...Result.props, interp},
         ...rendered_content
       );
       return res;
@@ -2525,7 +2640,7 @@ class GlobalModule extends Module {
     interp.stack_push(element);
   }
 
-  // (rorthic -- callback_function)
+  // (forthic -- callback_function)
   word_FCALLBACK(interp) {
     let forthic = interp.stack_pop();
 
