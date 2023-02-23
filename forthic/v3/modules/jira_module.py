@@ -16,6 +16,9 @@ class JiraError(RuntimeError):
     pass
 
 
+DEFAULT_MAX_TICKETS = 1000
+
+
 class JiraModule(Module):
     """This implements support for common use cases when interacting with Jira.
 
@@ -25,10 +28,14 @@ class JiraModule(Module):
         super().__init__('jira', interp, JIRA_FORTHIC)
         self.context_stack: List['JiraContext'] = []
 
+        self.flags = {}
+        self.get_flags()
+
         self.add_module_word('PUSH-CONTEXT!', self.word_PUSH_CONTEXT_bang)
         self.add_module_word('POP-CONTEXT!', self.word_POP_CONTEXT_bang)
 
         self.add_module_word('HOST', self.word_HOST)
+        self.add_module_word('NUM-TICKETS', self.word_NUM_TICKETS)
         self.add_module_word('SEARCH', self.word_SEARCH)
         self.add_module_word('DEFAULT-SEARCH', self.word_DEFAULT_SEARCH)
         self.add_module_word('RENDERED-SEARCH', self.word_RENDERED_SEARCH)
@@ -59,6 +66,9 @@ class JiraModule(Module):
         self.add_module_word('RAPID-CHARTS-SPRINTREPORT', self.word_RAPID_CHARTS_SPRINTREPORT)
         self.add_module_word('RAPID-CHARTS-SCOPECHANGEBURNDOWNCHART', self.word_RAPID_CHARTS_SCOPECHANGEBURNDOWNCHART)
 
+        # ----- Flag words ----------------------------------------------------------------------------
+        self.add_module_word('!MAX-TICKETS', self.word_bang_MAX_TICKETS)
+
     # ( context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
         context = interp.stack_pop()
@@ -73,19 +83,22 @@ class JiraModule(Module):
         context = self.current_context()
         interp.stack_push(context.get_host())
 
+    # ( jql -- count )
+    def word_NUM_TICKETS(self, interp: IInterpreter):
+        """Returns the number of tickets that would be returned by the JQL statement"""
+        jql = interp.stack_pop()
+        result = self.num_tickets(jql)
+        interp.stack_push(result)
+
     # ( jql fields -- tickets )
     def word_SEARCH(self, interp: IInterpreter):
         """Returns the minimal requested info. E.g., keys instead of records"""
         fields = interp.stack_pop()
         jql = interp.stack_pop()
 
-        result = self.search(jql, fields)
+        flags = self.get_flags()
 
-        # Extract key, if possible
-        for r in result:
-            for key, value in r.items():
-                r[key] = self.simplify_value(key, value)
-
+        result = self.search(jql, fields, max_tickets=flags.get('max_tickets'))
         interp.stack_push(result)
 
     # ( jql fields -- tickets )
@@ -495,6 +508,11 @@ class JiraModule(Module):
         result = res.json()
         interp.stack_push(result)
 
+    # ( num_tickets -- )
+    def word_bang_MAX_TICKETS(self, interp: IInterpreter):
+        num_tickets = interp.stack_pop()
+        self.flags['max_tickets'] = num_tickets
+
     # =================================
     # Helpers
 
@@ -542,10 +560,24 @@ class JiraModule(Module):
             result = ' '
         return result
 
+    def get_normalized_data(self, fields: List[str]) -> Dict[str, Any]:
+        field_names_to_keys = {}
+        for f in fields:
+            field_names_to_keys[f] = self.get_field_keys(f)
+
+        normalized_fields = []
+        for field_keys in field_names_to_keys.values():
+            normalized_fields += field_keys
+        return {
+            "field_names_to_keys": field_names_to_keys,
+            "normalized_fields": normalized_fields
+        }
+
     def get_changelog(self, ticket_key: str, fields: List[str]) -> List[Dict[str, Any]]:
         context = self.current_context()
 
-        normalized_fields = [self.normalize_field(f) for f in fields]
+        normalized_data = self.get_normalized_data(fields)
+        normalized_fields = normalized_data['normalized_fields']
 
         api_url = f"/rest/api/2/issue/{ticket_key}?expand=changelog&fields={','.join(normalized_fields + ['created'])}"
         res = context.requests_get(api_url)
@@ -556,34 +588,18 @@ class JiraModule(Module):
 
         ticket = res.json()
 
-        # NOTE: Changelog response uses field names instead of IDs. This may lead to a bug if there are duplicate
-        #       custom field names
         def get_ticket_changes(ticket: Dict[str, Any]) -> List[Dict[str, Any]]:
             result = []
             for history in ticket['changelog']['histories']:
                 for item in history['items']:
                     item_field = item['field']
-                    if item_field in fields:
+                    if item_field in fields or item_field in normalized_fields:
                         result.append(
                             {
                                 'date': parser.parse(history['created']),
                                 'field': item_field,
                                 'from': item['fromString'],
                                 'to': item['toString'],
-                                'from_': item['from'],
-                                'to_': item['to'],
-                            }
-                        )
-                    # NOTE: This is a bit of a hack to handle the fact that changes involving assignees behave
-                    #       differently from other fields. There may be more cases like this. The correct fix
-                    #       is to understand changelog more deeply and handle all cases consistently.
-                    elif "Assignee" in fields and item_field == 'assignee':
-                        result.append(
-                            {
-                                'date': parser.parse(history['created']),
-                                'field': item_field,
-                                'from': item['from'],
-                                'to': item['to'],
                                 'from_': item['from'],
                                 'to_': item['to'],
                             }
@@ -630,10 +646,17 @@ class JiraModule(Module):
         """
         This extracts simple values from Jira value records. See normalize_value for more info.
         """
+        field = self.normalize_field(user_field)
+        result = self.simplify_field_key_value(field, val)
+        return result
+
+    def simplify_field_key_value(self, field_key: str, val: Any):
+        """
+        This extracts simple values from Jira value records. See normalize_value for more info.
+        """
         context = self.current_context()
 
-        field = self.normalize_field(user_field)
-        schema = context.field_to_schema.get(field)
+        schema = context.field_to_schema.get(field_key)
         if not schema:
             schema = {'type': '?'}
 
@@ -744,7 +767,32 @@ class JiraModule(Module):
             )
         return result
 
-    def search(self, jql: str, fields_: List[str], expand: List[str] = []):
+    def num_tickets(self, jql: str):
+        """Uses jql to search Jira, returning records with the specified fields"""
+        if jql.strip() == '':
+            raise JiraError('JQL must not be blank')
+
+        context = self.current_context()
+
+        req_data = {
+            'jql': jql,
+            'maxResults': 1,
+            'fields': ['key']
+        }
+
+        with requests.Session() as session:
+            api_url = '/rest/api/2/search'
+            response = context.requests_post(api_url, json=req_data, session=session)
+
+            if not response.ok:
+                raise JiraError(
+                    f"Problem doing Jira search '{jql}': {response.text}"
+                )
+            res_data = response.json()
+            result = res_data.get('total')
+        return result
+
+    def search(self, jql: str, fields_: List[str], expand: List[str] = [], max_tickets: int = DEFAULT_MAX_TICKETS):
         """Uses jql to search Jira, returning records with the specified fields"""
         if jql.strip() == '':
             raise JiraError('JQL must not be blank')
@@ -758,7 +806,10 @@ class JiraModule(Module):
         if 'id' in fields:
             fields.remove('id')
 
-        normalized_fields = [self.normalize_field(f) for f in fields]
+        normalized_data = self.get_normalized_data(fields)
+        normalized_fields = normalized_data['normalized_fields']
+        field_names_to_keys = normalized_data['field_names_to_keys']
+
         batch_size = 200
 
         def run_batch(start_at, session):
@@ -778,11 +829,11 @@ class JiraModule(Module):
             )
 
             if not response.ok:
-                raise JiraError(
-                    f"Problem doing Jira search '{jql}': {response.text}"
-                )
+                raise JiraError(f"Problem doing Jira search '{jql}': {response.text}")
             res_data = response.json()
             res = res_data['issues']
+            if res_data['total'] > max_tickets:
+                raise JiraError(f"Number of tickets {res_data['total']} exceeds max num tickets {max_tickets}. Use !MAX-TICKETS to override.")
             return res
 
         def run(session: requests.Session):
@@ -800,22 +851,45 @@ class JiraModule(Module):
             issues = run(session)
 
         def issue_data_to_record(issue_data: Dict[str, Any]) -> Dict[str, Any]:
+            # Prefill result with id and key
             res = {
                 'id': issue_data['id'],
                 'key': issue_data['key']
             }
+
+            def get_value(field_key):
+                raw_value = drill_for_value(issue_data, ['fields', field_key])
+                res = self.simplify_field_key_value(field_key, raw_value)
+                return res
+
             # Map field back to what the user provided
             for field in fields:
-                normalized_field = self.normalize_field(field)
-                value = drill_for_value(
-                    issue_data, ['fields', normalized_field]
-                )
-                res[field] = value
+                field_keys = field_names_to_keys[field]
+                field_values = [get_value(k) for k in field_keys]
+                non_null_field_values = list(filter(lambda x: x is not None, field_values))
+
+                if len(non_null_field_values) > 0:
+                    res[field] = non_null_field_values[0]
+                else:
+                    res[field] = None
             return res
 
         result = [issue_data_to_record(d) for d in issues]
         return result
 
+    def get_field_keys(self, field: str) -> str:
+        """Returns all of the field keys corresponding to this field name"""
+        context = self.current_context()
+        if field in context.field_map:
+            return field
+        ids = context.field_name_to_id.get(field)
+
+        if ids is None:
+            return [field]
+        else:
+            return ids
+
+    # NOTE: This is needed to map fields into field keys for creating/updating tickets
     def normalize_field(self, field: str) -> str:
         """If field doesn't correspond to a field ID, search for name of field in field map"""
         context = self.current_context()
@@ -833,6 +907,13 @@ class JiraModule(Module):
 
         result = ids[0]
         return result
+
+    def get_flags(self):
+        flags = self.flags.copy()
+        self.flags = {
+            "max_tickets": DEFAULT_MAX_TICKETS,
+        }
+        return flags
 
 
 # TODO: The JiraContext needs to store info about the current ticket limit. It should also allow you to
