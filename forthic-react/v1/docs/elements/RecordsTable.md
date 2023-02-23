@@ -15,7 +15,9 @@ A `RecordsTable` can render an array of records in a table. This table can be co
 * `total_info` (optional): Record with the following fields
     * `total_row_label` (optional): Specifies label to use for total row. If set, computes total row. NOTE: The row totals are computed only for the visible records
     * `total_col_label` (optional): Specifies label to use for total col. If set, computes total col
-    * `fclick` (optional): Forthic executed on click. The Forthic should expect an array record values associated with the row
+    * `col_fclick` (optional): Forthic executed on total column cell click. The Forthic should expect an array record values associated with the row
+    * `row_fclick` (optional): Forthic executed on total row cell click. The Forthic should expect an array record values associated with the row
+    * `grand_fclick` (optional): Forthic executed on grand total cell click. The Forthic should expect an array record values associated with the row
     * `col_className` (optional): Classnames for total column
 * `pagination_info` (optional): Record with the following fields
     * `page_size`: Number of records to show in each page. Setting this enables pagination

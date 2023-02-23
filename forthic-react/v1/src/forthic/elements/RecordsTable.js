@@ -14,7 +14,9 @@ function RecordsTable(props) {
     //    total_info (optional): Record with the following fields
     //        total_row_label (optional): Specifies label to use for total row. If set, computes total row. NOTE: The row totals are computed only for the visible records
     //        total_col_label (optional): Specifies label to use for total col. If set, computes total col
-    //        fclick (optional): Forthic executed on click. The Forthic should expect an array record values associated with the row
+    //        col_fclick (optional): Forthic executed on total column cell click. The Forthic should expect an array record values associated with the row
+    //        row_fclick (optional): Forthic executed on total row cell click. The Forthic should expect an array record values associated with the row
+    //        grand_fclick (optional): Forthic executed on grand total cell click. The Forthic should expect an array record values associated with the row
     //        col_className (optional): Classnames for total column
     //    pagination_info (optional): Record with the following fields
     //        page_size: Number of records to show in each page. Setting this enables pagination
@@ -42,7 +44,7 @@ function RecordsTable(props) {
         setTimeout(async () => {
             let interp = props.interp
             interp.stack_push([...props.records])
-            await interp.run(`'''${sort_key.fsort}''' SORT-w/FORTHIC`)
+            await interp.run(`'''${sort_key.fsort}''' !COMPARATOR SORT`)
             let records = interp.stack_pop()
             if (sort_key.dir == "DESC")   records.reverse()
             set_sorted_records(records)
@@ -185,11 +187,11 @@ function RecordsTable(props) {
             className = className + " " + props.total_info.col_className
         }
         let click_handler = () => {}
-        if (props?.total_info?.fclick) {
-            className = "total-col clickable"
+        if (props?.total_info?.col_fclick) {
+            className = className + " " + "total-col clickable"
             click_handler = async (raw_value) => {
                 props.interp.stack_push(raw_value)
-                await props.interp.run(props.total_info.fclick)
+                await props.interp.run(props.total_info.col_fclick)
             }
         }
 
@@ -209,14 +211,17 @@ function RecordsTable(props) {
     }
 
     function total_row_cell(col_info) {
-        let className
+        let className = ""
         let click_handler = () => {}
-        if (props?.total_info?.fclick) {
+        if (props?.total_info?.row_fclick) {
             className = "clickable"
             click_handler = async (raw_value) => {
                 props.interp.stack_push(raw_value)
-                await props.interp.run(props.total_info.fclick)
+                await props.interp.run(props.total_info.row_fclick)
             }
+        }
+        if (col_info.className) {
+            className = className + " " + col_info.className
         }
 
         let sum = 0
@@ -237,11 +242,11 @@ function RecordsTable(props) {
             className = className + " " + props.total_info.col_className
         }
         let click_handler = () => {}
-        if (props?.total_info?.fclick) {
-            className = "total-col total-row clickable"
+        if (props?.total_info?.grand_fclick) {
+            className = className + " " + "total-col total-row clickable"
             click_handler = async (raw_value) => {
                 props.interp.stack_push(raw_value)
-                await props.interp.run(props.total_info.fclick)
+                await props.interp.run(props.total_info.grand_fclick)
             }
         }
 
