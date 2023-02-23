@@ -162,6 +162,15 @@ class MessageBroker {
   }
 }
 
+// NOTE: To add CSRF, redefine this function to look up your CSRF token from the cookies
+function get_csrf_token() {
+    return "LOOK-UP-FROM-CSRF-COOKIE"
+}
+
+const csrf_axios = axios.create({
+    headers: {'X-CSRFToken': get_csrf_token()}
+});
+
 // ----- MODULE FLAGS --------------------------------------------------------------------------------------------------
 // Module Flags: These are all None but are settable for one-time use to change the behavior
 // of module words
@@ -2661,7 +2670,7 @@ class GlobalModule extends Module {
       return result;
     }
 
-    await axios
+    await csrf_axios
       .post(get_forthic_route(), {
         forthic: await get_forthic(),
         fullstack_response: true,
