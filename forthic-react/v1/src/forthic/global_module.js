@@ -4,9 +4,12 @@ import axios from 'axios';
 import ForthicPage from './elements/ForthicPage';
 import { Module, Word, PushValueWord } from './module';
 import { ensure_array, render_content_array } from './utils';
+import { Typeahead, AsyncTypeahead } from 'react-bootstrap-typeahead';
+import { CSVLink } from "react-csv"
 import { UserNav, UserBreadcrumbNav, UserTypeahead } from './elements/UserNav'
 import RecordsTable from './elements/RecordsTable'
 import TicketsModal from './elements/TicketsModal'
+
 
 // React Bootstrap
 import Accordion from 'react-bootstrap/Accordion'
@@ -121,6 +124,9 @@ const REACT_BOOTSTRAP_NAME_TO_ELEMENT = {
 
 const NAME_TO_ELEMENT = {
     ...REACT_BOOTSTRAP_NAME_TO_ELEMENT,
+    Typeahead,
+    AsyncTypeahead,
+    CSVLink,
     RecordsTable,
     TicketsModal,
     UserBreadcrumbNav,
@@ -165,8 +171,13 @@ let FLAGS = {
     comparator: null,
     push_rest: null,
     depth: null,
-    overwrite: null
+    overwrite: null,
+    delay: null
 }
+
+// ----- Set Timeout IDs -------------------------------------------------------------------------------------
+// These are used to cancel setTimeout calls
+let QPARAM_BANG_ID = null
 
 // Retrieves current value of FLAGS and then clears flags
 function get_flags() {
@@ -230,6 +241,7 @@ class GlobalModule extends Module {
     this.add_module_word("DROP", this.word_DROP);
     this.add_module_word("ROTATE", this.word_ROTATE);
     this.add_module_word("ROTATE-ELEMENT", this.word_ROTATE_ELEMENT);
+    this.add_module_word("ARRAY?", this.word_ARRAY_q);
 
     this.add_module_word("SHUFFLE", this.word_SHUFFLE);
     this.add_module_word("SORT", this.word_SORT);
@@ -301,6 +313,7 @@ class GlobalModule extends Module {
     this.add_module_word("DATETIME>TIMESTAMP", this.word_DATETIME_to_TIMESTAMP);
     this.add_module_word("TIMESTAMP>DATETIME", this.word_TIMESTAMP_to_DATETIME);
     this.add_module_word("STR>DATETIME", this.word_STR_to_DATETIME);
+    this.add_module_word("STR>TIMESTAMP", this.word_STR_to_TIMESTAMP);
 
     // --------------------
     // Math words
@@ -309,6 +322,7 @@ class GlobalModule extends Module {
     this.add_module_word("*", this.word_times);
     this.add_module_word("/", this.word_divide_by);
     this.add_module_word("MOD", this.word_MOD);
+    this.add_module_word("MEAN", this.word_MEAN);
     this.add_module_word("ROUND", this.word_ROUND);
     this.add_module_word("==", this.word_equal_equal);
     this.add_module_word("!=", this.word_not_equal);
@@ -337,6 +351,7 @@ class GlobalModule extends Module {
     this.add_module_word("!PUSH-REST", this.word_bang_PUSH_REST);
     this.add_module_word("!DEPTH", this.word_bang_DEPTH);
     this.add_module_word("!OVERWRITE", this.word_bang_OVERWRITE);
+    this.add_module_word("!DELAY", this.word_bang_DELAY);
 
     // --------------------
     // React words
@@ -352,6 +367,7 @@ class GlobalModule extends Module {
     this.add_module_word("QPARAM!", this.word_QPARAM_bang);
     this.add_module_word("QPARAMS!", this.word_QPARAMS_bang);
     this.add_module_word("DEL-QPARAM!", this.word_DEL_QPARAM_bang);
+    this.add_module_word("<QPARAMS", this.word_l_QPARAMS);
     this.add_module_word("console.log", this.word_console_log);
     this.add_module_word("window.open", this.word_window_open);
     this.add_module_word("SERVER-INTERPRET", this.word_SERVER_INTERPRET);
@@ -1441,6 +1457,13 @@ class GlobalModule extends Module {
     interp.stack_push(result);
   }
 
+    // ( val -- bool )
+    word_ARRAY_q(interp) {
+        let val = interp.stack_pop();
+        let result = val instanceof Array
+        interp.stack_push(result);
+    }
+
   // ( array -- array )
   // ( record -- record )
   word_SHUFFLE(interp) {
@@ -2120,6 +2143,14 @@ class GlobalModule extends Module {
     interp.stack_push(result);
   }
 
+  // ( str -- timestamp )
+  word_STR_to_TIMESTAMP(interp) {
+    let s = interp.stack_pop();
+    let datetime = new Date(s);
+    let result = Math.round(datetime.getTime() / 1000);
+    interp.stack_push(result);
+  }
+
   // ( a b -- a+b )
   // ( items -- sum )
   word_plus(interp) {
@@ -2172,6 +2203,17 @@ class GlobalModule extends Module {
     let b = interp.stack_pop();
     let a = interp.stack_pop();
     interp.stack_push(a % b);
+  }
+
+  // ( numbers -- mean )
+  word_MEAN(interp) {
+    let numbers = interp.stack_pop();
+    let sum = 0
+    for (const num of numbers) {
+        sum += num
+    }
+    let result = sum/numbers.length
+    interp.stack_push(result)
   }
 
   // ( num -- int )
@@ -2449,6 +2491,12 @@ class GlobalModule extends Module {
     FLAGS.overwrite = overwrite;
   }
 
+  // ( delay_ms -- )
+  word_bang_DELAY(interp) {
+    let delay_ms = interp.stack_pop();
+    FLAGS.delay = delay_ms;
+  }
+
   // (element_name -- element)
   word_Element(interp) {
     const element_name = interp.stack_pop();
@@ -2480,7 +2528,6 @@ class GlobalModule extends Module {
   word_Route(interp) {
     let element_func = interp.stack_pop();
     let path = interp.stack_pop();
-    console.log(window.basename)
     let result = {
       path: window.basename + path,
       element: element_func(),
@@ -2517,7 +2564,17 @@ class GlobalModule extends Module {
     // TODO: We should escape the value
     let varname = interp.stack_pop();
     let value = interp.stack_pop();
-    set_qparam(varname, value);
+    const flags = get_flags()
+
+    // If !DELAY is set, then we'll use setTimeout to delay setting the query param. If another QPARAM! happens
+    // in the meantime, we'll cancel this call and replace it with the new one
+    let delay_ms = flags.delay ? flags.delay : 0
+
+    if (QPARAM_BANG_ID)   clearTimeout(QPARAM_BANG_ID)
+    QPARAM_BANG_ID = setTimeout(() => {
+        set_qparam(varname, value);
+        QPARAM_BANG_ID = null
+    }, delay_ms)
   }
 
   // ( pairs -- )
@@ -2525,21 +2582,51 @@ class GlobalModule extends Module {
   word_QPARAMS_bang(interp) {
     let pairs = interp.stack_pop();
 
+    // Merge the provided params with the current qparams, removing any that are explicitly undefined
+    let search_params = new URLSearchParams(window.location.search)
+
     for (const pair of pairs) {
       let name = pair[0];
       let value = pair[1];
-      if (value === null || value === undefined) {
+      if (value === null || value === undefined || value === '') {
         del_qparam(name);
+        search_params.delete(name)
       } else {
-        set_qparam(name, value);
+        search_params.set(name, value)
       }
     }
-  }
+    window.location.search = search_params.toString()
+}
 
   // ( varname -- )
   word_DEL_QPARAM_bang(interp) {
     let varname = interp.stack_pop();
     del_qparam(varname);
+  }
+
+  // ( url -- url_w_qparams )
+  // Adds current qparams to specified URL
+  word_l_QPARAMS(interp) {
+    let url = interp.stack_pop();
+    let search_params = new URLSearchParams(window.location.search)
+
+    // Handle case where the URL has qparams
+    let url_parts = url.split("?")
+    let url_w_out_qparams = url_parts[0]
+    let url_qparams = url_parts[1]
+
+    // Merge url params with current search params
+    if (url_qparams) {
+        let qparams = url_qparams.split("&")
+        for (const qparam of qparams) {
+            let pieces = qparam.split("=")
+            search_params.set(pieces[0], pieces[1])
+        }
+    }
+
+    // Append search params to URL
+    let result = url_w_out_qparams + "?" + search_params.toString();
+    interp.stack_push(result)
   }
 
   // ( string -- string )

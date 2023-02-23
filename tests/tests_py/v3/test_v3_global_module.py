@@ -1005,6 +1005,18 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(stack[1], ['b'])
         self.assertEqual(stack[2], [])
 
+    def test_array_q(self):
+        interp = Interpreter()
+        interp.run("""
+        ['a' 'b' 'c' 'd'] ARRAY?
+        'b' ARRAY?
+        0 ARRAY?
+        """)
+        stack = interp.stack
+        self.assertEqual(stack[0], True)
+        self.assertEqual(stack[1], False)
+        self.assertEqual(stack[2], False)
+
     def test_shuffle(self):
         interp = Interpreter()
         interp.run("""

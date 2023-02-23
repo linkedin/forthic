@@ -12,6 +12,7 @@ import io
 import markdown
 import csv
 from collections import defaultdict
+import statistics
 
 from .module import Module, PushValueWord
 from .profile import ProfileAnalyzer
@@ -123,6 +124,7 @@ class GlobalModule(Module):
         self.add_module_word('TAKE', self.word_TAKE)
         self.add_module_word('DROP', self.word_DROP)
         self.add_module_word('ROTATE', self.word_ROTATE)
+        self.add_module_word('ARRAY?', self.word_ARRAY_q)
         self.add_module_word('SHUFFLE', self.word_SHUFFLE)
         self.add_module_word('SORT', self.word_SORT)
         self.add_module_word('FIELD-KEY-FUNC', self.word_FIELD_KEY_FUNC)
@@ -214,6 +216,7 @@ class GlobalModule(Module):
         self.add_module_word('DATETIME>TIMESTAMP', self.word_DATETIME_to_TIMESTAMP)
         self.add_module_word('TIMESTAMP>DATETIME', self.word_TIMESTAMP_to_DATETIME)
         self.add_module_word('STR>DATETIME', self.word_STR_to_DATETIME)
+        self.add_module_word('STR>TIMESTAMP', self.word_STR_to_TIMESTAMP)
 
         # ----------------
         # Math words
@@ -222,6 +225,7 @@ class GlobalModule(Module):
         self.add_module_word('*', self.word_times)
         self.add_module_word('/', self.word_divide_by)
         self.add_module_word('MOD', self.word_MOD)
+        self.add_module_word('MEAN', self.word_MEAN)
         self.add_module_word('ROUND', self.word_ROUND)
         self.add_module_word('MAX', self.word_MAX)
         self.add_module_word('MIN', self.word_MIN)
@@ -1236,6 +1240,12 @@ class GlobalModule(Module):
 
         interp.stack_push(result)
 
+    # ( value -- bool )
+    def word_ARRAY_q(self, interp: IInterpreter):
+        value = interp.stack_pop()
+        result = isinstance(value, list)
+        interp.stack_push(result)
+
     # ( array -- array )
     # ( record -- record )
     def word_SHUFFLE(self, interp: IInterpreter):
@@ -2163,6 +2173,18 @@ class GlobalModule(Module):
         result = parser.parse(string)
         interp.stack_push(result)
 
+    # ( str -- timestamp )
+    def word_STR_to_TIMESTAMP(self, interp: IInterpreter):
+        string = interp.stack_pop()
+
+        if string is None:
+            interp.stack_push(None)
+            return
+
+        datetime_val = parser.parse(string)
+        result = int(datetime.datetime.timestamp(datetime_val))
+        interp.stack_push(result)
+
     # ( a b -- a+b )
     # ( [a1 a2...] -- sum )
     def word_plus(self, interp: IInterpreter):
@@ -2248,6 +2270,12 @@ class GlobalModule(Module):
             return
 
         interp.stack_push(m % n)
+
+    # ( numbers -- mean )
+    def word_MEAN(self, interp: IInterpreter):
+        numbers = interp.stack_pop()
+        result = statistics.mean(numbers)
+        interp.stack_push(result)
 
     # ( num -- int )
     def word_ROUND(self, interp: IInterpreter):
