@@ -148,6 +148,7 @@ class RechartsModule extends Module {
         const max_len = interp.stack_pop()
 
         function result(label) {
+            if (!label)   return ""
             let res = label
             try {
                 let short_string = label.substring(0, max_len);

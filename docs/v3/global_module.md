@@ -452,6 +452,11 @@ Given an array, removes the last element and inserts it as the first element.
 
 For a record, this is a no-op.
 
+### ARRAY?
+`( value -- bool )`
+
+Returns `TRUE` if `value` is an array; `FALSE` otherwise.
+
 ### SHUFFLE
 `( array -- array )`
 
@@ -958,6 +963,11 @@ Given a unix timestamp, returns associated datetime object.
 
 Attempts to parse a string as a date/time. Raises error if format is unrecognized.
 
+### STR>TIMESTAMP
+`( str -- timestamp )`
+
+Parses string as a date/time and converts it to a Unix timestamp.
+
 ## Reference: Math Words
 
 ### TRUE
@@ -1002,6 +1012,11 @@ Given `a` and `b`, returns `a` divided by `b`.
 `( m n -- m%n )`
 
 Given integers `m` and `n`, returns `m modulo n`.
+
+### MEAN
+`( numbers -- mean )`
+
+Returns the mean of an array of numbers
 
 ### ROUND
 `( number -- integer )`

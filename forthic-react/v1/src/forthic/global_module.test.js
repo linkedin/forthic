@@ -1059,7 +1059,7 @@ it ('Can uppercase a string', async () => {
 it ('Can remove non-ASCII chars from a string', async () => {
     let interp = new Interpreter()
     await interp.run(`
-        "HOWDY, “Everyone!”" |ASCII
+        "HOWDY, “Everyone!”" ASCII
     `)
     expect(interp.stack[0]).toEqual("HOWDY, Everyone!")
 })
@@ -1301,6 +1301,14 @@ it ('Can convert timestamps to datetimes', async () => {
     expect([date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()]).toEqual([2020, 6, 4, 13, 45])
 })
 
+it ('Can convert strings to timestamps', async () => {
+    let interp = new Interpreter()
+    await interp.run(`
+        "Thu, 23 Feb 2023 04:47:03 GMT" STR>TIMESTAMP
+    `)
+    expect(interp.stack[0]).toEqual(1677127623)
+})
+
 it ('Can do arithmetic', async () => {
     let interp = new Interpreter()
     await interp.run(`
@@ -1312,8 +1320,9 @@ it ('Can do arithmetic', async () => {
         2.51 ROUND
         [1 2 3] +
         [2 3 4] *
+        [1 2 3] MEAN
     `)
-    expect(interp.stack).toEqual([6, -2, 8, 0.5, 2, 3, 6, 24])
+    expect(interp.stack).toEqual([6, -2, 8, 0.5, 2, 3, 6, 24, 2])
 })
 
 it ('Can perform comparisons', async () => {
