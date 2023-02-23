@@ -15,6 +15,8 @@ class ISOWeekModule(Module):
         self.add_module_word('QUARTER-START', self.word_QUARTER_START)
         self.add_module_word('QUARTER-END', self.word_QUARTER_END)
         self.add_module_word('QUARTER/YEAR', self.word_QUARTER_slash_YEAR)
+        self.add_module_word('QUARTER', self.word_QUARTER)
+        self.add_module_word('YEAR', self.word_YEAR)
 
     # ( date -- num )
     def word_WEEK_NUM(self, interp: IInterpreter):
@@ -66,7 +68,31 @@ class ISOWeekModule(Module):
     def word_QUARTER_slash_YEAR(self, interp: IInterpreter):
         qtr_offset = interp.stack_pop()
         date = interp.stack_pop()
+        res_quarter = self.get_quarter(date, qtr_offset)
+        res_year = self.get_year(date, qtr_offset)
+        interp.stack_push([res_quarter, res_year])
 
+    # ( date qtr_offset -- qtr )
+    def word_QUARTER(self, interp: IInterpreter):
+        qtr_offset = interp.stack_pop()
+        date = interp.stack_pop()
+        result = self.get_quarter(date, qtr_offset)
+        interp.stack_push(result)
+
+    # ( date qtr_offset -- qtr )
+    def word_YEAR(self, interp: IInterpreter):
+        qtr_offset = interp.stack_pop()
+        date = interp.stack_pop()
+        result = self.get_year(date, qtr_offset)
+        interp.stack_push(result)
+
+    # ----------------------------------------
+    # Helpers
+    def get_quarter(self, date, qtr_offset=0):
+        """Returns the quarter number for the current date
+
+        If `qtr_offset` is specified, applies that offset to the quarter number
+        """
         week_num = self.date_to_week_num(date)
         if week_num >= 1 and week_num <= 13:
             quarter = 1
@@ -77,13 +103,18 @@ class ISOWeekModule(Module):
         else:
             quarter = 4
 
-        res_quarter = ((quarter - 1) + qtr_offset) % 4 + 1
-        res_date = date + datetime.timedelta(qtr_offset * 13 * 7)
-        res_year = res_date.timetuple().tm_year
-        interp.stack_push([res_quarter, res_year])
+        result = ((quarter - 1) + qtr_offset) % 4 + 1
+        return result
 
-    # ----------------------------------------
-    # Helpers
+    def get_year(self, date, qtr_offset=0):
+        """Returns the year for the current date
+
+        If `qtr_offset` is specified, applies that offset to the year
+        """
+        res_date = date + datetime.timedelta(qtr_offset * 13 * 7)
+        result = res_date.timetuple().tm_year
+        return result
+
     def get_day_of_week(self, date):
         day_of_week = date.timetuple().tm_wday + 1  # ISO Week Monday is 1
         return day_of_week
