@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'react-bootstrap-typeahead/css/Typeahead.css';
 import './index.css'
 import {RouterProvider} from "react-router-dom";
 import RechartsModule from "./forthic/modules/recharts_module"

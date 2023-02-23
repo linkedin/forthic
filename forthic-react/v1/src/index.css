@@ -58,6 +58,7 @@ code {
 
 .total-row th, .total-row td {
     border-top: 2px solid #333;
+    border-bottom: 1px solid #333;
 }
 
 th.total-col, td.total-col {
