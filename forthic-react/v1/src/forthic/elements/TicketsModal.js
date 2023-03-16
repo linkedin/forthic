@@ -5,7 +5,6 @@ import Form from 'react-bootstrap/Form';
 import RecordsTable from "./RecordsTable"
 import Badge from 'react-bootstrap/Badge';
 import { CSVLink } from "react-csv"
-// import { get_app_state } from "./forthic/modules/react_module";
 
 function arrayEquals(a, b) {
     return Array.isArray(a) &&
@@ -494,6 +493,8 @@ function EmailCampaignActivity(props) {
     const [draftInfo, setDraftInfo] = useState({})
     const [content, setContent] = useState({})
 
+    let selected_tickets = props.records.filter(r => r[SELECT_TICKETS_FIELD])
+    console.log("EmailCampaign", props.records, selected_tickets)
     useEffect(() => {
         setTimeout(async () => {
             let _content = {};
@@ -502,7 +503,7 @@ function EmailCampaignActivity(props) {
                     _content = {
                         step: "RecipientsStep",
                         stepContent: <RecipientsStep
-                            records={props.records}
+                            records={selected_tickets}
                             set_step={(s) => setStep(s)}
                             recipient_info={recipientInfo}
                             set_recipient_info={(info) => setRecipientInfo(info)}
@@ -512,13 +513,13 @@ function EmailCampaignActivity(props) {
 
                 case EmailCampaignSteps.DraftStep:
                     props.interp.stack_push(recipientInfo)
-                    props.interp.stack_push(props.records)
+                    props.interp.stack_push(selected_tickets)
                     await props.interp.run(props.frecipients)
                     const recipients = props.interp.stack_pop()
                     _content = {
                         step: "DraftStep",
                         stepContent: <DraftStep
-                            records={props.records}
+                            records={selected_tickets}
                             set_step={(s) => setStep(s)}
                             recipient_info={recipientInfo}
                             recipients={recipients}
@@ -534,7 +535,7 @@ function EmailCampaignActivity(props) {
                     _content = {
                         step: "EmailStep",
                         stepContent: <EmailStep
-                            records={props.records}
+                            records={selected_tickets}
                             set_step={(s) => setStep(s)}
                             recipient_info={recipientInfo}
                             set_draft_info={(info) => setDraftInfo(info)}
@@ -553,6 +554,21 @@ function EmailCampaignActivity(props) {
     })
 
     return content.stepContent
+}
+
+// ----- TicketSelector --------------------------------------------------------------------------------------
+const SELECT_TICKETS_FIELD = "TicketsModal_selected";  // This is to add a ticket selection column, if necessary
+
+export function TicketSelector(props) {
+    // Props:
+    //
+    //    ticket:  A ticket record with SELECT_TICKETS_FIELD to indicate if a ticket is selected
+    return (
+        <Form.Check
+            defaultChecked={props.ticket[SELECT_TICKETS_FIELD]}
+            onChange={e => props.ticket[SELECT_TICKETS_FIELD] = e.target.checked}  // Yeah, this is a little dicey...
+        />
+    )
 }
 
 // ----- TicketsModal ----------------------------------------------------------------------------------------
@@ -584,7 +600,18 @@ function TicketsModal(props) {
         let subscription = props.message_broker.subscribe((message) => {
             let _records = message[props.records_field]
             if (!_records)   _records = []
-            setRecords(_records)
+
+            // If email is configured, add a field that allows tickets to be selected
+            if (email_configured) {
+                setRecords(_records.map(r => {
+                    let res = {...r}
+                    res[SELECT_TICKETS_FIELD] = true
+                    return res
+                }))
+            }
+            else {
+                setRecords(_records)
+            }
         })
         set_initialized(true)
 
@@ -608,11 +635,25 @@ function TicketsModal(props) {
         }
     }
 
+    function get_select_col_info() {
+        let result = {
+            field: SELECT_TICKETS_FIELD,
+            label: "S",
+            fformat_rec: "[SWAP] ['ticket'] SWAP ZIP REC  'TicketSelector' Element SWAP <PROPS"  // Apologies for all the SWAPs, but this is to avoid using a variable
+        }
+        return result
+    }
+
     // Filters props.column_infos to return only those that are in the records
     function get_column_info() {
         if (!records || records.length == 0)   return []
+        // TODO: We should take the union of field values from all records to decide what should be included
         const record = records[0]
-        const result = props.column_infos.filter((col_info) => record[col_info.field])
+        let result = props.column_infos.filter((col_info) => record[col_info.field])
+
+        if (email_configured) {
+            result.unshift(get_select_col_info())
+        }
         return result
     }
 
