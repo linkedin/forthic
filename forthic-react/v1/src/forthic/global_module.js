@@ -1,5 +1,5 @@
 import React from 'react';
-import {createBrowserRouter} from "react-router-dom";
+import {createBrowserRouter, Navigate} from "react-router-dom";
 import axios from 'axios';
 import ForthicPage from './elements/ForthicPage';
 import { Module, Word, PushValueWord } from './module';
@@ -9,6 +9,7 @@ import { CSVLink } from "react-csv"
 import { UserNav, UserBreadcrumbNav, UserTypeahead } from './elements/UserNav'
 import RecordsTable from './elements/RecordsTable'
 import TicketsModal from './elements/TicketsModal'
+import {TicketSelector} from './elements/TicketsModal'
 
 
 // React Bootstrap
@@ -127,7 +128,9 @@ const NAME_TO_ELEMENT = {
     Typeahead,
     AsyncTypeahead,
     CSVLink,
+    Navigate,
     RecordsTable,
+    TicketSelector,
     TicketsModal,
     UserBreadcrumbNav,
     UserTypeahead,
@@ -379,6 +382,7 @@ class GlobalModule extends Module {
     this.add_module_word("<QPARAMS", this.word_l_QPARAMS);
     this.add_module_word("console.log", this.word_console_log);
     this.add_module_word("window.open", this.word_window_open);
+    this.add_module_word("TITLE!", this.word_TITLE_bang);
     this.add_module_word("SERVER-INTERPRET", this.word_SERVER_INTERPRET);
     this.add_module_word("MESSAGE-BROKER", this.word_MESSAGE_BROKER);
     this.add_module_word("PUBLISH-MESSAGE", this.word_PUBLISH_MESSAGE);
@@ -2575,6 +2579,9 @@ class GlobalModule extends Module {
     let value = interp.stack_pop();
     const flags = get_flags()
 
+    let cur_value = get_qparam(varname);
+    if (value == cur_value)   return
+
     // If !DELAY is set, then we'll use setTimeout to delay setting the query param. If another QPARAM! happens
     // in the meantime, we'll cancel this call and replace it with the new one
     let delay_ms = flags.delay ? flags.delay : 0
@@ -2604,6 +2611,7 @@ class GlobalModule extends Module {
         search_params.set(name, value)
       }
     }
+
     window.location.search = search_params.toString()
 }
 
@@ -2650,6 +2658,12 @@ class GlobalModule extends Module {
     let url = interp.stack_pop();
     window.open(url)
   }
+
+    // ( str -- )
+    word_TITLE_bang(interp) {
+        let str = interp.stack_pop();
+        document.title = str;
+    }
 
   // ( args word -- ? )
   // If the !PUSH-ERRORS flag is set, this pushes an error after the return values

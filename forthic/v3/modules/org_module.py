@@ -285,6 +285,12 @@ class OrgContext:
         manager_to_lead: Dict[str, str] = {}
         lead: Optional[str] = None
 
+        if not items:
+            items = []
+
+        if not leads:
+            leads = []
+
         for lead in leads:
             managers = self.org_managers(lead)
             for m in managers:

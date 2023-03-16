@@ -10,6 +10,7 @@ function RecordsTable(props) {
     //        fsort (optional): Forthic used to return a value for sorting the column. If specifed, enables sort
     //        fclick (optional): Forthic executed on click. The Forthic should expect the record value associated with the cell
     //        fformat (optional): Forthic executed to format value
+    //        fformat_rec (optional): Forthic executed to format record (this is used over `fformat`)
     //        className (optional): Classnames for column
     //    total_info (optional): Record with the following fields
     //        total_row_label (optional): Specifies label to use for total row. If set, computes total row. NOTE: The row totals are computed only for the visible records
@@ -65,19 +66,26 @@ function RecordsTable(props) {
                 new_page_records = sorted_records.slice(record_offset, end_offset)
             }
 
+            async function run_formatter(forthic) {
+                await interp.run(forthic)
+                let result = interp.stack_pop()
+                if (result instanceof Function)   return result()
+                else                              return result
+            }
+
             // Compute formatted cell values
             let formatted_page_records = []
             for (const rec of new_page_records) {
                 let formatted_rec = {...rec}
                 for (const info of props.column_info) {
                     let formatted_value = rec[info.field]
-                    if (info.fformat) {
+                    if (info.fformat_rec) {
+                        interp.stack_push(rec)
+                        formatted_value = await run_formatter(info.fformat_rec)
+                    }
+                    else if (info.fformat) {
                         interp.stack_push(rec[info.field])
-                        await interp.run(info.fformat)
-                        formatted_value = interp.stack_pop()
-                        if (formatted_value instanceof Function) {
-                            formatted_value = formatted_value()
-                        }
+                        formatted_value = await run_formatter(info.fformat)
                     }
                     formatted_rec[get_value_field(info.field)] = formatted_value
                 }
