@@ -494,7 +494,6 @@ function EmailCampaignActivity(props) {
     const [content, setContent] = useState({})
 
     let selected_tickets = props.records.filter(r => r[SELECT_TICKETS_FIELD])
-    console.log("EmailCampaign", props.records, selected_tickets)
     useEffect(() => {
         setTimeout(async () => {
             let _content = {};
@@ -563,10 +562,12 @@ export function TicketSelector(props) {
     // Props:
     //
     //    ticket:  A ticket record with SELECT_TICKETS_FIELD to indicate if a ticket is selected
+    //    select_field:  The ticket field that indicates a ticket is selected
+    //    toggle_selected:  A function that takes a ticket_key and a selected boolean
     return (
         <Form.Check
-            defaultChecked={props.ticket[SELECT_TICKETS_FIELD]}
-            onChange={e => props.ticket[SELECT_TICKETS_FIELD] = e.target.checked}  // Yeah, this is a little dicey...
+            checked={props.ticket[props.select_field]}
+            onChange={() => props.toggle_selected(props.ticket.key)}
         />
     )
 }
@@ -635,11 +636,29 @@ function TicketsModal(props) {
         }
     }
 
+    function toggle_selected(ticket_key) {
+        let new_records = []
+        for (const r of records) {
+            if (r.key === ticket_key) {
+                r[SELECT_TICKETS_FIELD] = !r[SELECT_TICKETS_FIELD]
+            }
+            new_records.push(r)
+        }
+        setRecords(new_records)
+    }
+
     function get_select_col_info() {
         let result = {
             field: SELECT_TICKETS_FIELD,
-            label: "S",
-            fformat_rec: "[SWAP] ['ticket'] SWAP ZIP REC  'TicketSelector' Element SWAP <PROPS"  // Apologies for all the SWAPs, but this is to avoid using a variable
+            label: " ",
+            fsort: `'${SELECT_TICKETS_FIELD}' REC@`,
+            format_rec: (rec) => {
+                return <TicketSelector
+                    ticket={rec}
+                    select_field={SELECT_TICKETS_FIELD}
+                    toggle_selected={(ticket_key) => toggle_selected(ticket_key)}
+                />
+            }
         }
         return result
     }
