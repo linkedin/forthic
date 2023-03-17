@@ -16,6 +16,7 @@ from forthic.v2.modules.org_module import OrgModule
 from forthic.v2.modules.confluence_module import ConfluenceModule
 
 from forthic.v3.interpreter import Interpreter as InterpreterV3
+import forthic.v3.modules.jira_module
 
 from forthic.utils.creds import (
     Creds,
@@ -26,6 +27,7 @@ from forthic.utils.creds import (
 )
 from forthic.utils.errors import UnauthorizedError
 from example_contexts_module_v2 import ExampleContextsModuleV2
+from example_contexts_module_v3 import ExampleContextsModuleV3
 
 # Allow us to use http locally
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -333,10 +335,10 @@ def get_interp_v3(app_dir):
 
     # interp.register_module(gsheet_module.GsheetModule)
     # interp.register_module(excel_module.ExcelModule)
-    # interp.register_module(jira_module.JiraModule)
+    interp.register_module(forthic.v3.modules.jira_module.JiraModule)
     # interp.register_module(JinjaModule)
     # interp.register_module(ConfluenceModule)
-    # interp.register_module(ExampleContextsModuleV2)
+    interp.register_module(ExampleContextsModuleV3)
     # interp.register_module(OrgModule)
     return interp
 
