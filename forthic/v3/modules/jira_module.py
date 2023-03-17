@@ -607,6 +607,7 @@ class JiraModule(Module):
             return result
 
         changes = get_ticket_changes(ticket)
+        changes = sorted(changes, key=lambda r: r['date'])
 
         def get_first_change(field: str, normalized_field: str) -> Optional[Any]:
             res = None
