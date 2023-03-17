@@ -2580,7 +2580,7 @@ class GlobalModule extends Module {
     const flags = get_flags()
 
     let cur_value = get_qparam(varname);
-    if (value == cur_value)   return
+    if (value === cur_value)   return
 
     // If !DELAY is set, then we'll use setTimeout to delay setting the query param. If another QPARAM! happens
     // in the meantime, we'll cancel this call and replace it with the new one

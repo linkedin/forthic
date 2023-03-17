@@ -9,8 +9,9 @@ function RecordsTable(props) {
     //        is_header (optional): Boolean to indicate if the column is a header column for each row
     //        fsort (optional): Forthic used to return a value for sorting the column. If specifed, enables sort
     //        fclick (optional): Forthic executed on click. The Forthic should expect the record value associated with the cell
+    //        format_rec (optional): Javascript function to format using the record rather than the record field (this takes precedence over `fformat_rec`)
+    //        fformat_rec (optional): Forthic executed to format record (this takes precedence over `fformat`)
     //        fformat (optional): Forthic executed to format value
-    //        fformat_rec (optional): Forthic executed to format record (this is used over `fformat`)
     //        className (optional): Classnames for column
     //    total_info (optional): Record with the following fields
     //        total_row_label (optional): Specifies label to use for total row. If set, computes total row. NOTE: The row totals are computed only for the visible records
@@ -69,8 +70,7 @@ function RecordsTable(props) {
             async function run_formatter(forthic) {
                 await interp.run(forthic)
                 let result = interp.stack_pop()
-                if (result instanceof Function)   return result()
-                else                              return result
+                return result instanceof Function ? result () : result;
             }
 
             // Compute formatted cell values
@@ -79,7 +79,16 @@ function RecordsTable(props) {
                 let formatted_rec = {...rec}
                 for (const info of props.column_info) {
                     let formatted_value = rec[info.field]
-                    if (info.fformat_rec) {
+
+                    // If we have formatters specified for this column, we'll use them to format the field value
+                    // There are three kinds:
+                    //    * format_rec: This is a javascript function that takes the row record and returns a cell value
+                    //    * fformat_rec: This is a Forthic string that takes a row record and returns a cell value
+                    //    * fformat: This is a Forthic string that takes the raw cell value and returns a formatted cell value
+                    if (info.format_rec) {
+                        formatted_value = info.format_rec(rec)
+                    }
+                    else if (info.fformat_rec) {
                         interp.stack_push(rec)
                         formatted_value = await run_formatter(info.fformat_rec)
                     }
