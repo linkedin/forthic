@@ -1885,7 +1885,7 @@ class GlobalModule(Module):
     # ( item -- json )
     def word_to_JSON(self, interp: IInterpreter):
         item = interp.stack_pop()
-        result = json.dumps(item)
+        result = json.dumps(item, default=default_json_serialize)
         interp.stack_push(result)
 
     # ( json -- item )
@@ -2159,7 +2159,7 @@ class GlobalModule(Module):
     # ( timestamp -- datetime )
     def word_TIMESTAMP_to_DATETIME(self, interp: IInterpreter):
         ts = interp.stack_pop()
-        result = datetime.datetime.fromtimestamp(ts)
+        result = datetime.datetime.fromtimestamp(int(ts))
         interp.stack_push(result)
 
     # ( str -- datetime )
@@ -2684,6 +2684,13 @@ def foreach(interp, flags):
     if flags.get('push_error'):
         interp.stack_push(errors)
     return
+
+
+def default_json_serialize(obj):
+    # Python can't serialize datetimes, so we'll default to converting them to timestamps
+    if isinstance(obj, datetime.datetime):
+        return int(datetime.datetime.timestamp(obj))
+    raise TypeError(f"{obj} not serializable")
 
 
 def execute(interp: IInterpreter, object: str):

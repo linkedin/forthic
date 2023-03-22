@@ -2,6 +2,7 @@ import os
 import json
 from ..module import Module
 from ..interfaces import IInterpreter
+from ..global_module import default_json_serialize
 
 
 class CacheModule(Module):
@@ -69,7 +70,7 @@ class CacheModule(Module):
     def store_cache(self, cache):
         filename = self.get_cache_filename()
         with open(filename, 'w') as f:
-            f.write(json.dumps(cache, indent=4, separators=(',', ': ')))
+            f.write(json.dumps(cache, indent=4, separators=(',', ': '), default=default_json_serialize))
 
 
 CACHE_FORTHIC = ''
