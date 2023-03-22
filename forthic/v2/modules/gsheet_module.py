@@ -510,6 +510,9 @@ class GsheetModule(Module):
         update_requests = interp.stack_pop()
         url = interp.stack_pop()
 
+        if (not update_requests):
+            return
+
         gsheet_id, tab_id = self.get_gsheet_id_and_tab_id(url)
         context = self.get_context()
 
@@ -553,6 +556,9 @@ class GsheetModule(Module):
         update_requests = interp.stack_pop()
         tab_title = interp.stack_pop()
         url = interp.stack_pop()
+
+        if (not update_requests):
+            return
 
         gsheet_id, _ = self.get_gsheet_id_and_tab_id(url)
         context = self.get_context()
