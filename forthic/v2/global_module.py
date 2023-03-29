@@ -2288,7 +2288,7 @@ class GlobalModule(Module):
         result = 0
         if isinstance(b, list):
             for num in b:
-                if b is not None:
+                if num is not None:
                     result += num
         else:
             a = interp.stack_pop()
