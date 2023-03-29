@@ -1685,7 +1685,7 @@ class GlobalModule(Module):
         if not string:
             string = ''
 
-        result = re.sub(regex, replace, string, re.MULTILINE | re.DOTALL)
+        result = re.sub(regex, replace, string, flags=re.MULTILINE | re.DOTALL)
         interp.stack_push(result)
 
     # ( string regex -- match )
@@ -2193,7 +2193,7 @@ class GlobalModule(Module):
         result = 0
         if isinstance(b, list):
             for num in b:
-                if b is not None:
+                if num is not None:
                     result += num
         else:
             a = interp.stack_pop()
