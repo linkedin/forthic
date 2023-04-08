@@ -1,0 +1,9 @@
+["contexts" "jira"] USE-MODULES
+
+contexts.JIRA-PROD jira.PUSH-CONTEXT!
+
+: JQL              ["resolution = null and updated > -3d"] CONCAT;
+: FIELDS           ['Summary' 'Assignee'];
+: |TO-LINES        ">STR" MAP "<br>" JOIN;
+: ACTIVE-TICKETS   JQL FIELDS jira.SEARCH;
+: MAIN-PAGE        ["<code>" ACTIVE-TICKETS |TO-LINES "</code>"] CONCAT;

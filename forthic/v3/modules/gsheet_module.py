@@ -396,10 +396,13 @@ def get_gsheet_id_and_tab_id(url: str) -> Tuple[str, str]:
 
 def get_sheet_info(context, gsheet_id: str) -> Any:
     gsheets_session = get_gsheets_session(context)
-    result = gsheets_session.get(
+    response = gsheets_session.get(
         f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}',
         proxies=context.get_proxies(),
-    ).json()
+    )
+    if not response.ok:
+        raise GsheetError(response.text)
+    result = response.json()
     return result
 
 

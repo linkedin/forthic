@@ -1,0 +1,13 @@
+["contexts" "gsheet"] USE-MODULES
+
+contexts.GOOGLE gsheet.PUSH-CONTEXT!
+
+# NOTE: Follow the direcitons in EXAMPLES.md to set up your Google client
+
+# Instructions: Replace this with your gsheet URL
+: GSHEET-URL   "https://add-your-gsheet-url-here";
+
+: TAB          GSHEET-URL gsheet.TAB;
+: TAB-ROWS     TAB gsheet.ROWS;
+: |TO-LINES    ">STR" MAP "<br>" JOIN;
+: MAIN-PAGE    ["<code>" TAB-ROWS |TO-LINES "</code>"] CONCAT;

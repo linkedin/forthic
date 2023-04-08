@@ -1,0 +1,11 @@
+["cache"] USE-MODULES
+
+# This stores the array of strings under the "greek" key in the cache.
+# You can examine the cache by looking at the `.cache` file in the
+# example app's directory
+["Alpha" "Beta" "Gamma"] "greek" cache.CACHE!
+
+# This returns the value of the cached content
+: GREEK   "greek" cache.CACHE@;
+
+: MAIN-PAGE   ["<code>" GREEK >STR  "</code>"] CONCAT;
