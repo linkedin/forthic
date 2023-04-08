@@ -1,0 +1,1 @@
+## TODO: Describe structure of apps and the config.json file

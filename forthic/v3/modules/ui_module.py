@@ -7,51 +7,48 @@ from ..interfaces import IInterpreter
 class UIModule(Module):
     def __init__(self, interp: IInterpreter):
         super().__init__("ui", interp, FORTHIC)
-        self.add_module_word("FORTHIC-REACT/v1", self.word_FORTHIC_REACT_slash_v1)
+        self.add_module_word("FORTHIC-REACT-v1", self.word_FORTHIC_REACT_v1)
         self.add_module_word("<CSS", self.word_l_CSS)
         self.add_module_word("<JSX", self.word_l_JSX)
         self.add_module_word("<FORTHIC", self.word_l_FORTHIC)
         return
 
-    # ( -- ForthicUI )
-    def word_FORTHIC_REACT_slash_v1(self, interp: IInterpreter):
-        result = ForthicReactUI_v1()
+    # ( -- ForthicReact )
+    def word_FORTHIC_REACT_v1(self, interp: IInterpreter):
+        result = ForthicReact("v1")
         interp.stack_push(result)
 
-    # ( ForthicUI css -- ForthicUI )
+    # ( ForthicReact css -- ForthicReact )
     def word_l_CSS(self, interp: IInterpreter):
         css = interp.stack_pop()
-        forthic_ui = interp.stack_pop()
+        forthic_react = interp.stack_pop()
 
-        forthic_ui.css = css
-        interp.stack_push(forthic_ui)
+        forthic_react.css = css
+        interp.stack_push(forthic_react)
 
-    # ( ForthicUI jsx -- ForthicUI )
+    # ( ForthicReact jsx -- ForthicReact )
     def word_l_JSX(self, interp: IInterpreter):
         jsx = interp.stack_pop()
-        forthic_ui = interp.stack_pop()
+        forthic_react = interp.stack_pop()
 
-        forthic_ui.jsx = jsx
-        interp.stack_push(forthic_ui)
+        forthic_react.jsx = jsx
+        interp.stack_push(forthic_react)
 
-    # ( ForthicUI forthic -- ForthicUI )
+    # ( ForthicReact forthic -- ForthicReact )
     def word_l_FORTHIC(self, interp: IInterpreter):
         forthic = interp.stack_pop()
-        forthic_ui = interp.stack_pop()
+        forthic_react = interp.stack_pop()
 
-        forthic_ui.forthic = forthic
-        interp.stack_push(forthic_ui)
+        forthic_react.forthic = forthic
+        interp.stack_push(forthic_react)
 
 
 FORTHIC = ""
 
 
-class ForthicReactUI:
-    def __init__(self):
+class ForthicReact:
+    def __init__(self, version):
+        self.version = version
         self.css = ""
         self.jsx = ""
         self.forthic = ""
-
-
-class ForthicReactUI_v1(ForthicReactUI):
-    pass

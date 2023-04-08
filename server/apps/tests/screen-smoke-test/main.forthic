@@ -1,0 +1,3 @@
+"screen1" LOAD-SCREEN
+
+: MAIN-PAGE   MESSAGE;

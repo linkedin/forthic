@@ -1,1 +1,0 @@
-Demonstrates how to use the Jira module to a basic search.
