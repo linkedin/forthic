@@ -19,16 +19,9 @@ This will create a Python virtual environment, install Forthic into it, and run 
 web server on port 8000 that can run some sample applications.
 
 ## Examples
-The Forthic examples run as web apps. The urls for each sample app have the same structure, which matches the directory structure:
-```
-http://localhost:8000/examples/<example>
-```
-For instance, to see the `ex_cache` example, go to:
-```
-http://localhost:8000/examples/ex_cache
-```
+The Forthic examples run as web apps. To see a list of the examples run the server using `make` and then go here: [http://localhost:8000](http://localhost:8000)
 
-See [EXAMPLES.md](docs/EXAMPLES.md) for more info about each example.
+See [EXAMPLES.md](docs/EXAMPLES.md) for more info.
 
 
 ## Tests

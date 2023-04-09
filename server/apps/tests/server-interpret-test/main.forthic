@@ -1,0 +1,14 @@
+["ui"] USE-MODULES
+
+: UI-FORTHIC   '''
+: H1             "'h1'" Element;
+: SERVER-MESSAGE   [] "MESSAGE" SERVER-INTERPRET console.log;
+: HOME-ELEMENT   H1 SERVER-MESSAGE <CONTENT;
+: HOME-ROUTE   "/" HOME-ELEMENT Route;
+: MAIN-ROUTER   [HOME-ROUTE] Router;
+''';
+
+# We'll call this word from UI-FORTHIC and render it in the heading
+: MESSAGE   "Howdy, from the server!";
+
+: MAIN-PAGE   ui.FORTHIC-REACT-v1 UI-FORTHIC ui.<FORTHIC;

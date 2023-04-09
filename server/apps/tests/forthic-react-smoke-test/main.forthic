@@ -1,0 +1,16 @@
+["ui"] USE-MODULES
+
+: CSS   '''
+h1 {
+    color: blue;
+}
+''';
+
+: UI-FORTHIC   '''
+: H1             "'h1'" Element;
+: HOME-ELEMENT   H1 "Forthic React Smoke Test" <CONTENT;
+: HOME-ROUTE   "/" HOME-ELEMENT Route;
+: MAIN-ROUTER   [HOME-ROUTE] Router;
+''';
+
+: MAIN-PAGE   ui.FORTHIC-REACT-v1 CSS ui.<CSS  UI-FORTHIC ui.<FORTHIC;

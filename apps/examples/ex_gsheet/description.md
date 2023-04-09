@@ -1,1 +1,0 @@
-Simple pull of data from a gsheet tab.

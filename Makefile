@@ -3,8 +3,7 @@ SHELL := /bin/bash
 .PHONY: install-forthic test test-js credentials-server examples docs
 
 example-server: install-forthic
-	pushd apps/examples && ln -sf ../../../../forthic-js . && popd
-	source myenv/bin/activate && cd apps/examples && FLASK_APP=run.py FLASK_ENV=development flask run --port=8000
+	source myenv/bin/activate && cd server && FLASK_APP=run.py FLASK_DEBUG=true flask run --port=8000
 
 myenv:
 	python3 -m venv myenv
@@ -21,13 +20,21 @@ test: myenv
 qa: myenv
 	source myenv/bin/activate && pip install tox && tox -eqa
 
+# NOTE: The Forthic JS code has been deprecated. Please use Forthic React for client side work
 test-js:
 	@echo
-	@echo "JS tests"
+	@echo "Forthic JS tests"
 	@echo "============"
 	node --experimental-modules ./tests/tests_js/test_all.mjs
 
-test-all: test test-js
+test-react:
+	@echo
+	@echo "Forthic React tests"
+	@echo "============"
+	cd forthic-react/v1 && npm install && CI=1 npm run test
+
+
+test-all: test test-react
 
 credentials-server:
 	FLASK_APP=apps/setup/run.py flask run --port=8000

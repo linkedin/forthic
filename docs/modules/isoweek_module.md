@@ -43,3 +43,19 @@ Given a `date` and a `qtr_offset` (being the quarter offset from the calendar ye
 an array whose first element is the quarter for the specified date and whose second element is the associated year.
 
 This is used to compute fiscal quarters from dates where the fiscal calendar is offset from the calendar year.
+
+### QUARTER
+`(date qtr_offset -- qtr)`
+
+Given a `date` and a `qtr_offset` (being the quarter offset from the calendar year), this returns
+the quarter for the specified date.
+
+This is used to compute fiscal quarters from dates where the fiscal calendar is offset from the calendar year.
+
+### YEAR
+`(date qtr_offset -- year)`
+
+Given a `date` and a `qtr_offset` (being the quarter offset from the calendar year), this returns
+the associated year.
+
+This is used to compute fiscal quarters from dates where the fiscal calendar is offset from the calendar year.
