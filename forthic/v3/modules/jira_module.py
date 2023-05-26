@@ -1,6 +1,7 @@
 import re
 import requests
 import datetime
+import numbers
 import pytz
 import base64
 from dateutil import parser
@@ -16,6 +17,7 @@ class JiraError(RuntimeError):
     pass
 
 
+UNIX_EPOCH = datetime.datetime.utcfromtimestamp(0).replace(tzinfo=None)
 DEFAULT_MAX_TICKETS = 1000
 
 
@@ -351,8 +353,9 @@ class JiraModule(Module):
         changes = interp.stack_pop()
         resolution = interp.stack_pop()
 
-        # NOTE: Each change should have the following form:
+        # NOTE: Each change should have one of the following forms:
         #  {'date': datetime.datetime(2021, 1, 15, 8, 31, 15, tzinfo=tzutc()), 'field': 'status', 'from': 'Open', 'to': 'In Progress', 'from_': '1', 'to_': '3'}
+        #  {'date': 1626830097, 'field': 'status', 'from': 'Open', 'to': 'In Progress', 'from_': '1', 'to_': '3'}
 
         result: Dict[str, float] = {}
 
@@ -384,9 +387,21 @@ class JiraModule(Module):
             }
             return res
 
+        def ensure_seconds(obj):
+            result = 0
+            if isinstance(obj, datetime.datetime):
+                result = (obj.replace(tzinfo=None) - UNIX_EPOCH).total_seconds()
+            elif (isinstance(obj, numbers.Number)):
+                result = obj
+            else:
+                raise JiraError(f"Invalid date type: {obj}")
+            return result
+
         def compute_duration_h(cur_time, prev_time):
-            duration = cur_time - prev_time
-            res = duration.total_seconds() / 3600
+            cur_time_s = ensure_seconds(cur_time)
+            prev_time_s = ensure_seconds(prev_time)
+            duration = cur_time_s - prev_time_s
+            res = duration / 3600
             return res
 
         def compute_duration_recs(changes):
