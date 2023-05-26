@@ -6,6 +6,7 @@ from forthic.v3.modules import (
     gsheet_module,
     excel_module,
     confluence_module,
+    trino_module,
 )
 from forthic.utils.creds import Creds
 
@@ -22,6 +23,7 @@ class ContextsModule(Module):
         self.add_module_word('CONFLUENCE', self.word_CONFLUENCE)
         self.add_module_word('GOOGLE', self.word_GOOGLE)
         self.add_module_word('MSGRAPH', self.word_MSGRAPH)
+        self.add_module_word('TRINO', self.word_TRINO)
 
     # ( -- JiraContext )
     def word_JIRA_PROD(self, interp):
@@ -69,6 +71,11 @@ class ContextsModule(Module):
 
         interp.stack_push(MSGraphCredsContext())
 
+    # ( -- TrinoContext )
+    def word_TRINO(self, interp):
+        result = TrinoContext()
+        interp.stack_push(result)
+
     # ----------------------------------
     # Helpers
     def get_jira_context(self, key):
@@ -78,6 +85,29 @@ class ContextsModule(Module):
             result = JiraContext(key)
             CONTEXTS[key] = result
         return result
+
+
+class TrinoContext(trino_module.TrinoContext):
+    def __init__(self):
+        creds = Creds(SECRETS_DIR)
+        self.app_creds = creds.get_password_creds("TRINO")
+        super().__init__()
+
+    def get_field(self):
+        return self.field
+
+    def get_host(self):
+        return self.app_creds['host']
+
+    def get_username(self):
+        return self.app_creds['username']
+
+    def get_password(self):
+        return self.app_creds['password']
+
+    # Uncomment to verify ssl certs in REST calls
+    # def get_cert_verify(self):
+    #     return "/export/apps/openssl/ssl/cert.pem"
 
 
 class JiraContext(jira_module.JiraContext):

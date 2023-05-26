@@ -20,6 +20,9 @@ test: myenv
 qa: myenv
 	source myenv/bin/activate && pip install tox && tox -eqa
 
+test-py:
+	python -m pytest tests/tests_py
+
 # NOTE: The Forthic JS code has been deprecated. Please use Forthic React for client side work
 test-js:
 	@echo

@@ -34,6 +34,8 @@ setup(
         "Flask",
         "Jinja2",
         "markdown",
+        "trino",
+        "pandas"
     ],
     project_urls={
         'Documentation': 'https://forthic.readthedocs.io',
