@@ -1,0 +1,59 @@
+["gsheet" "jira" "contexts" "cache"] USE-MODULES
+
+# ----- TWEAK: Configuration ---------------------------------------------------------------------------------
+contexts.JIRA-PROD jira.PUSH-CONTEXT!
+contexts.GOOGLE gsheet.PUSH-CONTEXT!
+
+: JQL             "TODO-REPLACE-THIS-WITH-YOUR-JQL";
+: TICKET-STATES   ["TODO-REPLACE-THIS-WITH-YOUR-TICKET-STATES" "Open" "In Progress" "Blocked" "On Hold" "Closed"];
+: FIELDS          ["TODO-REPLACE-THIS-WITH-THE-FIELDS-YOU-WANT" "Resolution" "Summary" "Reporter" "Assignee" "Created" "Resolved" "Labels"];
+: GSHEET          "https://docs.google.com/spreadsheets/d/TODO-REPLACE-WITH-YOUR-GSHEET";
+
+# ----- Computing time in state ------------------------------------------------------------------------------
+["ticket" "state"] VARIABLES
+
+: ticket-KEY                 ticket @ "key" REC@;
+: ticket-RESOLUTION          ticket @ "Resolution" REC@;
+: ticket-CHANGELOG           ticket-KEY ['status'] jira.CHANGELOG;
+: ticket-CHANGES             ticket @ "changes" REC@;
+
+: <CHANGES                   (ticket !@) ticket-CHANGELOG "changes" <REC!;
+: ticket-TIME-METRICS        ticket-RESOLUTION ticket-CHANGES "status" jira.TIME-IN-STATE;
+: <TIME-METRICS              (ticket !@) ticket-TIME-METRICS "time_metrics" <REC!;
+
+: TICKETS!                   JQL FIELDS jira.SEARCH "<CHANGES <TIME-METRICS" MAP "tickets" cache.CACHE!;
+: TICKETS                    "tickets" cache.CACHE@;
+
+# ----- TWEAK: Report ----------------------------------------------------------------------------------------
+: ticket+state-TIME-METRIC   ticket @ ["time_metrics"  state @] REC@ "" DEFAULT;
+
+: ticket-SUMMARY             ticket @ "Summary" REC@;
+: ticket-REPORTER            ticket @ "Reporter" REC@;
+: ticket-ASSIGNEE            ticket @ "Assignee" REC@;
+: ticket-CREATED             ticket @ "Created" REC@;
+: ticket-RESOLVED            ticket @ "Resolved" REC@;
+: ticket-LABELS              ticket @ "Labels" REC@;
+
+: TICKET>ROW-REC   (ticket !) [
+    ["Jira"          ticket-KEY]
+    ["Summary"       ticket-SUMMARY]
+    ["Created"       ticket-CREATED]
+    ["Reporter"      ticket-REPORTER]
+    ["Assignee"      ticket-ASSIGNEE]
+    ["Labels"        ticket-LABELS ", " JOIN]
+    ["Resolved"      ticket-RESOLVED]
+    TICKET-STATES "(state !) [state @  ticket+state-TIME-METRIC]" MAP UNPACK
+] REC;
+
+: DATA-ROWS        TICKETS "TICKET>ROW-REC" MAP;
+: DATA-HEADERS     ["Created" "Jira"  "Summary" TICKET-STATES "Reporter" "Assignee" "Labels" "Resolved"] FLATTEN;
+@: GSHEET-TAB      GSHEET gsheet.TAB;
+: UPDATE-GSHEET!   GSHEET-TAB gsheet.CLEAR!  GSHEET-TAB DATA-HEADERS DATA-ROWS gsheet.RECORDS!;
+
+# ----- TWEAK: UPDATE -----------------------------------------------------------------------------------------------
+: UPDATE   TICKETS! UPDATE-GSHEET!;
+
+# NOTE: To run the report, uncomment the next line
+# UPDATE
+
+: MAIN-PAGE   "Howdy, Jira time in state!";

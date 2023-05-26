@@ -19,6 +19,16 @@
                 {% endfor %}
             </ul>
 
+            <h2>Archetypes</h2>
+            <p>These apps show how to solve real-world problems.</p>
+            <ul>
+                {% for app in apps['archetypes'] %}
+                <li>
+                    <a href="./archetypes/{{app}}">{{app}}</a>
+                </li>
+                {% endfor %}
+            </ul>
+
             <h2>Tests</h2>
             <p>These are mostly smoke tests for app functionality.</p>
             <ul>

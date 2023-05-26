@@ -45,9 +45,11 @@ def add_header(response):
 @app.route('/')
 def home():
     coding_forthic_apps = os.listdir("./apps/coding-forthic")
+    archetype_apps = os.listdir("./apps/archetypes")
     test_apps = os.listdir("./apps/tests")
     apps = {
         "coding-forthic": coding_forthic_apps,
+        "archetypes": archetype_apps,
         "tests": test_apps
     }
     return render_template('home.html', apps=apps)
