@@ -93,7 +93,10 @@ class Axis:
         # Adjust val max based on tick step
         self.val_max = self.val_0 + self.tick_step * (self.num_ticks - 1)
 
-        self.pix_per_val = (self.pix_max - self.pix_0) / (self.val_max - self.val_0)
+        if self.val_max != self.val_0:
+            self.pix_per_val = (self.pix_max - self.pix_0) / (self.val_max - self.val_0)
+        else:
+            self.pix_per_val = 1
 
     def val_to_pix(self, val):
         result = self.pix_0 + (val - self.val_0) * self.pix_per_val

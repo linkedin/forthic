@@ -1779,6 +1779,8 @@ class GlobalModule(Module):
 
         if not string:
             string = ''
+        if not replacement:
+            replacement = ''
 
         result = string.replace(search_string, replacement)
         interp.stack_push(result)
