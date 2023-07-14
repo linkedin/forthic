@@ -4,15 +4,11 @@ import oauthlib.oauth2.rfc6749.errors
 from requests_oauthlib import OAuth2Session   # type: ignore
 from ..module import Module
 from ..interfaces import IInterpreter
+from ...utils.errors import (
+    ExpiredMSGraphOAuthToken,
+    ExcelError
+)
 from typing import List
-
-
-class ExcelError(RuntimeError):
-    pass
-
-
-class ExpiredMSGraphOAuthToken(ExcelError):
-    pass
 
 
 def raises_ExpiredMSGraphOAuthToken(fn):

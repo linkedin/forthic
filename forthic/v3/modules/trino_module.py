@@ -6,10 +6,6 @@ import pandas as pd
 import json
 
 
-class TrinoError(RuntimeError):
-    pass
-
-
 class TrinoModule(Module):
     """This implements a trino client
     """

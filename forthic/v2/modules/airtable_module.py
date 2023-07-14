@@ -2,22 +2,11 @@ import requests
 import urllib
 from ..module import Module
 from ..interfaces import IInterpreter
+from ...utils.errors import (
+    AirtableError,
+    AirtableUnauthorized
+)
 from typing import List
-
-
-class InvalidAirtableCreds(RuntimeError):
-    def __init__(self, field, host):
-        super().__init__(f'Invalid field: {field}')
-        self.field = field
-        self.host = host
-
-
-class AirtableError(RuntimeError):
-    pass
-
-
-class AirtableUnauthorized(RuntimeError):
-    pass
 
 
 MAX_ITERATIONS = 100

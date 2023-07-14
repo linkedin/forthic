@@ -3,14 +3,11 @@ import urllib
 import requests
 from ..module import Module
 from ..interfaces import IInterpreter
+from ...utils.errors import ConfluenceError
 from typing import List, Optional
 
 # Unit separator
 US = chr(31)
-
-
-class ConfluenceError(RuntimeError):
-    pass
 
 
 class ConfluenceModule(Module):

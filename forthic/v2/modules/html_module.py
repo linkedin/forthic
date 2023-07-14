@@ -4,16 +4,11 @@ import markdown
 from ..module import Module
 import random
 from ..interfaces import IInterpreter
+from ...utils.errors import (
+    HtmlModuleError,
+    InvalidForthicWordError
+)
 from typing import List, Dict, Optional
-
-
-class HtmlModuleError(RuntimeError):
-    pass
-
-
-class InvalidForthicWordError(HtmlModuleError):
-    def __init__(self, name):
-        super().__init__(f"Expecting a single Forthic word. Not '{name}'")
 
 
 ASYNC_BUTTON_KEY = '_async_forthic_button_state'

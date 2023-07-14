@@ -5,15 +5,11 @@ from requests_oauthlib import OAuth2Session   # type: ignore
 import oauthlib.oauth2.rfc6749.errors
 from ..module import Module
 from ..interfaces import IInterpreter
+from ...utils.errors import (
+    GsheetError,
+    ExpiredGsheetOAuthToken
+)
 from typing import List, Any, Dict, Optional, Tuple
-
-
-class GsheetError(RuntimeError):
-    pass
-
-
-class ExpiredGsheetOAuthToken(GsheetError):
-    pass
 
 
 def raises_ExpiredGsheetOAuthToken(fn):

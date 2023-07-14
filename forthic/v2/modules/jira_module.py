@@ -7,13 +7,12 @@ from dateutil import parser
 from ..module import Module
 from ..global_module import drill_for_value
 from collections import defaultdict
-from ...utils.errors import UnauthorizedError
+from ...utils.errors import (
+    UnauthorizedError,
+    JiraError
+)
 from ..interfaces import IInterpreter
 from typing import List, Any, Dict, Optional
-
-
-class JiraError(RuntimeError):
-    pass
 
 
 class JiraModule(Module):
