@@ -7,14 +7,23 @@ For a brief overview of Forthic, see [OVERVIEW.md](docs/OVERVIEW.md). The [ARCHI
 
 To build browsable documentation (including the Forthic module docs):
 ```
+# For Mac and Linux
 make docs
 ```
 Then load `./build/sphinx/html/index.html`
 
 ## Getting started
 ```
+# For Mac and Linux
 make
 ```
+
+```
+# Windows
+.\make-install.ps1
+.\make-server.ps1
+```
+
 This will create a Python virtual environment, install Forthic into it, and run a
 web server on port 8000 that can run some sample applications.
 
