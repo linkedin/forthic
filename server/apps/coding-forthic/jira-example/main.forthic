@@ -6,4 +6,4 @@ contexts.JIRA-PROD jira.PUSH-CONTEXT!
 : FIELDS           ['Summary' 'Assignee'];
 : |TO-LINES        ">STR" MAP "<br>" JOIN;
 : ACTIVE-TICKETS   JQL FIELDS jira.SEARCH;
-: MAIN-PAGE        ["<code>" ACTIVE-TICKETS |TO-LINES "</code>"] CONCAT;
+: MAIN-PAGE        ["<h1>Jira Example</h1>" "<code>" ACTIVE-TICKETS |TO-LINES "</code>"] CONCAT;
