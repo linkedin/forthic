@@ -5,21 +5,14 @@ Forthic is a stack-based language for writing tweakable applications by coordina
 ## Documentation
 For a brief overview of Forthic, see [OVERVIEW.md](docs/OVERVIEW.md). The [ARCHITECTURE.md](docs/ARCHITECTURE.md) provides more technical detail about Forthic, including a brief overview of some of the standard global Forthic words. The [IDIOMS.md](docs/IDIOMS.md) file gives pointers on how to use Forthic the way it was designed to be used. Also see the [THREAT_MODEL.md](docs/THREAT_MODEL.md) file for guidance on running Forthic securely.
 
-To build browsable documentation (including the Forthic module docs):
-```
-# For Mac and Linux
-make docs
-```
-Then load `./build/sphinx/html/index.html`
-
 ## Getting started
 ```
-# For Mac and Linux
+# On Mac and Linux
 make
 ```
 
 ```
-# Windows
+# On Windows
 .\make-install.ps1
 .\make-server.ps1
 ```
