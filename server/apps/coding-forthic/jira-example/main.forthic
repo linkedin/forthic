@@ -1,9 +1,23 @@
-["contexts" "jira"] USE-MODULES
+["contexts" "jira" "jinja"] USE-MODULES
 
 contexts.JIRA-PROD jira.PUSH-CONTEXT!
 
 : JQL              ["resolution = null and updated > -3d"] CONCAT;
 : FIELDS           ['Summary' 'Assignee'];
 : |TO-LINES        ">STR" MAP "<br>" JOIN;
-: ACTIVE-TICKETS   JQL FIELDS jira.SEARCH;
-: MAIN-PAGE        ["<h1>Jira Example</h1>" "<code>" ACTIVE-TICKETS |TO-LINES "</code>"] CONCAT;
+@: ACTIVE-TICKETS   JQL FIELDS jira.SEARCH;
+
+: MAIN-TEMPLATE   '''
+   <h1>Jira Example</h1>
+   <p>Num tickets: {{ num_tickets }}</p>
+   <code>
+   {{ ticket_json_lines }}
+   </code>
+''';
+
+: MAIN-DATA   [
+    ["num_tickets"         ACTIVE-TICKETS LENGTH]
+    ["ticket_json_lines"   ACTIVE-TICKETS |TO-LINES]
+] REC;
+
+: MAIN-PAGE        MAIN-TEMPLATE MAIN-DATA jinja.RENDER;
