@@ -23,6 +23,10 @@ qa: myenv
 test-py:
 	python -m pytest tests/tests_py
 
+delete-secrets:
+	rm server/.key
+	rm server/.secrets
+
 # NOTE: The Forthic JS code has been deprecated. Please use Forthic React for client side work
 test-js:
 	@echo

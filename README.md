@@ -9,9 +9,7 @@ For a brief overview of Forthic, see [OVERVIEW.md](docs/OVERVIEW.md). The [ARCHI
 ```
 # On Mac and Linux
 make
-```
 
-```
 # On Windows
 .\make-install.ps1
 .\make-server.ps1
@@ -37,5 +35,19 @@ make test-js
 # Tests both
 make test-all
 ```
+
+## Deleting secrets
+All credentials are stored encrypted in a JSON object in the `server/.secrets` file. To delete a particular secret, just remove it from the JSON record
+and save the file. To delete all secrets along with the encryption key, delete `server/.secrets` and `server/.key` or
+
+```
+# On Mac and Linux
+make delete-secrets
+
+# On Windows
+make-delete-secrets.ps1
+```
+
+
 ## Articles
 LinkedIn Article on how to use the Jira module https://www.linkedin.com/pulse/hello-forthic-abdul-sheik
