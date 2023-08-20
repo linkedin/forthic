@@ -1,0 +1,22 @@
+# NOTE: This is the starting point for a video on how to tweak Forthic code
+["jira" "contexts"] USE-MODULES
+
+contexts.JIRA-PROD jira.PUSH-CONTEXT!
+
+# ----- Utils -------------------------------------------------------------------------------------
+: |TO-LINES                    ">JSON" MAP "<br>" JOIN;
+
+# ----- Report ------------------------------------------------------------------------------------
+["ticket"] VARIABLES
+
+: TICKETS                      "project='CF'"  ["Resolution" "Status" "Assignee"] jira.SEARCH;
+: ticket-RESOLUTION            ticket @ 'Resolution' REC@;
+: ticket-KEY                   ticket @ 'key' REC@;
+: ticket-STATUS-CHANGES        ticket-KEY ['status'] jira.CHANGELOG;
+: ticket-STATE-DURATION        ticket-RESOLUTION ticket-STATUS-CHANGES 'status' jira.TIME-IN-STATE;
+: AUGMENTED-TICKETS            TICKETS "(ticket !@) ticket-STATE-DURATION 'duration' <REC!" MAP;
+: REPORT                       ["<code>"  AUGMENTED-TICKETS |TO-LINES "</code>"] CONCAT;
+
+# ----- MAIN-PAGE ------------------------------------------------------------------------------------
+: MAIN-PAGE   REPORT;
+
