@@ -2276,6 +2276,15 @@ class GlobalModule(Module):
     # ( numbers -- mean )
     def word_MEAN(self, interp: IInterpreter):
         numbers = interp.stack_pop()
+
+        if not numbers:
+            interp.stack_push(0)
+            return
+
+        if isinstance(numbers, list) and len(numbers) == 1:
+            interp.stack_push(numbers[0])
+            return
+
         result = statistics.mean(numbers)
         interp.stack_push(result)
 

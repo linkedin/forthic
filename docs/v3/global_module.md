@@ -1016,7 +1016,7 @@ Given integers `m` and `n`, returns `m modulo n`.
 ### MEAN
 `( numbers -- mean )`
 
-Returns the mean of an array of numbers
+Returns the mean of an array of numbers. The mean of empty arrays or `NULL` is defined to be `0`.
 
 ### ROUND
 `( number -- integer )`

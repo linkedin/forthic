@@ -1711,6 +1711,21 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(stack[6], 6)
         self.assertEqual(stack[7], 24)
 
+    def test_mean(self):
+        interp = Interpreter()
+        stack = interp.stack
+        interp.run("[1 2 3 4 5] MEAN")
+        self.assertEqual(stack[-1], 3)
+
+        interp.run("[4] MEAN")
+        self.assertEqual(stack[-1], 4)
+
+        interp.run("[] MEAN")
+        self.assertEqual(stack[-1], 0)
+
+        interp.run("NULL MEAN")
+        self.assertEqual(stack[-1], 0)
+
     def test_comparison(self):
         interp = Interpreter()
         interp.run("""
