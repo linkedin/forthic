@@ -1423,7 +1423,7 @@ class GlobalModule(Module):
             return accum
 
         def add_to_record_result(item, keys, key, result):
-            new_key = '\t'.join(keys + [key])
+            new_key = '.'.join(keys + [key])
             result[new_key] = item
 
         def fully_flatten_record(record, res, keys):

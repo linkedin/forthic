@@ -1706,7 +1706,7 @@ class GlobalModule extends Module {
     }
 
     function add_to_record_result(item, key, keys, result) {
-      let new_key = keys.concat([key]).join("\t");
+      let new_key = keys.concat([key]).join(".");
       result[new_key] = item;
     }
 

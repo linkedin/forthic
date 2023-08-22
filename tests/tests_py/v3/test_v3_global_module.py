@@ -1180,7 +1180,7 @@ class TestGlobalModule(unittest.TestCase):
         """)
         stack = interp.stack
         record = stack[0]
-        self.assertEqual(sorted(list(record.keys())), ['a', 'b\talpha\tduo', 'b\talpha\tuno', 'c'])
+        self.assertEqual(sorted(list(record.keys())), ['a', 'b.alpha.duo', 'b.alpha.uno', 'c'])
 
     def test_FLATTEN_depth(self):
         interp = Interpreter()
@@ -1215,7 +1215,7 @@ class TestGlobalModule(unittest.TestCase):
             [['a' 1] ['b' alpha @] ['c' 3]] REC 1 !DEPTH FLATTEN
         """)
         record = interp.stack[0]
-        self.assertEqual(sorted(record.keys()), ['a', 'b\talpha', 'c'])
+        self.assertEqual(sorted(record.keys()), ['a', 'b.alpha', 'c'])
         return
 
 

@@ -937,7 +937,7 @@ it ('Can flatten all levels of a nested record', async () => {
         [['a' 1] ['b' alpha @] ['c' 3]] REC FLATTEN
     `)
     let record = interp.stack[0]
-    expect(Object.keys(record).sort()).toEqual(['a', 'b\talpha\tduo', 'b\talpha\tuno', 'c'])
+    expect(Object.keys(record).sort()).toEqual(['a', 'b.alpha.duo', 'b.alpha.uno', 'c'])
 })
 
 
@@ -960,7 +960,7 @@ it ('Can flatten one level of a nested record', async () => {
         [['a' 1] ['b' alpha @] ['c' 3]] REC 1 !DEPTH FLATTEN
     `)
     let record = interp.stack[0]
-    expect(Object.keys(record).sort()).toEqual(['a', 'b\talpha', 'c'])
+    expect(Object.keys(record).sort()).toEqual(['a', 'b.alpha', 'c'])
 })
 
 it ('Can return the index of the first value in an array', async () => {

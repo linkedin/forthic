@@ -41,7 +41,7 @@ test-react:
 	cd forthic-react/v1 && npm install && CI=1 npm run test
 
 
-test-all: test test-react
+test-all: test-py test-react test-js
 
 credentials-server:
 	FLASK_APP=apps/setup/run.py flask run --port=8000
