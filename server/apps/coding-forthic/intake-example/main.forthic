@@ -1,0 +1,28 @@
+["contexts" "jira" "cache" "jinja"] USE-MODULES
+
+# contexts.JIRA-PROD jira.PUSH-CONTEXT!
+contexts.JIRA-STG jira.PUSH-CONTEXT!
+
+
+# ----- Configuration ----------------------------------------------------------------------------------------
+: FORM-ADMINS   ['<YOUR-USERNAME>'];
+: CONFIG-URL    "<YOUR-GSHEET-URL>";
+
+: HOME-CONTENT   '''
+''';
+
+: MY-FORM-CONTENT   '''
+
+''';
+
+: MY-FORM-CONFIG   [
+    ["tab"          "My Form"]
+    ["Project"      'CF']
+    ["Issue Type"   'Task']
+    ["top_content"  MY-FORM-CONTENT]
+] REC;
+
+: CONFIGS [MY-FORM-CONFIG];
+
+
+: MAIN-PAGE   "Howdy, Intake Form!";
