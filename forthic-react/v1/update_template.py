@@ -2,7 +2,7 @@ import re
 import glob
 
 def main():
-    template_path = "../../apps/examples/templates/react/react-app/v1/main.html"
+    template_path = "../../server/templates/react/react-app/v1/main.html"
 
     # Get new js and css filenames
     [js_path] = glob.glob("./build/static/js/main*.js")

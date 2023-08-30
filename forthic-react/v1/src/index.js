@@ -5,6 +5,7 @@ import 'react-bootstrap-typeahead/css/Typeahead.css';
 import './index.css'
 import {RouterProvider} from "react-router-dom";
 import RechartsModule from "./forthic/modules/recharts_module"
+import IntakeModule from './forthic/modules/intake_module';
 import { Interpreter } from './forthic/interpreter';
 
 let INTERP;
@@ -26,6 +27,7 @@ export async function get_interp() {
   let result = new Interpreter()
   let forthic = get_forthic()
   await result.register_module(new RechartsModule())
+  await result.register_module(new IntakeModule())
   // await result.register_module(new TableModule())
   await result.run(forthic)
   INTERP = result

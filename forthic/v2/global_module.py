@@ -1,5 +1,5 @@
 import re
-import os
+import getpass
 import random
 import math
 import pytz
@@ -2676,7 +2676,7 @@ class GlobalModule(Module):
 
     # ( -- username )
     def word_CURRENT_USER(self, interp: IInterpreter):
-        result = os.getlogin()
+        result = getpass.getuser()
         interp.stack_push(result)
 
 

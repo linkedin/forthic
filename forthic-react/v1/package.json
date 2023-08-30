@@ -17,6 +17,7 @@
     "react-bootstrap-typeahead": "^6.0.0",
     "react-csv": "^2.2.2",
     "react-dom": "^18.2.0",
+    "react-markdown": "^8.0.7",
     "react-router-dom": "^6.6.1",
     "react-scripts": "5.0.1",
     "recharts": "^2.3.2",

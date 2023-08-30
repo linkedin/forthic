@@ -1,5 +1,5 @@
 import re
-import os
+import getpass
 import random
 import math
 import pytz
@@ -394,12 +394,6 @@ class GlobalModule(Module):
     # ( names -- )
     def word_USE_MODULES(self, interp: IInterpreter):
         names = interp.stack_pop()
-
-        cur_module = interp.cur_module()
-        if cur_module != interp.app_module:
-            raise GlobalModuleError(
-                'USE-MODULES can only be called within the app module'
-            )
 
         for name in names:
             module_name = name
@@ -2622,7 +2616,7 @@ class GlobalModule(Module):
 
     # ( -- username )
     def word_CURRENT_USER(self, interp: IInterpreter):
-        result = os.getlogin()
+        result = getpass.getuser()
         interp.stack_push(result)
 
     # ( markdown -- html)

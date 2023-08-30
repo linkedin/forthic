@@ -21,7 +21,7 @@ qa: myenv
 	source myenv/bin/activate && pip install tox && tox -eqa
 
 test-py:
-	python -m pytest tests/tests_py
+	source myenv/bin/activate && python -m pytest tests/tests_py
 
 delete-secrets:
 	rm server/.key

@@ -212,6 +212,10 @@ class JiraModule(Module):
     def word_ADD_ATTACHMENTS(self, interp: IInterpreter):
         attachments_rec = interp.stack_pop()
         ticket_key = interp.stack_pop()
+
+        if (not attachments_rec or len(attachments_rec) == 0):
+            return
+
         context = self.current_context()
         headers = {
             "Accept": "application/json",

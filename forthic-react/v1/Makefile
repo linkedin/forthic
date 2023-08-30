@@ -1,6 +1,5 @@
 # Makefile for react-app
-APP_NAME = react-app
-STATIC_DIR=../../apps/examples/static/react/$(APP_NAME)/v1
+STATIC_DIR=../../server/static/react/react-app/v1
 
 .PHONY: build test run
 
