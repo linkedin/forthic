@@ -48,6 +48,10 @@ make delete-secrets
 make-delete-secrets.ps1
 ```
 
+## YouTube
+- [Coding Forthic with Rino](https://www.youtube.com/@codingforthic)
 
 ## Articles
-LinkedIn Article on how to use the Jira module https://www.linkedin.com/pulse/hello-forthic-abdul-sheik
+- [Categorical Coding](https://forthix.com/category/categorical-coding/)
+- [Forthic How To](https://forthix.com/category/how-to/)
+- LinkedIn Article on how to use the Jira module https://www.linkedin.com/pulse/hello-forthic-abdul-sheik
