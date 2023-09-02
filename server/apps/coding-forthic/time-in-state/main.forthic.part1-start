@@ -7,7 +7,7 @@ contexts.JIRA-PROD jira.PUSH-CONTEXT!
 
 ["my_tickets"] VARIABLES
 
-: GET-TICKETS                  "<Your JQL>"  ["Resolution"  "Status"] jira.SEARCH;
+: GET-TICKETS                  "<YOUR JQL>"  ["Resolution"  "Status"] jira.SEARCH;
 : PUSH-JQL-RECORD              my_tickets !;
 : PULL-JQL-RECORD              my_tickets @;
 : TICKET-RESOLUTION            PULL-JQL-RECORD 'Resolution' REC@;

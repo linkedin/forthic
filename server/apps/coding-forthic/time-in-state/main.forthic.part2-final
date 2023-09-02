@@ -1,0 +1,40 @@
+# NOTE: This is the ending point for [CF04 Jira Time in State, Part 2](https://youtu.be/Ytu9YLu0EAg)
+
+["jira" "contexts" "cache" "gsheet"] USE-MODULES
+
+contexts.JIRA-PROD jira.PUSH-CONTEXT!
+contexts.GOOGLE gsheet.PUSH-CONTEXT!
+
+# ----- Utils -------------------------------------------------------------------------------------
+: |TO-LINES   ">JSON" MAP "<br>" JOIN;
+: |RESOLVED   "'Resolution' REC@" SELECT;
+
+# ----- Report ------------------------------------------------------------------------------------
+["ticket"] VARIABLES
+
+: TICKETS                      "<YOUR JQL>"  ["Resolution" "Status" "Assignee"] jira.SEARCH;
+: ticket-RESOLUTION            ticket @ 'Resolution' REC@;
+: ticket-KEY                   ticket @ 'key' REC@;
+: ticket-STATUS-CHANGES        ticket-KEY ['status'] jira.CHANGELOG;
+: ticket-STATE-DURATION        ticket-RESOLUTION ticket-STATUS-CHANGES 'status' jira.TIME-IN-STATE;
+: AUGMENTED-TICKETS!           TICKETS "(ticket !@) ticket-STATE-DURATION 'duration' <REC!" MAP "augmented_tickets" cache.CACHE!;
+: AUGMENTED-TICKETS            "augmented_tickets" cache.CACHE@;
+: REPORT                       ["<code>"  AUGMENTED-TICKETS |TO-LINES "</code>"] CONCAT;
+
+# ----- gsheet export ---------------------------------------------------------------------------------
+: GSHEET-URL   "<YOUR GSHEET URL>";
+: TAB          GSHEET-URL gsheet.TAB;
+: OLD-KEYS      [ "Assignee"  "key"  "Resolution" "Status" "duration.To Do"  "duration.In Progress"];
+: HEADERS       [ "Assignee"  "Jira" "Resolution" "Status" "To Do (d)"       "In Progress (d)"     ];
+: >ROW-RECORD   FLATTEN OLD-KEYS HEADERS RELABEL;
+
+# NOTE: Schedule this to be called when you want a fresh gsheet export
+: UPDATE-GSHEET!
+    AUGMENTED-TICKETS!
+    TAB gsheet.CLEAR!
+    TAB HEADERS AUGMENTED-TICKETS |RESOLVED ">ROW-RECORD" MAP gsheet.RECORDS!
+;
+
+# ----- MAIN-PAGE ------------------------------------------------------------------------------------
+: MAIN-PAGE   REPORT;
+

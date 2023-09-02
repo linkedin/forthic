@@ -3,4 +3,5 @@ This example shows how to compute the time that tickets were in each of their st
 Part 1 starts with an existing app and revises it to make it more categorical.
 
 ## References
-- [Time in State Part 1 (YouTube)](https://youtu.be/_cjNMRpo97M)
+- [CF03 Time in State, Part 1 (YouTube)](https://youtu.be/_cjNMRpo97M)
+- [CF04 Time in State, Part 2 (YouTube)](https://youtu.be/Ytu9YLu0EAg)
