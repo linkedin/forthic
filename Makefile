@@ -11,6 +11,9 @@ myenv:
 install-forthic: myenv
 	source myenv/bin/activate && python -m pip install -U pip && pip install .
 
+build-forthic-react:
+	cd forthic-react/v1 && make build
+
 docs: myenv
 	source myenv/bin/activate && pip install tox && tox -edocs
 
