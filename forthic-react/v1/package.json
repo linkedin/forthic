@@ -38,7 +38,10 @@
   "jest": {
     "moduleNameMapper": {
       "axios": "axios/dist/node/axios.cjs"
-    }
+    },
+    "transformIgnorePatterns": [
+        "node_modules/(?!@ngrx|(?!deck.gl)|ng-dynamic)"
+    ]
   },
   "browserslist": {
     "production": [
