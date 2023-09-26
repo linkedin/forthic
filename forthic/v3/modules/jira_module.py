@@ -754,7 +754,10 @@ class JiraModule(Module):
 
         def schematize_value(schema_type: str, value: Any) -> Any:
             if schema_type == 'array':
-                res: Any = [schematize_value(schema['items'], v) for v in value]
+                if not value:
+                    res = []
+                else:
+                    res: Any = [schematize_value(schema['items'], v) for v in value]
             else:
                 if schema_type in ('date', 'datetime', 'string', 'number'):
                     res = value

@@ -38,6 +38,7 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
     const [valuesByFieldId, setValuesByFieldId] = useState({})
     const [nextEnabledStepId, setNextEnabledStepId] = useState(null)
     const [createdMessage, setCreatedMessage] = useState(null)
+    const [hideField, setHideField] = useState({})
 
     const params = useParams();
     const form_id = params[form_id_field]
@@ -93,6 +94,12 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
         MultiCheckbox,
     }
 
+    // This just creates a record from the formConfig, fieldsById, curSteps, and valuesByFieldId.
+    // Basically, this is all the information that's in a form
+    function get_form() {
+        return {formConfig, fieldsById, curSteps, valuesByFieldId}
+    }
+
     // TODO: Handle case where there is no step corresponding to nextEnabledStepId
     //
     // `update_state` is the callback used for all form controls. When any values change, we store them
@@ -103,12 +110,7 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
         let new_values_by_field_id = {...valuesByFieldId}
         new_values_by_field_id[field_id] = value
         setValuesByFieldId(new_values_by_field_id)
-
-        console.log("New values", new_values_by_field_id)
-
-        const form = {
-            formConfig, fieldsById, curSteps, valuesByFieldId: new_values_by_field_id
-        }
+        const form = {...get_form(), valuesByFieldId: new_values_by_field_id}
 
         // Check step transition conditions
         const cur_step = curSteps[curSteps.length - 1]
@@ -133,6 +135,25 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
     }
 
     function make_input_field(field_record) {
+        if (!field_record)   return <p></p>
+
+        const field_id = field_record["Field ID"]
+        setTimeout(async () => {
+            const condition = field_record['Condition']
+            if (condition) {
+                interp.stack_push(get_form())
+                await interp.run(`intake.!FORM ${condition} NOT`)
+                const condition_value = interp.stack_pop()
+                if ((hideField[field_id]) === condition_value)   return
+
+                let new_hide_field = {...hideField}
+                new_hide_field[field_id] = condition_value
+                setHideField(new_hide_field)
+            }
+        })
+
+        if (hideField[field_id])   return <p></p>
+
         const field_type = field_record['Field Type']
         const field_class = fieldType_to_class[field_type]
 
@@ -177,10 +198,8 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
 
     // ----- Prev/Next/Submit buttons ------------------------------------------------------------------------
     const cur_step = curSteps[curSteps.length - 1]
-    console.log("=====> ", cur_step)
     const cur_field_records = cur_step.fields.map(field_id => fieldsById[field_id])
     const step_transitions = cur_step.transitions
-    console.log("Step Transitions", step_transitions)
 
     let prev_button, next_button, submit_button
 
@@ -195,15 +214,11 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
 
     function is_next_enabled(field_records) {
         const result = !!nextEnabledStepId && all_required_fields_have_values(field_records)
-        // const result = !!nextEnabledStepId
         return result
     }
 
     function is_submit_enabled(field_records, transitions) {
         const have_transitions = !!transitions && transitions.length > 0
-        console.log("have transitions", have_transitions)
-        console.log("nextEnabledStepId", nextEnabledStepId)
-        console.log("all required done?", all_required_fields_have_values(field_records))
         const result = all_required_fields_have_values(field_records) && !have_transitions
         return result
     }

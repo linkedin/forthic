@@ -21,6 +21,7 @@ FORTHIC = """
     ["Field Type"          "The type of field control: Dropdown, TextInput, Textarea, RadioCheckbox, MultiCheckbox, DateInput, Attachment"]
     ["Field Content"       "Default content for a TextInput/Textarea. For Dropdowns and checkboxes, this specifies the options, one per line"]
     ["Max Input Length"    "The maximum number of characters for a TextInput or Textarea"]
+    ["Condition"           "A Forthic predicate that indicates of a field should be hidden or shown"]
 ] REC;
 
 : HEADERS                HEADER-INFO KEYS;
@@ -212,8 +213,7 @@ class IntakeModule(Module):
     #    specified `jira_field`.
     #
     #    `ticket_info`: This is a record with the following fields:
-    #        - formConfig: This is a form configuration record defined in the application. It has the following fields:
-    #            - TODO
+    #        - formConfig: This is a form configuration record defined in the application
     #        - valuesById: This is a record mapping "Field ID" to user entered value
     #        - fieldsById: This is a record mapping "Field ID" to configured values from the gsheet
     def word_AGGREGATE_JIRA_FIELDS(self, interp: IInterpreter):
@@ -231,6 +231,8 @@ class IntakeModule(Module):
 
         result = {}
         for f in field_ids:
-            result[f] = valuesById.get(f)
+            value = valuesById.get(f)
+            if value:
+                result[f] = value
 
         interp.stack_push(result)
