@@ -212,6 +212,10 @@ class JiraModule(Module):
     def word_ADD_ATTACHMENTS(self, interp: IInterpreter):
         attachments_rec = interp.stack_pop()
         ticket_key = interp.stack_pop()
+
+        if (not attachments_rec or len(attachments_rec) == 0):
+            return
+
         context = self.current_context()
         headers = {
             "Accept": "application/json",
@@ -750,7 +754,10 @@ class JiraModule(Module):
 
         def schematize_value(schema_type: str, value: Any) -> Any:
             if schema_type == 'array':
-                res: Any = [schematize_value(schema['items'], v) for v in value]
+                if not value:
+                    res = []
+                else:
+                    res: Any = [schematize_value(schema['items'], v) for v in value]
             else:
                 if schema_type in ('date', 'datetime', 'string', 'number'):
                     res = value

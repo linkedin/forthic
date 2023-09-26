@@ -26,6 +26,7 @@ FORTHIC = '''
 '''
 
 
+# TODO: Need to rework this so it matches the gsheet module
 class GdocModule(Module):
     """This implements basic access to Gdocs via Google's [gdoc API](https://developers.google.com/docs/api)
 

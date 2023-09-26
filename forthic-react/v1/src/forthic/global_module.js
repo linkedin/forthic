@@ -10,6 +10,9 @@ import { UserNav, UserBreadcrumbNav, UserTypeahead } from './elements/UserNav'
 import RecordsTable from './elements/RecordsTable'
 import TicketsModal from './elements/TicketsModal'
 import {TicketSelector} from './elements/TicketsModal'
+import { ConfigurableForm } from './elements/form/ConfigurableForm';
+import { ForthicButton } from './elements/ForthicButton';
+import ReactMarkdown from 'react-markdown'
 
 
 // React Bootstrap
@@ -128,13 +131,16 @@ const NAME_TO_ELEMENT = {
     Typeahead,
     AsyncTypeahead,
     CSVLink,
+    ReactMarkdown,
     Navigate,
     RecordsTable,
     TicketSelector,
     TicketsModal,
+    ConfigurableForm,
     UserBreadcrumbNav,
     UserTypeahead,
-    UserNav
+    UserNav,
+    ForthicButton,
 };
 
 
@@ -201,6 +207,7 @@ function get_flags() {
 class GlobalModule extends Module {
   constructor(interp) {
     super("<GLOBAL>", interp);
+    const self = this
     this.literal_handlers = [
       this.to_bool,
       this.to_float,
@@ -382,10 +389,125 @@ class GlobalModule extends Module {
     this.add_module_word("<QPARAMS", this.word_l_QPARAMS);
     this.add_module_word("console.log", this.word_console_log);
     this.add_module_word("window.open", this.word_window_open);
+    this.add_module_word("location.reload", this.word_location_reload);
     this.add_module_word("TITLE!", this.word_TITLE_bang);
     this.add_module_word("SERVER-INTERPRET", this.word_SERVER_INTERPRET);
     this.add_module_word("MESSAGE-BROKER", this.word_MESSAGE_BROKER);
     this.add_module_word("PUBLISH-MESSAGE", this.word_PUBLISH_MESSAGE);
+
+    // --------------------
+    // HTML words (js-specific)
+    [
+        "A",
+        "Abbr",
+        "Address",
+        "Area",
+        "Article",
+        "Aside",
+        "Audio",
+        "B",
+        "Base",
+        "Bdi",
+        "Bdo",
+        "Blockquote",
+        "Br",
+        "Button",
+        "Canvas",
+        "Caption",
+        "Cite",
+        "Code",
+        "Col",
+        "Colgroup",
+        "Data",
+        "Datalist",
+        "Dd",
+        "Del",
+        "Details",
+        "Dfn",
+        "Dialog",
+        "Div",
+        "Dl",
+        "Dt",
+        "Em",
+        "Embed",
+        "Fieldset",
+        "Figcaption",
+        "Figure",
+        "Footer",
+        "Form",
+        "H1",
+        "Head",
+        "Header",
+        "Hgroup",
+        "Hr",
+        "I",
+        "Iframe",
+        "Img",
+        "Input",
+        "Ins",
+        "Kbd",
+        "Label",
+        "Legend",
+        "Li",
+        "Link",
+        "Main",
+        "Map",
+        "Mark",
+        "Menu",
+        "Meta",
+        "Meter",
+        "Nav",
+        "Noscript",
+        "Object",
+        "Ol",
+        "Optgroup",
+        "Option",
+        "Output",
+        "P",
+        "Picture",
+        "Pre",
+        "Progress",
+        "Q",
+        "Rp",
+        "Rt",
+        "Ruby",
+        "S",
+        "Samp",
+        "Script",
+        "Search",
+        "Section",
+        "Select",
+        "Slot",
+        "Small",
+        "Source",
+        "Span",
+        "Strong",
+        "Style",
+        "Sub",
+        "Summary",
+        "Sup",
+        "Table",
+        "Tbody",
+        "Td",
+        "Template",
+        "Textarea",
+        "Tfoot",
+        "Th",
+        "Thead",
+        "Time",
+        "Title",
+        "Tr",
+        "Track",
+        "U",
+        "Ul",
+        "Var",
+        "Video",
+        "Wbr"
+    ].forEach(element_name => self.add_HTML_word(element_name))
+
+    // --------------------
+    // Custom Elements
+    Object.keys(NAME_TO_ELEMENT).forEach(element_name => self.add_element_word(element_name))
 
     // --------------------
     // Misc words (js-specific)
@@ -469,7 +591,33 @@ class GlobalModule extends Module {
     return result;
   }
 
-  // =======================
+    // Convenience function to create HTML element word handlers
+    make_HTML_word(element_name) {
+        async function Result(interp) {
+            interp.stack_push(`"${element_name}"`)
+            await interp.run("Element")
+        }
+        return Result
+    }
+
+    add_HTML_word(element_name) {
+        this.add_module_word(element_name, this.make_HTML_word(element_name));
+    }
+
+    // Convenience function to create element word handlers
+    make_element_word(element_name) {
+        async function Result(interp) {
+            interp.stack_push(`${element_name}`)
+            await interp.run("Element")
+        }
+        return Result
+    }
+
+    add_element_word(element_name) {
+        this.add_module_word(element_name, this.make_element_word(element_name));
+    }
+
+    // =======================
   // Words
 
   // ( varnames -- )
@@ -1864,6 +2012,8 @@ class GlobalModule extends Module {
 
     if (!strings) strings = [];
 
+    console.log("JOIN strings", strings)
+
     let result = strings.join(sep);
     interp.stack_push(result);
   }
@@ -2659,7 +2809,12 @@ class GlobalModule extends Module {
     window.open(url)
   }
 
-    // ( str -- )
+  // ( -- )
+  word_location_reload(interp) {
+    window.location.reload()
+  }
+
+  // ( str -- )
     word_TITLE_bang(interp) {
         let str = interp.stack_pop();
         document.title = str;
@@ -2677,10 +2832,14 @@ class GlobalModule extends Module {
     }
 
     async function get_forthic() {
+        console.log("get_forthic")
+        console.log("args", args)
       interp.stack_push(args);
+      console.log("interp.stack", interp.stack)
       await interp.run(`">JSON QUOTED  ' JSON>' CONCAT" MAP " " JOIN`);
-      const arg_string = interp.stack_pop();
+    const arg_string = interp.stack_pop();
       const result = `${arg_string} ${word}`;
+      console.log("get_forthic result", result)
       return result;
     }
 

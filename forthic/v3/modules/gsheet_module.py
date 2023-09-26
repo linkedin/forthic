@@ -40,6 +40,7 @@ class GsheetModule(Module):
             "range": None,
             "transpose": False,
             "cell_format": False,
+            "null_on_error": False,
         }
 
         self.add_module_word('PUSH-CONTEXT!', self.word_PUSH_CONTEXT_bang)
@@ -63,6 +64,7 @@ class GsheetModule(Module):
         self.add_module_word('!RANGE', self.word_bang_RANGE)
         self.add_module_word('!TRANSPOSE', self.word_bang_TRANSPOSE)
         self.add_module_word('!CELL-FORMAT', self.word_bang_CELL_FORMAT)
+        self.add_module_word('!NULL-ON-ERROR', self.word_bang_NULL_ON_ERROR)
 
         # Utils
         self.add_module_word('INDEX>COL-NAME', self.word_INDEX_to_COL_NAME)
@@ -105,11 +107,20 @@ class GsheetModule(Module):
         """
         url = interp.stack_pop()
 
-        context = self.get_context()
-        _, tab_id = get_gsheet_id_and_tab_id(url)
-        spreadsheet = Spreadsheet(context, url)
-        result = spreadsheet.get_tab(tab_id)
-        interp.stack_push(result)
+        try:
+            context = self.get_context()
+            _, tab_id = get_gsheet_id_and_tab_id(url)
+            spreadsheet = Spreadsheet(context, url)
+            result = spreadsheet.get_tab(tab_id)
+            interp.stack_push(result)
+        except RuntimeError:
+            flags = self.get_flags()
+            if flags.get('null_on_error'):
+                interp.stack_push(None)
+            else:
+                raise
+
+
 
     # ( Spreadsheet id -- Tab )
     # ( Spreadsheet name -- Tab )
@@ -120,8 +131,16 @@ class GsheetModule(Module):
         id_or_name = interp.stack_pop()
         spreadsheet = interp.stack_pop()
 
-        result = spreadsheet.get_tab(id_or_name)
-        interp.stack_push(result)
+        try:
+            result = spreadsheet.get_tab(id_or_name)
+            interp.stack_push(result)
+        except RuntimeError:
+            flags = self.get_flags()
+            if flags.get('null_on_error'):
+                interp.stack_push(None)
+            else:
+                raise
+
 
     # ( Tab -- rows )
     @raises_ExpiredGsheetOAuthToken
@@ -141,8 +160,15 @@ class GsheetModule(Module):
         else:
             tab_range = tab.get_name()
 
-        result = get_rows(tab.get_context(), tab.get_spreadsheet_id(), tab_range, flags.get('transpose'))
-        interp.stack_push(result)
+        try:
+            result = get_rows(tab.get_context(), tab.get_spreadsheet_id(), tab_range, flags.get('transpose'))
+            interp.stack_push(result)
+        except RuntimeError:
+            if flags.get('null_on_error'):
+                interp.stack_push(None)
+            else:
+                raise
+
 
     # ( Tab rows -- )
     @raises_ExpiredGsheetOAuthToken
@@ -184,63 +210,73 @@ class GsheetModule(Module):
         header = interp.stack_pop()
         tab = interp.stack_pop()
 
-        # Check flags
-        flags = self.get_flags()
-        if flags.get('range'):
-            tab_range = f"{tab.get_name()}!{flags.get('range')}"
-        else:
-            tab_range = tab.get_name()
+        if not tab:
+            interp.stack_push(None)
+            return
 
-        rows = get_rows(tab.get_context(), tab.get_spreadsheet_id(), tab_range)
+        try:
+            # Check flags
+            flags = self.get_flags()
+            if flags.get('range'):
+                tab_range = f"{tab.get_name()}!{flags.get('range')}"
+            else:
+                tab_range = tab.get_name()
 
-        def to_ascii(value: str) -> str:
-            res = ''.join([c for c in value if ord(c) < 128]).strip()
-            return res
+            rows = get_rows(tab.get_context(), tab.get_spreadsheet_id(), tab_range)
 
-        def get_header_to_column(values: List[str]) -> Dict[str, int]:
-            res = {}
-            ascii_values = [to_ascii(v) for v in values]
-            for h in header:
-                for i in range(len(ascii_values)):
-                    if ascii_values[i] == h:
-                        res[h] = i
-            return res
+            def to_ascii(value: str) -> str:
+                res = ''.join([c for c in value if ord(c) < 128]).strip()
+                return res
 
-        def find_header() -> Any:
-            res = None
-            for i in range(len(rows)):
-                header_to_column = get_header_to_column(rows[i])
-                found_all = True
+            def get_header_to_column(values: List[str]) -> Dict[str, int]:
+                res = {}
+                ascii_values = [to_ascii(v) for v in values]
                 for h in header:
-                    if h not in header_to_column:
-                        found_all = False
+                    for i in range(len(ascii_values)):
+                        if ascii_values[i] == h:
+                            res[h] = i
+                return res
+
+            def find_header() -> Any:
+                res = None
+                for i in range(len(rows)):
+                    header_to_column = get_header_to_column(rows[i])
+                    found_all = True
+                    for h in header:
+                        if h not in header_to_column:
+                            found_all = False
+                            break
+                    if found_all:
+                        res = {
+                            'header_row': i,
+                            'header_to_column': header_to_column,
+                        }
                         break
-                if found_all:
-                    res = {
-                        'header_row': i,
-                        'header_to_column': header_to_column,
-                    }
-                    break
-            return res
+                return res
 
-        header_info = find_header()
-        if not header_info:
-            raise GsheetError(
-                f"Can't find header ({header}) in gsheet {tab.get_spreadsheet_id()} {tab.get_name()}"
-            )
+            header_info = find_header()
+            if not header_info:
+                raise GsheetError(
+                    f"Can't find header ({header}) in gsheet {tab.get_spreadsheet_id()} {tab.get_name()}"
+                )
 
-        def row_to_rec(row: List[str]) -> Dict[str, Any]:
-            res = {}
-            for h in header:
-                col = header_info['header_to_column'][h]
-                res[h] = row[col]
-            return res
+            def row_to_rec(row: List[str]) -> Dict[str, Any]:
+                res = {}
+                for h in header:
+                    col = header_info['header_to_column'][h]
+                    res[h] = row[col]
+                return res
 
-        result = []
-        for r in rows[header_info['header_row'] + 1:]:
-            result.append(row_to_rec(r))
+            result = []
+            for r in rows[header_info['header_row'] + 1:]:
+                result.append(row_to_rec(r))
 
-        interp.stack_push(result)
+            interp.stack_push(result)
+        except RuntimeError:
+            if flags.get('null_on_error'):
+                interp.stack_push(None)
+            else:
+                raise
 
     # ( Tab header records -- )
     @raises_ExpiredGsheetOAuthToken
@@ -340,6 +376,12 @@ class GsheetModule(Module):
         """Sets a `cell_format` flag to indicate that data is provided in "cell" format rather than as strings
         """
         self.flags["cell_format"] = True
+
+    # ( -- )
+    def word_bang_NULL_ON_ERROR(self, interp: IInterpreter):
+        """When TRUE, if a word were to return a result and an error occurs, return NULL instead
+        """
+        self.flags["null_on_error"] = True
 
     # =================================
     # Helpers

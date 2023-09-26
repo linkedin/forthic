@@ -76,3 +76,15 @@ th.total-col, td.total-col {
     margin: 1.75rem auto;
     padding: 2rem;
 }
+
+/* ConfigurableForm */
+.field-description {
+    margin-top: 0;
+    font-style: italic;
+    color: #555;
+}
+
+.field-description > * {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}

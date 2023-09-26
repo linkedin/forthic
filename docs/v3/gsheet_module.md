@@ -102,11 +102,19 @@ Returns a `Spreadsheet` object for the specified url. Also, can return the paren
 
 Returns the `Tab` for a specified gsheet url.
 
+Flag words:
+* `!NULL-ON-ERROR`: On error, suppresses error returning `NULL` instead
+
+
 ### TAB@
 `( Spreadsheet tab_id --  Tab )`
 `( Spreadsheet tab_name --  Tab )`
 
 Given a spreadsheet, returns a tab in it for the specified `tab_id` or `tab_name`.
+
+Flag words:
+* `!NULL-ON-ERROR`: On error, suppresses error returning `NULL` instead
+
 
 ### ENSURE-TAB!
 `( Spreadsheet tab_name -- Tab )`
@@ -121,6 +129,7 @@ Returns the rows of a Tab.
 Flag words:
 * `!RANGE`: This specifies the range to read (See https://developers.google.com/sheets/api/guides/concepts#cell)
 * `!TRANSPOSE`: If set, data is returned by column rather than by row
+* `!NULL-ON-ERROR`: On error, suppresses error returning `NULL` instead
 
 
 ### ROWS!
@@ -147,6 +156,7 @@ Given `header`, an array of column headings, searches the `Tab` for row that mat
 
 Flag words:
 * `!RANGE`: This specifies the range to read. See [gsheets API guide](https://developers.google.com/sheets/api/guides/concepts#cell)
+* `!NULL-ON-ERROR`: On error, suppresses error returning `NULL` instead
 
 
 ### RECORDS!
@@ -160,7 +170,7 @@ Flag words:
 * `!CELL-FORMAT`: By default, data is assumed to be strings. If `!CELL-FORMAT` is set, the data will be treated as being in a "cell" format. This is a record with a `content` string field and an `updateRequest` field that contains a record with the structure of a gsheet API update request. See [gsheets API guide](https://developers.google.com/sheets/api/samples/formatting)
 
 
-### BATCH-UPDATE-TAB
+### BATCH-UPDATE-TAB!
 `( Tab update_requests -- )`
 
 This provides low-level access to the [batchUpdate API](https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/batchUpdate) for updating a specific tab.
@@ -239,6 +249,12 @@ Flag word to set the `range` flag to something like "A1" or "A1:E7"
 `( -- )`
 
 Flag word to set the `transpose` flag so data is read/written as columns rather than rows.
+
+
+### !NULL-ON-ERROR
+`( -- )`
+
+Flag word to cause next word that returns a result to return `NULL` and suppress an error if one occurs.
 
 
 ### !CELL-FORMAT

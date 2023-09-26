@@ -11,6 +11,9 @@ myenv:
 install-forthic: myenv
 	source myenv/bin/activate && python -m pip install -U pip && pip install .
 
+build-forthic-react:
+	cd forthic-react/v1 && make build
+
 docs: myenv
 	source myenv/bin/activate && pip install tox && tox -edocs
 
@@ -21,7 +24,7 @@ qa: myenv
 	source myenv/bin/activate && pip install tox && tox -eqa
 
 test-py:
-	python -m pytest tests/tests_py
+	source myenv/bin/activate && python -m pytest tests/tests_py
 
 delete-secrets:
 	rm server/.key

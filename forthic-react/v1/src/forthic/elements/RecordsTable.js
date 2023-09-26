@@ -110,6 +110,7 @@ function RecordsTable(props) {
     }
 
     function col_head(col_info) {
+        // TODO: Check label and field
         let res = col_info.label
         if (!res)   res = col_info.field
 
