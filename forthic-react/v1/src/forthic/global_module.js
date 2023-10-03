@@ -9,6 +9,7 @@ import { CSVLink } from "react-csv"
 import { UserNav, UserBreadcrumbNav, UserTypeahead } from './elements/UserNav'
 import RecordsTable from './elements/RecordsTable'
 import TicketsModal from './elements/TicketsModal'
+import RawHTML from './elements/RawHTML';
 import {TicketSelector} from './elements/TicketsModal'
 import { ConfigurableForm } from './elements/form/ConfigurableForm';
 import { ForthicButton } from './elements/ForthicButton';
@@ -136,6 +137,7 @@ const NAME_TO_ELEMENT = {
     RecordsTable,
     TicketSelector,
     TicketsModal,
+    RawHTML,
     ConfigurableForm,
     UserBreadcrumbNav,
     UserTypeahead,
@@ -295,6 +297,8 @@ class GlobalModule extends Module {
     this.add_module_word("RE-MATCH", this.word_RE_MATCH);
     this.add_module_word("RE-MATCH-GROUP", this.word_RE_MATCH_GROUP);
     this.add_module_word("RE-MATCH-ALL", this.word_RE_MATCH_ALL);
+    this.add_module_word("PARSE-DOLLARS", this.word_PARSE_DOLLARS);
+
 
     // --------------------
     // Misc words
@@ -436,6 +440,11 @@ class GlobalModule extends Module {
         "Footer",
         "Form",
         "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
         "Head",
         "Header",
         "Hgroup",
@@ -2101,6 +2110,38 @@ class GlobalModule extends Module {
     if (string !== null) matches = string.matchAll(re_pattern);
     let result = Array.from(matches).map((v) => v[1]);
 
+    interp.stack_push(result);
+  }
+
+  // ( string -- number )
+  word_PARSE_DOLLARS(interp) {
+    let string = interp.stack_pop();
+
+    function parse_dollars(value_str) {
+        if (!isNaN(value_str))   return value_str * 1;
+        if (!value_str)  return 0
+        const conditioned_string = value_str.replace(/[\s$,]+/g, "")
+        let thousands_match = conditioned_string.match(/(\d+.?\d*)[Kk]/)
+        let millions_match = conditioned_string.match(/(\d+.?\d*)[Mm]/)
+        let num_match = conditioned_string.match(/(\d+.?\d*)/)
+
+        let result = 0;
+        if (thousands_match) {
+            result = parseFloat(thousands_match[1]) * 1E3
+        }
+        else if (millions_match) {
+            result = parseFloat(millions_match[1]) * 1E6
+        }
+        else if (num_match) {
+            result = parseFloat(num_match[1])
+        }
+        else {
+            result = 0
+        }
+        return result
+    }
+
+    const result = parse_dollars(string)
     interp.stack_push(result);
   }
 

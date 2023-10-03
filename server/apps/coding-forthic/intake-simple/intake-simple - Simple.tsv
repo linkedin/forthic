@@ -1,0 +1,5 @@
+Field ID	Jira Field	Field Label	Field Description	Is Required?	Field Type	Field Content	Max Input Length	Condition
+summary	Summary	Subject	A *one sentence* description of your ask	Yes	TextInput		255	
+problem	Description	Problem	Please enter more details about your problem	Yes	Textarea			
+impact	Description	Impact	What is the impact?	Yes	Textarea			
+urgency	Description	Urgency	How urgent is this?	Yes	Dropdown	Extremely Urgent Urgent Fairly Urgent Not Urgent		

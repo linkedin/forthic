@@ -1,0 +1,67 @@
+{
+    "intake__form_configs": [
+        {
+            "tab": "Multistep",
+            "step_tabs": [
+                "Multistep 1",
+                "Multistep 2"
+            ],
+            "Project": "TOOLS",
+            "Issue Type": "Task",
+            "Labels": [
+                "forthic-intake"
+            ],
+            "field_records": {
+                "Multistep 1": [
+                    {
+                        "Field ID": "summary",
+                        "Jira Field": "Summary",
+                        "Field Label": "Subject",
+                        "Field Description": "Add a summary of your request",
+                        "Is Required?": "Yes",
+                        "Field Type": "TextInput",
+                        "Field Content": "",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    },
+                    {
+                        "Field ID": "description",
+                        "Jira Field": "Description",
+                        "Field Label": "Problem",
+                        "Field Description": "Add more details about your problem",
+                        "Is Required?": "Yes",
+                        "Field Type": "Textarea",
+                        "Field Content": "",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    }
+                ],
+                "Multistep 2": [
+                    {
+                        "Field ID": "impact",
+                        "Jira Field": "Labels",
+                        "Field Label": "Impact",
+                        "Field Description": "What is the impact",
+                        "Is Required?": "Yes",
+                        "Field Type": "Dropdown",
+                        "Field Content": "High\nMedium\nLow",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    },
+                    {
+                        "Field ID": "team",
+                        "Jira Field": "Labels",
+                        "Field Label": "Team",
+                        "Field Description": "What team should handle this?",
+                        "Is Required?": "Yes",
+                        "Field Type": "RadioCheckbox",
+                        "Field Content": "Engineering\nProduct\nSales",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    }
+                ]
+            },
+            "dup_fields": {}
+        }
+    ]
+}

@@ -7,9 +7,6 @@ export function Dropdown({
     interp,             // Forthic interpreter
     }) {
 
-    // TODO: Style control
-    console.log("Dropdown content", field_record["Field Content"], field_record)
-
     const options_string = field_record["Field Content"] ? field_record["Field Content"] : ""
     const options = options_string.split("\n").map(o => <option>{o}</option>)
     const field_id = field_record['Field ID']

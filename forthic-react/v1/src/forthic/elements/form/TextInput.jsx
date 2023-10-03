@@ -1,30 +1,47 @@
 import Form from 'react-bootstrap/Form';
+import {useEffect, useState, useRef} from 'react'
 
 export function TextInput({
     field_record,       // See (TODO) for the fields
     update_state,       // A function taking a (field_id, value) and setting the data in the form
     valuesByFieldId,    // Field values
     interp,             // Forthic interpreter
-    // field_id,           // Unique field identifier
-    // field_label,        // Display label for field
-    // field_description,  // Markdown description of field
-    // jira_field,         // Jira field associated with this field
-    // is_required,        // Is this field required
-    // field_content,      // Default content for the textarea
-    // max_input_length,   // Max num chars
     }) {
 
-    // TODO: Indicate required
-    // TODO: Handle max num chars
-    // TODO: Add field description
-    // TODO: Style control
+    // Handle max num chars
+    const max_length = field_record['Max Input Length']
+
     const field_id = field_record['Field ID']
-    const defaultValue = valuesByFieldId[field_id] ? valuesByFieldId[field_id] : field_record['Field Content']
+    const default_value = valuesByFieldId[field_id] ? valuesByFieldId[field_id] : field_record['Field Content']
+    const field_value = valuesByFieldId[field_id]
+
+    const element = useRef()
+
+    useEffect(() => {
+        if (field_value && field_value === element.current.value)   return
+
+        if (!field_value) {
+            element.current.value = ""
+        }
+        else {
+            element.current.value = field_value
+        }
+    })
+
+    function update(value) {
+        let new_value = value
+        if (value && max_length && value.length > max_length) {
+            new_value = value.substring(0, max_length)
+        }
+        update_state(field_id, new_value)
+    }
+
     return (
         <Form.Control
             type="text"
-            placeholder={defaultValue}
-            onChange={(event) => {update_state(field_id, event.target.value)}}
+            ref={element}
+            placeholder={default_value}
+            onChange={(event) => {update(event.target.value)}}
         />
     )
 }

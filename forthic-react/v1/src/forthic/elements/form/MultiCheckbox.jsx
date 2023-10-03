@@ -12,11 +12,8 @@ export function MultiCheckbox({
     const field_id = field_record['Field ID']
     const checked_options = valuesByFieldId[field_id] ? valuesByFieldId[field_id]: []
     const [value, setValue] = useState(checked_options)
-    console.log("Radio checkbox", value)
 
     function update(option, event) {
-        console.log("Multicheckbox", option, event.target.value, event.target.checked)
-
         let new_value
         if (event.target.checked) {
             new_value = [...value, option]

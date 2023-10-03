@@ -1,0 +1,2 @@
+Field ID	Jira Field	Field Label	Field Description	Is Required?	Field Type	Field Content	Max Input Length	Condition
+problem	description	Description	Please describe your problem	Yes	Textarea			

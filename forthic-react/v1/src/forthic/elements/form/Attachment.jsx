@@ -8,9 +8,6 @@ export function Attachment({
     interp,             // Forthic interpreter
     }) {
 
-    // TODO: Style control
-    console.log("Attachment", field_record)
-
     async function read_file(file) {
         if(file.size > 2097152){
             alert("Attachment is too large. Please select files that are less than 2MB large");

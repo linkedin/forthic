@@ -135,7 +135,7 @@ class JiraModule(Module):
 
         if response.status_code != 201:
             raise JiraError(
-                f'Unable to create issue {record}: {response.text}'
+                f'Unable to create issue: {response.text}, record: {record}'
             )
         res_data = response.json()
         result = res_data['key']
@@ -156,7 +156,7 @@ class JiraModule(Module):
 
         if response.status_code != 204:
             raise JiraError(
-                f'Unable to update issue {record}: {response.text}'
+                f'Unable to update issue: {response.text}, record: {record}'
             )
 
     # ( ticket_key username -- )

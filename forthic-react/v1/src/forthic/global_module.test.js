@@ -1113,6 +1113,20 @@ it ('Can extract all regex matches', async () => {
     expect(interp.stack[0]).toEqual(['android', 'ios', 'android', 'web', 'web'])
 })
 
+it ('Can parse dollars', async () => {
+    let interp = new Interpreter()
+    await interp.run(`
+        "" PARSE-DOLLARS
+        "100" PARSE-DOLLARS
+        "100,000" PARSE-DOLLARS
+        "200K" PARSE-DOLLARS
+        "$250K" PARSE-DOLLARS
+        "$1.5M" PARSE-DOLLARS
+    `)
+
+    expect(interp.stack).toEqual([0, 100, 100000, 200000, 250000, 1500000])
+})
+
 it ('Can encode a URL', async () => {
     let interp = new Interpreter()
     await interp.run(`

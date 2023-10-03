@@ -6,7 +6,7 @@ FORTHIC = """
 # ----- gsheet setup -----------------------------------------------------------------------------------------
 ["gsheet" "cache"] USE-MODULES
 
-["url" "configs" "config" "tab" "admins" "content" "type"] VARIABLES
+["url" "configs" "config" "tab" "admins" "content" "type" "google_context" "info"] VARIABLES
 
 : url-GSHEET    url @ gsheet.SPREADSHEET;
 : tab-TAB   url-GSHEET tab @ gsheet.TAB@;
@@ -42,7 +42,7 @@ FORTHIC = """
 : tab-ADD-HEADER             tab-TAB [HEADERS] gsheet.ROWS!;
 
 # ===== Adding field type data validation
-: FIELD-TYPES            ["Dropdown" "TextInput" "Textarea" "RadioCheckbox" "MultiCheckbox" "DateInput" "Attachment" "Markdown"];
+: FIELD-TYPES            ["Dropdown" "TextInput" "Textarea" "RadioCheckbox" "MultiCheckbox" "DateInput" "Attachment" "Markdown" "Html"];
 : type-CONDITION-VALUE   [["userEnteredValue"   type @]] REC;
 : FIELD-TYPE-COLUMN      HEADERS "Field Type" KEY-OF;
 
@@ -141,38 +141,97 @@ FORTHIC = """
 : tab-ADD-TEMPLATE-IF-NEEDED   [[FALSE  "tab-ADD-HEADER tab-STYLE-TAB"]] REC tab-TAB gsheet.ROWS >BOOL REC@ INTERPRET;
 : tab-ENSURE-TAB               tab-CREATE-IF-NEEDED tab-ADD-TEMPLATE-IF-NEEDED;
 : tab-FIELD-RECORDS            tab-TAB  HEADERS gsheet.!NULL-ON-ERROR gsheet.RECORDS []  DEFAULT;
+
 : config-TAB                   config @ 'tab' REC@;
-: <ADD-FIELD-RECORDS           (config !@) (config-TAB tab ! tab-ENSURE-TAB)  tab-FIELD-RECORDS "field_records" <REC!;
-: config-FIELD-RECORDS         config @ 'field_records' REC@;
+: config-STEP-TABS             config @ 'step_tabs' REC@;
+
+: config-TABS   [
+    [TRUE    config-STEP-TABS]
+    [FALSE   [config-TAB]]
+] REC config-STEP-TABS >BOOL REC@;
+
+: <ADD-FIELD-RECORDS           (config !@) config-TABS DUP "(tab ! tab-ENSURE-TAB) tab-FIELD-RECORDS" MAP ZIP REC "field_records" <REC!;
+: config-FIELD-RECORDS         config @ 'field_records' REC@ VALUES FLATTEN;
+
 : <NOTE-DUP-FIELDS             (config !@)  config-FIELD-RECORDS "Field ID" GROUP-BY-FIELD "LENGTH" MAP "1 >" SELECT "dup_fields" <REC!;
 : admins-IS-ADMIN?              CURRENT-USER admins @ IN;
 
 # NOTE: Run these whenever the forms need to be updated
 # (url configs admins -- configs)
-: REFRESH-CONFIGS!   (admins ! configs ! url !) [
-    [TRUE   "contexts.GOOGLE gsheet.PUSH-CONTEXT!
+: REFRESH-CONFIGS!   (admins ! configs ! url ! google_context !) [
+    [TRUE   "google_context @ gsheet.PUSH-CONTEXT!
              configs @ '<ADD-FIELD-RECORDS <NOTE-DUP-FIELDS' MAP 'intake__form_configs' cache.CACHE!"]
 ] REC admins-IS-ADMIN? REC@ INTERPRET;
 
 : FORM-CONFIGS   'intake__form_configs' cache.CACHE@;
 
 # ----- Support -----------------------------------------------------------------------------------------
-["step_id" "step_fields" "transitions"] VARIABLES
-: STEP   (transitions ! step_fields ! step_id !) [
-    ["id"           step_id @]
-    ["fields"       step_fields @]
-    ["transitions"  transitions @]
-] REC;
+: |CONDITION-LABELS     "' ' '-' REPLACE" MAP;
+: |NON-NULL-VALUE       "'value' REC@ NULL !=" SELECT;
+: |NON-NULL             "NULL !=" SELECT;
 
-["fcondition" "next_step_id"] VARIABLES
-: TRANSITION   (fcondition ! next_step_id !) [
-    ["fcondition"    fcondition @]
-    ["next_step_id"  next_step_id @]
-] REC;
+# ----- ticket_info Words ------------------------------------------------------------------------------------
+["info" "fields" "field"] VARIABLES
+
+: field-ID          field @ "Field ID" REC@;
+
+# Add value to field record
+: |ADD-VALUE        "(field !@) info @ ['valuesById'  field-ID] REC@ 'value' <REC!" MAP;
+
+# This can be used to override any choices we make in the intake module
+@: info-FIELDS-BY-JIRA-FIELD
+    info @ ["formConfig" "field_records"] REC@ VALUES FLATTEN "Jira Field" GROUP-BY-FIELD "" <DEL "Attachment" <DEL
+    "|ADD-VALUE |NON-NULL-VALUE" MAP
+;
+: field-HEADER   ["h4. " field @ "Field Label" REC@] CONCAT;
+: field-VALUE     field @ "value" REC@;
+: fields-FORMAT-DESCRIPTION   fields @ "(field !) [field-HEADER field-VALUE]" MAP FLATTEN /N JOIN;
+
+: fields-JIRA-FIELD   fields @ 0 NTH "Jira Field" REC@;
+: fields-IS-DESCRIPTION?   fields-JIRA-FIELD "Description" ==;
+: fields-MULTI-VALUE   [
+    [TRUE   "fields-FORMAT-DESCRIPTION"]
+    [FALSE  '''fields @ "'value' REC@" MAP''']
+] REC fields-IS-DESCRIPTION? REC@ INTERPRET;
+
+: FIELDS>TICKET-VALUE   (fields !) [
+    [0   "NULL"]
+    [1   "fields @ 0 NTH 'value' REC@"]
+    [2   "fields-MULTI-VALUE"]
+] REC fields @ LENGTH [0 1 2] RANGE-INDEX REC@ INTERPRET;
+
+["key" "value"] VARIABLES
+: key/value-ARRAYIFY   [
+    [TRUE   [value @] FLATTEN]
+    [FALSE  value @]
+] REC key @ ["Labels" "Component/s"] IN REC@;
+
+: |ARRAYIFY-IF-NEEDED   "(value ! key !) key/value-ARRAYIFY" !WITH-KEY MAP;
+
+: info-PROJECT       info @ ['formConfig'  'Project'] REC@;
+: info-ISSUE-TYPE    info @ ['formConfig'  'Issue Type'] REC@;
+: INFO>TICKET-RECORD   (info !)
+    info-FIELDS-BY-JIRA-FIELD "FIELDS>TICKET-VALUE" MAP |ARRAYIFY-IF-NEEDED
+    info-PROJECT "Project" <REC!
+    info-ISSUE-TYPE "Issue Type" <REC!
+;
+
+: info-ATTACHMENT-FIELDS   info @ ["formConfig" "field_records"] REC@ VALUES FLATTEN "Field Type" GROUP-BY-FIELD "Attachment" REC@;
+: INFO>ATTACHMENTS   (info !)
+    info-ATTACHMENT-FIELDS "'Field ID' REC@" MAP "(key !) info @ ['valuesById' key @] REC@" MAP
+    [] REC "UNION" REDUCE
+;
+
+["jira_field"] VARIABLES
+: FORM-CONFIG-VALUE   info @ ['formConfig' jira_field @] REC@;
+: APPEND-FORM-CONFIG-FIELD   (jira_field !)  [
+        [TRUE   "DUP jira_field @ REC@ FORM-CONFIG-VALUE APPEND FLATTEN |NON-NULL jira_field @ <REC!"]
+    ] REC FORM-CONFIG-VALUE NULL != REC@ INTERPRET
+;
 
 # ----- Public facing words ----------------------------------------------------------------------------------
 [
-    # ( url configs admins -- )
+    # ( google_context url configs admins -- )
     #   - Ensures that gsheet tabs exist for all configured forms
     #   - Loads information from each gsheet tab, constructs a record for each configured field, and stores to cache
     "REFRESH-CONFIGS!"
@@ -181,20 +240,25 @@ FORTHIC = """
     #   - Returns array of cached form config records
     "FORM-CONFIGS"
 
-    # ( step_id step_fields transitions -- step-record )
-    # This is a convenience word to wrap step information in a record:
-    #   - `step_id` is the unique ID for the step
-    #   - `step_fields` is an array of step field IDs corresponding to rows in a gsheet
-    #   - `transitions` is an array of transitions created by the `TRANSITION` word (see below)
-    "STEP"
+    # The "INFO" record is constructed by the React intake module's CREATE-TICKET word:
+    # It has the following fields
+    #   formConfig: This is a record of the form config record the user specified in their main.forthic file
+    #   fieldsById: This is a record mapping field ID to the field information in the gsheets
+    #   valuesById: This is a record mapping field ID to the values a user has filled out in the form
 
-    # (next_step_id fcondition -- transition )
-    # This is a convenience word to wrap transition info in a record
-    #   - `next_step_id` is the ID of the step to go to next if the condition is true
-    #   - `fcondition` is a Forthic string that evaluates to `TRUE` if the `next_step_id` is enabled
-    #
-    # If multiple conditions are active, the first one (by order in array) is taken to be the next step
-    "TRANSITION"
+    # ( info -- ticket_record )
+    # This constructs a ticket record by aggregating values and extracting values by Jira field. It should
+    # be suitable to use directly by jira.CREATE-TICKET
+    "INFO>TICKET-RECORD"
+
+    # ( info -- attachments_record )
+    # This constructs a record mapping filename to attachment. It is suitable to use directly by jira.ADD-ATTACHMENTS
+    "INFO>ATTACHMENTS"
+
+    # ( ticket_record jira_field -- ticket_record )
+    # This is a utility word that appends a field specified in a form config record to the appropriate field in a ticket record
+    # It handles the case where there are existing values inputted by the user or if there are no values
+    "APPEND-FORM-CONFIG-FIELD"
 ] EXPORT
 """
 
@@ -205,34 +269,3 @@ class IntakeModule(Module):
 
     def __init__(self, interp: IInterpreter):
         super().__init__('intake', interp, FORTHIC)
-        self.add_module_word('AGGREGATE-JIRA-FIELDS', self.word_AGGREGATE_JIRA_FIELDS)
-
-    # ( ticket_info jira_field -- value_by_field_id )
-    #
-    #    This returns a record that maps field ID to user-entered value for all fields that have the
-    #    specified `jira_field`.
-    #
-    #    `ticket_info`: This is a record with the following fields:
-    #        - formConfig: This is a form configuration record defined in the application
-    #        - valuesById: This is a record mapping "Field ID" to user entered value
-    #        - fieldsById: This is a record mapping "Field ID" to configured values from the gsheet
-    def word_AGGREGATE_JIRA_FIELDS(self, interp: IInterpreter):
-        jira_field = interp.stack_pop()
-        ticket_info = interp.stack_pop()
-
-        fieldsById = ticket_info["fieldsById"]
-        valuesById = ticket_info["valuesById"]
-
-        # Get field IDs with specified jira field
-        field_ids = []
-        for field_id, field_record in fieldsById.items():
-            if field_record.get("Jira Field") == jira_field:
-                field_ids.append(field_id)
-
-        result = {}
-        for f in field_ids:
-            value = valuesById.get(f)
-            if value:
-                result[f] = value
-
-        interp.stack_push(result)

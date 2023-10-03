@@ -7,6 +7,7 @@ import { Textarea } from "./Textarea";
 import { DateInput } from "./DateInput";
 import { Dropdown } from "./Dropdown";
 import { Markdown } from "./Markdown";
+import { Html } from "./Html";
 import { Attachment } from "./Attachment";
 import { RadioCheckbox } from "./RadioCheckbox";
 import { MultiCheckbox } from "./MultiCheckbox";
@@ -50,21 +51,50 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
         setTimeout(async () => {
             const form_config = select_form_config(form_id, form_configs)
 
-            // If the form has no steps configured, create a single step that has all fields
-            if (!form_config.steps) {
-                // NOTE: This must match how steps are defined in the intake_module
-                form_config.steps = [
-                    {
-                        id: "single_step",
-                        fields: form_config.field_records.map(rec => rec["Field ID"])
+            // If no transitions, add default transitions
+            if (!form_config.transitions) {
+                form_config.steps = Object.keys(form_config.field_records).map((tab, index, keys) => {
+                    const next_step_id = keys[index + 1]
+                    const fcondition = "TRUE"
+                    return {
+                        id: tab,
+                        fields: form_config.field_records[tab].map(rec => rec["Field ID"]),
+                        transitions: index < keys.length - 1 ? [{next_step_id, fcondition}] : null
                     }
-                ]
+                })
+            }
+            else {
+                form_config.steps = Object.keys(form_config.field_records).map((tab) => {
+                    return {
+                        id: tab,
+                        fields: form_config.field_records[tab].map(rec => rec["Field ID"]),
+                        transitions: form_config.transitions[tab]
+                    }
+                })
             }
 
+            // TODO: If transitions, add them here
+
+            // // If the form has no steps configured, create a single step that has all fields
+            // if (!form_config.steps) {
+            //     // NOTE: This must match how steps are defined in the intake_module
+            //     form_config.steps = [
+            //         {
+            //             id: "single_step",
+            //             fields: form_config.field_records.map(rec => rec["Field ID"])
+            //         }
+            //     ]
+            // }
+
             const field_records_by_id = {}
-            form_config.field_records.forEach(rec => {
-                field_records_by_id[rec["Field ID"]] = rec
+            Object.keys(form_config.field_records).forEach(tab => {
+                form_config.field_records[tab].forEach(rec => {
+                    field_records_by_id[rec["Field ID"]] = rec
+                })
             })
+            // form_config.field_records.forEach(rec => {
+            //     field_records_by_id[rec["Field ID"]] = rec
+            // })
 
             setFormConfig(form_config)
             setCurSteps([form_config.steps[0]])
@@ -89,6 +119,7 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
         DateInput,
         Dropdown,
         Markdown,
+        Html,
         Attachment,
         RadioCheckbox,
         MultiCheckbox,
@@ -170,7 +201,7 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
         if (field_record["Field Description"] !== "") {
             field_description = (
                 <div className="field-description">
-                    <ReactMarkdown>{field_record["Field Description"]}</ReactMarkdown>
+                <ReactMarkdown>{field_record["Field Description"]}</ReactMarkdown>
                 </div>
             )
         }
@@ -252,6 +283,7 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
     if (curSteps.length > 1) {
         prev_button = (
             <Button
+                variant="outline-primary"
                 onClick={() => transition_to_previous_step()}
             >Prev</Button>
         )
@@ -266,7 +298,7 @@ export function ConfigurableForm({interp, form_configs, form_id_field, fcreated_
         )
     }
 
-    if (!step_transitions || step_transitions.length == 0) {
+    if (!step_transitions) {
         if (isWorking) {
             submit_button =
                 <div className='d-flex flex-row align-items-center'>

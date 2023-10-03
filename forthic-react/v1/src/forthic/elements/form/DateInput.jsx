@@ -7,7 +7,6 @@ export function DateInput({
     interp,             // Forthic interpreter
     }) {
 
-    // TODO: Style control
     const field_id = field_record['Field ID']
     const defaultValue = valuesByFieldId[field_id]
     return (

@@ -1804,6 +1804,24 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(f"{DLE}howdy{DLE}", stack[0])
         self.assertEqual(f"{DLE}sinister INJECT-BADNESS{DLE}", stack[1])
 
+    def test_rangeindex(self):
+        interp = Interpreter()
+        interp.run("""
+                   0 [0 1 2] RANGE-INDEX
+                   1 [0 1 2] RANGE-INDEX
+                   2 [0 1 2] RANGE-INDEX
+                   3 [0 1 2] RANGE-INDEX
+                   100 [0 1 2] RANGE-INDEX
+                   -1 [0 1 2] RANGE-INDEX
+                   """)
+        stack = interp.stack
+        self.assertEqual(0, stack[0])
+        self.assertEqual(1, stack[1])
+        self.assertEqual(2, stack[2])
+        self.assertEqual(2, stack[3])
+        self.assertEqual(2, stack[4])
+        self.assertEqual(None, stack[5])
+
     def test_math_converters(self):
         interp = Interpreter()
         interp.run("""

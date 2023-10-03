@@ -1,0 +1,94 @@
+{
+    "intake__form_configs": [
+        {
+            "tab": "Branched",
+            "step_tabs": [
+                "Start",
+                "Continue",
+                "Self-service"
+            ],
+            "transitions": {
+                "Start": [
+                    {
+                        "next_step_id": "Continue",
+                        "fcondition": "'request_type' intake.FIELD-VALUE ['New Feature' 'Bug Report'] IN"
+                    },
+                    {
+                        "next_step_id": "Self-service",
+                        "fcondition": "'request_type' intake.FIELD-VALUE 'Unimportant ask' =="
+                    }
+                ],
+                "Self-service": []
+            },
+            "Project": "TOOLS",
+            "Issue Type": "Task",
+            "Labels": [
+                "forthic-intake"
+            ],
+            "field_records": {
+                "Start": [
+                    {
+                        "Field ID": "subject",
+                        "Jira Field": "Summary",
+                        "Field Label": "Subject",
+                        "Field Description": "Please enter a summary",
+                        "Is Required?": "Yes",
+                        "Field Type": "TextInput",
+                        "Field Content": "",
+                        "Max Input Length": "255",
+                        "Condition": ""
+                    },
+                    {
+                        "Field ID": "request_type",
+                        "Jira Field": "Description",
+                        "Field Label": "Request Type",
+                        "Field Description": "Select a request type",
+                        "Is Required?": "Yes",
+                        "Field Type": "Dropdown",
+                        "Field Content": "New Feature\nBug Report\nUnimportant ask",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    }
+                ],
+                "Continue": [
+                    {
+                        "Field ID": "problem",
+                        "Jira Field": "description",
+                        "Field Label": "Description",
+                        "Field Description": "Please describe your problem",
+                        "Is Required?": "Yes",
+                        "Field Type": "Textarea",
+                        "Field Content": "",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    }
+                ],
+                "Self-service": [
+                    {
+                        "Field ID": "self_service",
+                        "Jira Field": "",
+                        "Field Label": "",
+                        "Field Description": "",
+                        "Is Required?": "",
+                        "Field Type": "Markdown",
+                        "Field Content": "## Self-service\nWe believe your issue would best be handled by these self service resources",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    },
+                    {
+                        "Field ID": "resources",
+                        "Jira Field": "",
+                        "Field Label": "",
+                        "Field Description": "",
+                        "Is Required?": "",
+                        "Field Type": "Html",
+                        "Field Content": "<table>\n    <tr>\n    <th>Resource</th>\n    </tr>\n    <tr>\n    <td>go/help</td>\n    </tr>\n</table>",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    }
+                ]
+            },
+            "dup_fields": {}
+        }
+    ]
+}

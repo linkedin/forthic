@@ -1,0 +1,3 @@
+Field ID	Jira Field	Field Label	Field Description	Is Required?	Field Type	Field Content	Max Input Length	Condition
+summary	Summary	Subject	Add a summary of your request	Yes	TextInput			
+description	Description	Problem	Add more details about your problem	Yes	Textarea			

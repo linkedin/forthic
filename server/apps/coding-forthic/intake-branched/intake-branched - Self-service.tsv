@@ -1,0 +1,3 @@
+Field ID	Jira Field	Field Label	Field Description	Is Required?	Field Type	Field Content	Max Input Length	Condition
+self_service					Markdown	## Self-service We believe your issue would best be handled by these self service resources		
+resources					Html	<table>     <tr>     <th>Resource</th>     </tr>     <tr>     <td>go/help</td>     </tr> </table>		

@@ -11,7 +11,6 @@ export function RadioCheckbox({
 
     const field_id = field_record['Field ID']
     const [value, setValue] = useState(valuesByFieldId[field_id])
-    console.log("Radio checkbox", value)
 
     function update(option) {
         setValue(option)

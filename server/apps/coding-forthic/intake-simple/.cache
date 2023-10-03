@@ -1,0 +1,61 @@
+{
+    "intake__form_configs": [
+        {
+            "tab": "Simple",
+            "Project": "TOOLS",
+            "Issue Type": "Task",
+            "Labels": [
+                "forthic-intake"
+            ],
+            "field_records": {
+                "Simple": [
+                    {
+                        "Field ID": "summary",
+                        "Jira Field": "Summary",
+                        "Field Label": "Subject",
+                        "Field Description": "A *one sentence* description of your ask",
+                        "Is Required?": "Yes",
+                        "Field Type": "TextInput",
+                        "Field Content": "",
+                        "Max Input Length": "255",
+                        "Condition": ""
+                    },
+                    {
+                        "Field ID": "problem",
+                        "Jira Field": "Description",
+                        "Field Label": "Problem",
+                        "Field Description": "Please enter more details about your problem",
+                        "Is Required?": "Yes",
+                        "Field Type": "Textarea",
+                        "Field Content": "",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    },
+                    {
+                        "Field ID": "impact",
+                        "Jira Field": "Description",
+                        "Field Label": "Impact",
+                        "Field Description": "What is the impact?",
+                        "Is Required?": "Yes",
+                        "Field Type": "Textarea",
+                        "Field Content": "",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    },
+                    {
+                        "Field ID": "urgency",
+                        "Jira Field": "Description",
+                        "Field Label": "Urgency",
+                        "Field Description": "How urgent is this?",
+                        "Is Required?": "Yes",
+                        "Field Type": "Dropdown",
+                        "Field Content": "Extremely Urgent\nUrgent\nFairly Urgent\nNot Urgent",
+                        "Max Input Length": "",
+                        "Condition": ""
+                    }
+                ]
+            },
+            "dup_fields": {}
+        }
+    ]
+}

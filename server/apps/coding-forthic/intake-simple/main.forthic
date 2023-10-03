@@ -1,0 +1,73 @@
+["contexts" "jira" "cache" "jinja" "intake" ["ui" ""]] USE-MODULES
+
+# ----- Configuration ----------------------------------------------------------------------------------------
+contexts.JIRA-STG jira.PUSH-CONTEXT!
+
+: FORM-ADMINS   ['rjose'];
+: CONFIG-URL    "https://docs.google.com/spreadsheets/d/1nwLgzAgqS34Pdharg0nU3DjsdUuBb7x_jZNoXAFmqOM/edit#gid=0";
+: FORM-CONFIGS [
+    [
+        ["tab"          "Simple"]
+        ["Project"      'TOOLS']
+        ["Issue Type"   'Task']
+        ["Labels"       ["forthic-intake"]]
+    ] REC
+];
+
+# ----- CREATE-TICKET ----------------------------------------------------------------------------------------
+["ticket_key" "info"] VARIABLES
+
+: CREATE-TICKET   (info !)
+    info @ intake.INFO>TICKET-RECORD "Labels" intake.APPEND-FORM-CONFIG-FIELD  CURRENT-USER "Reporter" <REC! jira.CREATE (ticket_key !)
+    ticket_key @ info @ intake.INFO>ATTACHMENTS jira.ADD-ATTACHMENTS
+    ticket_key @
+;
+
+["ticket_key"] VARIABLES
+: ticket_key-DATA   [
+    ["ticket_key"   ticket_key @]
+    ["ticket_url"   ticket_key @ jira.ISSUE-URL]
+] REC;
+
+: CREATED-MESSAGE   (ticket_key !) '''
+## Thanks for taking the time to file a ticket
+
+Here's a link to your ticket: [{{ticket_key}}]({{ticket_url}})
+''' ticket_key-DATA jinja.RENDER;
+
+# ----- Admin -----------------------------------------------------------------------------------
+# NOTE: Call this when the configs need to be updated
+: REFRESH-CONFIGS!   contexts.GOOGLE CONFIG-URL FORM-CONFIGS FORM-ADMINS intake.REFRESH-CONFIGS!;
+
+["str"] VARIABLES
+: >JS-FRIENDLY-STRING   "\" "\\" REPLACE (str !) ["'''"  str @ "'''"] CONCAT;
+: UI-FORTHIC-DATA   [
+    ["form_configs_json"   intake.FORM-CONFIGS >JSON >JS-FRIENDLY-STRING]
+    ["is_admin"            CURRENT-USER FORM-ADMINS IN >JSON]
+] REC;
+
+# ----- UI-FORTHIC -----------------------------------------------------------------------------------
+: UI-FORTHIC   """
+    : FORM-CONFIGS    {{form_configs_json}} JSON>;
+    : IS-ADMIN?       "{{is_admin}}" JSON>;
+
+    ["element"] VARIABLES
+    : FOR-ADMIN   (element !) [[TRUE   "element @"]] REC IS-ADMIN? REC@ INTERPRET;
+    : REFRESH-CONFIGS-BUTTON   ForthicButton "Refresh Configs (Admin)" <CONTENT [["variant"  "outline-light"] ["forthic"  "[] 'REFRESH-CONFIGS!' SERVER-INTERPRET location.reload"]] REC <PROPS;
+    : FORM-ELEMENT   Div [
+        Div [ H1 "Simple Intake Form Example" <CONTENT  REFRESH-CONFIGS-BUTTON FOR-ADMIN] <CONTENT
+            "text-light bg-dark bg-gradient shadow-sm p-3 mb-3 d-flex justify-content-between" <<CLASSNAME
+        ConfigurableForm [
+            ["form_configs"   FORM-CONFIGS]
+            ["form_id_field"  "formId"]
+            ["fcreated_message"  "[SWAP] 'CREATED-MESSAGE' SERVER-INTERPRET"]
+        ] REC <PROPS "container w-50 shadow p-4" <<CLASSNAME
+    ] <CONTENT;
+
+    : MAIN-ROUTER   [
+        "/" FORM-ELEMENT Route
+        "/:formId" FORM-ELEMENT Route
+    ] Router;
+""" UI-FORTHIC-DATA jinja.RENDER;
+
+: MAIN-PAGE   FORTHIC-REACT-v1 UI-FORTHIC <FORTHIC;

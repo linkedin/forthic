@@ -2622,7 +2622,7 @@ class GlobalModule(Module):
     # ( markdown -- html)
     def word_MARKDOWN_to_HTML(self, interp: IInterpreter):
         markdown_content = interp.stack_pop()
-        result = markdown.markdown(markdown_content)
+        result = markdown.markdown(markdown_content, extensions=['tables'])
         interp.stack_push(result)
 
     def get_flags(self):
