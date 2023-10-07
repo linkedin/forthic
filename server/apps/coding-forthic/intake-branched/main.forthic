@@ -10,9 +10,9 @@ contexts.JIRA-STG jira.PUSH-CONTEXT!
 : FORM-CONFIGS [
     [
         ["tab"          "Branched"]
-        ["step_tabs"    ["Start" "Continue"  "Self-service"]]
+        ["step_tabs"    ["Continue"  "Self-service"]]
         ["transitions"  [
-            ["Start"
+            ["Branched"
                 [ [["next_step_id"  "Continue"] ["fcondition" "'request_type' intake.FIELD-VALUE ['New Feature' 'Bug Report'] IN"]] REC
                   [["next_step_id"  "Self-service"] ["fcondition" "'request_type' intake.FIELD-VALUE 'Unimportant ask' =="]] REC
                 ]

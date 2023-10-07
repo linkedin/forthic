@@ -8,7 +8,7 @@ contexts.JIRA-STG jira.PUSH-CONTEXT!
 : FORM-CONFIGS [
     [
         ["tab"          "Multistep"]
-        ["step_tabs"    ["Multistep 1" "Multistep 2"]]
+        ["step_tabs"    ["Multistep 2"]]
         ["Project"      'TOOLS']
         ["Issue Type"   'Task']
         ["Labels"       ["forthic-intake"]]

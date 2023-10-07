@@ -3,12 +3,11 @@
         {
             "tab": "Branched",
             "step_tabs": [
-                "Start",
                 "Continue",
                 "Self-service"
             ],
             "transitions": {
-                "Start": [
+                "Branched": [
                     {
                         "next_step_id": "Continue",
                         "fcondition": "'request_type' intake.FIELD-VALUE ['New Feature' 'Bug Report'] IN"
@@ -26,30 +25,7 @@
                 "forthic-intake"
             ],
             "field_records": {
-                "Start": [
-                    {
-                        "Field ID": "subject",
-                        "Jira Field": "Summary",
-                        "Field Label": "Subject",
-                        "Field Description": "Please enter a summary",
-                        "Is Required?": "Yes",
-                        "Field Type": "TextInput",
-                        "Field Content": "",
-                        "Max Input Length": "255",
-                        "Condition": ""
-                    },
-                    {
-                        "Field ID": "request_type",
-                        "Jira Field": "Description",
-                        "Field Label": "Request Type",
-                        "Field Description": "Select a request type",
-                        "Is Required?": "Yes",
-                        "Field Type": "Dropdown",
-                        "Field Content": "New Feature\nBug Report\nUnimportant ask",
-                        "Max Input Length": "",
-                        "Condition": ""
-                    }
-                ],
+                "Branched": [],
                 "Continue": [
                     {
                         "Field ID": "problem",

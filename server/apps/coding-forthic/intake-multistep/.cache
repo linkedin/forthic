@@ -3,7 +3,6 @@
         {
             "tab": "Multistep",
             "step_tabs": [
-                "Multistep 1",
                 "Multistep 2"
             ],
             "Project": "TOOLS",
@@ -12,12 +11,12 @@
                 "forthic-intake"
             ],
             "field_records": {
-                "Multistep 1": [
+                "Multistep": [
                     {
                         "Field ID": "summary",
                         "Jira Field": "Summary",
                         "Field Label": "Subject",
-                        "Field Description": "Add a summary of your request",
+                        "Field Description": "Please add a summary of your request",
                         "Is Required?": "Yes",
                         "Field Type": "TextInput",
                         "Field Content": "",
