@@ -144,7 +144,7 @@ FORTHIC = """
 
 : config-TAB                   config @ 'tab' REC@;
 : config-STEP-TABS             config @ 'step_tabs' REC@;
-: config-TABS                  [config-TAB config-STEP-TABS] FLATTEN;
+: config-TABS                  [config-TAB config-STEP-TABS] FLATTEN ">BOOL" SELECT;
 
 : <ADD-FIELD-RECORDS           (config !@) config-TABS DUP "(tab ! tab-ENSURE-TAB) tab-FIELD-RECORDS" MAP ZIP REC "field_records" <REC!;
 : config-FIELD-RECORDS         config @ 'field_records' REC@ VALUES FLATTEN;
