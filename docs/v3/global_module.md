@@ -468,6 +468,7 @@ For a record, this is a no-op.
 
 
 ### SORT
+
 `( array -- array )`
 
 Sorts elements of an array by a default comparison. For a record, this is a no-op.
@@ -478,6 +479,31 @@ for each element instead of just the value.
 If `<comparator> !COMPARATOR` is called just before `SORT`, the specified `comparator` will be
 used to compare elements for sort. The `comparator` may be a Forthic string or it may be a
 function.
+
+Example:
+
+```
+# Sorting with default comparator
+[3 1 2 4] SORT                  #  [1 2 3 4]
+
+["beta" "gamma" "alpha"] SORT   #  ["alpha" "beta" "gamma"]
+
+
+# Sorting by risk using a comparator
+: RISK>ORDER   [
+    ["red"     1]
+    ["yellow"  2]
+    ["green"]  3]
+] REC SWAP REC@;
+
+["yellow" "red" "green" "red"]  "RISK>ORDER" !COMPARATOR SORT   #  ["red" "red" "yellow" "green"]
+
+
+# Sorting by assignee using a comparator
+: TICKET>ASSIGNEE   "Assignee" REC@;
+
+TICKETS "TICKET>ASSIGNEE" !COMPARATOR SORT
+```
 
 
 ### FIELD-KEY-FUNC

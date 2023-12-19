@@ -528,20 +528,44 @@ For a record, this is a no-op.
 
 
 ### SORT
+
 `( array -- array )`
 
-`( record -- record )`
+Sorts elements of an array by a default comparison.
 
-Sorts elements of an array by a default comparison. For a record, this is a no-op.
+Example:
 
+```
+[3 1 2 4] SORT                  #  [1 2 3 4]
+
+["beta" "gamma" "alpha"] SORT   #  ["alpha" "beta" "gamma"]
+```
 
 ### SORT-w/FORTHIC
+
 `( array forthic -- array )`
 
-`( record forthic -- record )`
+Sorts elements of an array using a `forthic` string to compare them. This is useful if you
+want to sort values in a custom way, or if you want to sort an array of records.
 
-Sorts elements of an array using a `forthic` string to return a value for comparison. For
-a record, this is a no-op.
+Example:
+
+```
+# Sorting by risk
+: RISK>ORDER   [
+    ["red"     1]
+    ["yellow"  2]
+    ["green"]  3]
+] REC SWAP REC@;
+
+["yellow" "red" "green" "red"]  "RISK>ORDER" SORT-w/FORTHIC   #  ["red" "red" "yellow" "green"]
+
+# Sorting by assignee
+: TICKET>ASSIGNEE   "Assignee" REC@;
+
+TICKETS "TICKET>ASSIGNEE"  SORT-w/FORTHIC
+```
+
 
 ### SORT-w/KEY-FUNC
 `( array key_func -- array )`
