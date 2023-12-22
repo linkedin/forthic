@@ -43,6 +43,12 @@ test-react:
 	@echo "============"
 	cd forthic-react/v1 && npm install && CI=1 npm run test
 
+test-rs:
+	@echo
+	@echo "Forthic Rust tests"
+	@echo "============"
+	cargo test --manifest-path tests/tests_rs/Cargo.toml
+
 
 test-all: test-py test-react test-js
 
