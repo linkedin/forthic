@@ -18,11 +18,15 @@ pub const Tokenizer = struct {
         return self.transitionFromSTART();
     }
 
+    fn isWhitespace(self: *Tokenizer, c: u8) bool {
+        return std.mem.indexOfScalar(u8, self.whitespace, c) != null;
+    }
+
     fn transitionFromSTART(self: *Tokenizer) error{OutOfMemory}!token.Token {
         while (self.position < self.input_string.len) {
             const c = self.input_string[self.position];
             self.position += 1;
-            if (std.mem.indexOfScalar(u8, self.whitespace, c) != null) {
+            if (self.isWhitespace(c)) {
                 continue;
             } else if (c == '#') {
                 return self.transitionFromCOMMENT();
