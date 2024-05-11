@@ -5,6 +5,8 @@ pub fn getNumber() u8 {
     return 42;
 }
 
+const TokenizerError = error{UnterminatedStringError};
+
 pub const Tokenizer = struct {
     input_string: []const u8,
     position: u32,
@@ -17,13 +19,27 @@ pub const Tokenizer = struct {
         self.token_string.deinit();
     }
 
-    pub fn nextToken(self: *Tokenizer) error{OutOfMemory}!token.Token {
+    pub fn nextToken(self: *Tokenizer) error{ OutOfMemory, UnterminatedStringError }!token.Token {
         self.token_string.clearRetainingCapacity();
         return self.transitionFromSTART();
     }
 
     fn isWhitespace(self: *Tokenizer, c: u8) bool {
         return std.mem.indexOfScalar(u8, self.whitespace, c) != null;
+    }
+
+    fn isQuote(self: *Tokenizer, c: u8) bool {
+        return std.mem.indexOfScalar(u8, self.quote_chars, c) != null;
+    }
+
+    fn isTripleQuote(self: *Tokenizer, position: u32, c: u8) bool {
+        if (!self.isQuote(c)) {
+            return false;
+        }
+        if (position + 2 < self.input_string.len) {
+            return self.input_string[position] == c and self.input_string[position + 1] == c and self.input_string[position + 2] == c;
+        }
+        return false;
     }
 
     fn isStartMemo(self: *Tokenizer, position: u32) bool {
@@ -33,7 +49,7 @@ pub const Tokenizer = struct {
         return false;
     }
 
-    fn transitionFromSTART(self: *Tokenizer) error{OutOfMemory}!token.Token {
+    fn transitionFromSTART(self: *Tokenizer) error{ OutOfMemory, UnterminatedStringError }!token.Token {
         while (self.position < self.input_string.len) {
             const c = self.input_string[self.position];
             self.position += 1;
@@ -54,6 +70,11 @@ pub const Tokenizer = struct {
                 return token.createToken(token.TokenType.tok_end_array, "]", self.allocator);
             } else if (c == '{') {
                 return self.transitionFromGATHER_MODULE();
+            } else if (c == '}') {
+                return token.createToken(token.TokenType.tok_end_module, "}", self.allocator);
+            } else if (self.isTripleQuote(self.position - 1, c)) {
+                self.position += 2; // Skip over 2nd and 3rd quote characters
+                return self.transitionFromGATHER_TRIPLE_QUOTE_STRING(c);
             }
         }
         return token.createToken(token.TokenType.tok_eos, "", self.allocator);
@@ -110,6 +131,20 @@ pub const Tokenizer = struct {
         return token.createToken(token.TokenType.tok_start_module, self.token_string.items, self.allocator);
     }
 
+    fn transitionFromGATHER_TRIPLE_QUOTE_STRING(self: *Tokenizer, quote_char: u8) error{ OutOfMemory, UnterminatedStringError }!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            if (c == quote_char and self.isTripleQuote(self.position, c)) {
+                self.position += 3;
+                return token.createToken(token.TokenType.tok_string, self.token_string.items, self.allocator);
+            } else {
+                self.position += 1;
+                try self.token_string.append(c);
+            }
+        }
+        return TokenizerError.UnterminatedStringError;
+    }
+
     pub fn printInput(self: *Tokenizer) void {
         std.debug.print("Input: {s}\n", .{self.input_string[0..1]});
     }
@@ -143,6 +178,9 @@ test "Parse comment" {
         \\[
         \\]
         \\{test-module
+        \\}
+        \\"""This is a triple quote string"""
+        \\'''Another triple quote string'''
     ;
     const expected_types = [_]token.TokenType{
         token.TokenType.tok_comment,
@@ -152,6 +190,9 @@ test "Parse comment" {
         token.TokenType.tok_start_array,
         token.TokenType.tok_end_array,
         token.TokenType.tok_start_module,
+        token.TokenType.tok_end_module,
+        token.TokenType.tok_string,
+        token.TokenType.tok_string,
     };
 
     var tokenizer = createTokenizer(forthic, allocator);
@@ -160,7 +201,7 @@ test "Parse comment" {
     for (expected_types) |expected_type| {
         var tok = try tokenizer.nextToken();
         defer tok.deinit();
-        std.debug.print("Token: {any}\n", .{tok.token_type});
+        std.debug.print("Token: {any} {any}\n", .{ tok.token_type, expected_type });
         std.testing.expect(tok.token_type == expected_type) catch @panic("TEST FAIL");
     }
 }
