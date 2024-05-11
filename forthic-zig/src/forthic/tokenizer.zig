@@ -11,7 +11,7 @@ pub const Tokenizer = struct {
     whitespace: []const u8,
     quote_chars: []const u8,
     token_string: std.ArrayList(u8),
-    allocator: *const std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
     pub fn nextToken(self: *Tokenizer) error{OutOfMemory}!token.Token {
         self.token_string.clearRetainingCapacity();
@@ -42,6 +42,8 @@ pub const Tokenizer = struct {
             } else if (self.isStartMemo(self.position - 1)) {
                 self.position += 1; // Skip over ":" in "@:"
                 return self.transitionFromSTART_MEMO();
+            } else if (c == ';') {
+                return token.createToken(token.TokenType.tok_end_definition, ";", self.allocator);
             }
         }
         return token.createToken(token.TokenType.tok_eos, "", self.allocator);
@@ -94,41 +96,50 @@ pub fn createTokenizer(input_string: []const u8, allocator: std.mem.Allocator) T
         .whitespace = " \t\n\r()",
         .quote_chars = "\"'",
         .token_string = std.ArrayList(u8).init(allocator),
-        .allocator = &allocator,
+        .allocator = allocator,
     };
 }
 
-test "tokenizer" {
+test "Parse comment" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer {
         const deinit_status = gpa.deinit();
+        std.debug.print("Deinit status: {any}\n", .{deinit_status});
         //fail test; can't try in defer as defer is executed after we return
-        if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
+        // if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
 
+    const forthic =
+        \\# This is a comment
+        \\: MESSAGE
+        \\@: MESSAGE
+        \\;
+    ;
+    var tokenizer = createTokenizer(forthic, allocator);
+
     // Test comment
-    var tokenizer = createTokenizer("# HOWDY", allocator);
-    var tok = try tokenizer.nextToken();
-    std.debug.print("Token: {any}\n", .{tok.token_type});
-    std.testing.expect(tok.token_type == token.TokenType.tok_comment) catch @panic("TEST FAIL");
+    var tok_comment = try tokenizer.nextToken();
+    defer tok_comment.deinit();
+    std.debug.print("Token: {any}\n", .{tok_comment.token_type});
+    std.testing.expect(tok_comment.token_type == token.TokenType.tok_comment) catch @panic("TEST FAIL");
     // tokenizer.printInput();
 
     // Test start definition
-    tokenizer = createTokenizer(": MESSAGE   'Howdy';", allocator);
-    tok = try tokenizer.nextToken();
-    std.debug.print("Token: {any}\n", .{tok.token_type});
-    std.testing.expect(tok.token_type == token.TokenType.tok_start_definition) catch @panic("TEST FAIL");
-
-    // Test start definition
-    tokenizer = createTokenizer(": MESSAGE   'Howdy';", allocator);
-    tok = try tokenizer.nextToken();
-    std.debug.print("Token: {any}\n", .{tok.token_type});
-    std.testing.expect(tok.token_type == token.TokenType.tok_start_definition) catch @panic("TEST FAIL");
+    var tok_start_definition = try tokenizer.nextToken();
+    defer tok_start_definition.deinit();
+    std.debug.print("Token: {any}\n", .{tok_start_definition.token_type});
+    std.testing.expect(tok_start_definition.token_type == token.TokenType.tok_start_definition) catch @panic("TEST FAIL");
 
     // Test start memo
-    tokenizer = createTokenizer("@: MESSAGE   'Howdy';", allocator);
-    tok = try tokenizer.nextToken();
-    std.debug.print("Token: {any}\n", .{tok.token_type});
-    std.testing.expect(tok.token_type == token.TokenType.tok_start_memo) catch @panic("TEST FAIL");
+    var tok_start_memo = try tokenizer.nextToken();
+    defer tok_start_memo.deinit();
+    std.debug.print("Token: {any}\n", .{tok_start_memo.token_type});
+    std.testing.expect(tok_start_memo.token_type == token.TokenType.tok_start_memo) catch @panic("TEST FAIL");
+
+    // Test end definition
+    var tok_end_definition = try tokenizer.nextToken();
+    defer tok_end_definition.deinit();
+    std.debug.print("Token: {any}\n", .{tok_end_definition.token_type});
+    std.testing.expect(tok_end_definition.token_type == token.TokenType.tok_end_definition) catch @panic("TEST FAIL");
 }

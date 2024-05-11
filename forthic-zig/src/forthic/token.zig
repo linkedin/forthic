@@ -4,16 +4,16 @@ pub const TokenType = enum { tok_string, tok_comment, tok_start_array, tok_end_a
 pub const Token = struct {
     token_type: TokenType,
     token_string: []u8,
-    allocator: *const std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
-    fn deinit(self: *Token) void {
+    pub fn deinit(self: *Token) void {
         if (self.token_string.len > 0) {
             self.allocator.free(self.token_string);
         }
     }
 };
 
-pub fn createToken(token_type: TokenType, token_string: []const u8, allocator: *const std.mem.Allocator) error{OutOfMemory}!Token {
+pub fn createToken(token_type: TokenType, token_string: []const u8, allocator: std.mem.Allocator) error{OutOfMemory}!Token {
     var buf = try allocator.alloc(u8, token_string.len);
     for (token_string, 0..) |c, i| {
         buf[i] = c;
@@ -34,7 +34,7 @@ test "createToken" {
         //fail test; can't try in defer as defer is executed after we return
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
-    var token = createToken(TokenType.tok_string, "hello", &allocator) catch |err| {
+    var token = createToken(TokenType.tok_string, "hello", allocator) catch |err| {
         std.debug.print("Error: {}\n", .{err});
         return;
     };
