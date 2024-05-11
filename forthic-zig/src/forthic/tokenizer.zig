@@ -5,7 +5,7 @@ pub fn getNumber() u8 {
     return 42;
 }
 
-const TokenizerError = error{UnterminatedStringError};
+const TokenizerError = error{ UnterminatedStringError, InvalidDefinition };
 
 pub const Tokenizer = struct {
     input_string: []const u8,
@@ -19,7 +19,7 @@ pub const Tokenizer = struct {
         self.token_string.deinit();
     }
 
-    pub fn nextToken(self: *Tokenizer) error{ OutOfMemory, UnterminatedStringError }!token.Token {
+    pub fn nextToken(self: *Tokenizer) error{ OutOfMemory, UnterminatedStringError, InvalidDefinition }!token.Token {
         self.token_string.clearRetainingCapacity();
         return self.transitionFromSTART();
     }
@@ -49,7 +49,7 @@ pub const Tokenizer = struct {
         return false;
     }
 
-    fn transitionFromSTART(self: *Tokenizer) error{ OutOfMemory, UnterminatedStringError }!token.Token {
+    fn transitionFromSTART(self: *Tokenizer) error{ OutOfMemory, UnterminatedStringError, InvalidDefinition }!token.Token {
         while (self.position < self.input_string.len) {
             const c = self.input_string[self.position];
             self.position += 1;
@@ -75,6 +75,11 @@ pub const Tokenizer = struct {
             } else if (self.isTripleQuote(self.position - 1, c)) {
                 self.position += 2; // Skip over 2nd and 3rd quote characters
                 return self.transitionFromGATHER_TRIPLE_QUOTE_STRING(c);
+            } else if (self.isQuote(c)) {
+                return self.transitionFromGATHER_STRING(c);
+            } else {
+                self.position -= 1; // Back up to beginning of word
+                return self.transitionFromGATHER_WORD();
             }
         }
         return token.createToken(token.TokenType.tok_eos, "", self.allocator);
@@ -91,27 +96,57 @@ pub const Tokenizer = struct {
         return token.createToken(token.TokenType.tok_comment, self.token_string.items, self.allocator);
     }
 
-    fn transitionFromSTART_DEFINITION(self: *Tokenizer) error{OutOfMemory}!token.Token {
+    fn transitionFromSTART_DEFINITION(self: *Tokenizer) error{ OutOfMemory, InvalidDefinition }!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            self.position += 1;
+            if (self.isWhitespace(c)) {
+                continue;
+            } else {
+                self.position -= 1;
+                return self.transitionFromGATHER_DEFINITION_NAME();
+            }
+        }
+        return TokenizerError.InvalidDefinition;
+    }
+
+    fn transitionFromSTART_MEMO(self: *Tokenizer) error{ OutOfMemory, InvalidDefinition }!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            self.position += 1;
+            if (self.isWhitespace(c)) {
+                continue;
+            } else {
+                self.position -= 1;
+                return self.transitionFromGATHER_MEMO_NAME();
+            }
+        }
+        return TokenizerError.InvalidDefinition;
+    }
+
+    fn gatherDefinitionName(self: *Tokenizer) error{ OutOfMemory, InvalidDefinition }!void {
         while (self.position < self.input_string.len) {
             const c = self.input_string[self.position];
             self.position += 1;
             if (self.isWhitespace(c)) {
                 break;
+            } else if (self.isQuote(c)) {
+                return TokenizerError.InvalidDefinition;
+            } else if (c == '[' or c == ']' or c == '{' or c == '}') {
+                return TokenizerError.InvalidDefinition;
+            } else {
+                try self.token_string.append(c);
             }
-            try self.token_string.append(c);
         }
+    }
+
+    fn transitionFromGATHER_DEFINITION_NAME(self: *Tokenizer) error{ OutOfMemory, InvalidDefinition }!token.Token {
+        try self.gatherDefinitionName();
         return token.createToken(token.TokenType.tok_start_definition, self.token_string.items, self.allocator);
     }
 
-    fn transitionFromSTART_MEMO(self: *Tokenizer) error{OutOfMemory}!token.Token {
-        while (self.position < self.input_string.len) {
-            const c = self.input_string[self.position];
-            self.position += 1;
-            if (self.isWhitespace(c)) {
-                break;
-            }
-            try self.token_string.append(c);
-        }
+    fn transitionFromGATHER_MEMO_NAME(self: *Tokenizer) error{ OutOfMemory, InvalidDefinition }!token.Token {
+        try self.gatherDefinitionName();
         return token.createToken(token.TokenType.tok_start_memo, self.token_string.items, self.allocator);
     }
 
@@ -145,8 +180,34 @@ pub const Tokenizer = struct {
         return TokenizerError.UnterminatedStringError;
     }
 
-    pub fn printInput(self: *Tokenizer) void {
-        std.debug.print("Input: {s}\n", .{self.input_string[0..1]});
+    fn transitionFromGATHER_STRING(self: *Tokenizer, quote_char: u8) error{ OutOfMemory, UnterminatedStringError }!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            self.position += 1;
+            if (c == quote_char) {
+                return token.createToken(token.TokenType.tok_string, self.token_string.items, self.allocator);
+            } else {
+                try self.token_string.append(c);
+            }
+        }
+        return TokenizerError.UnterminatedStringError;
+    }
+
+    fn transitionFromGATHER_WORD(self: *Tokenizer) error{OutOfMemory}!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            self.position += 1;
+            if (self.isWhitespace(c)) {
+                break;
+            }
+            if (c == ';' or c == '[' or c == ']' or c == '{' or c == '}') {
+                self.position -= 1;
+                break;
+            } else {
+                try self.token_string.append(c);
+            }
+        }
+        return token.createToken(token.TokenType.tok_word, self.token_string.items, self.allocator);
     }
 };
 
@@ -170,7 +231,7 @@ test "Parse comment" {
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
 
-    const forthic =
+    const forthic_fragments =
         \\# This is a comment
         \\: MESSAGE
         \\@: MESSAGE
@@ -181,6 +242,9 @@ test "Parse comment" {
         \\}
         \\"""This is a triple quote string"""
         \\'''Another triple quote string'''
+        \\"Regular string"
+        \\'Another regular string'
+        \\TEST-MESSAGE
     ;
     const expected_types = [_]token.TokenType{
         token.TokenType.tok_comment,
@@ -193,9 +257,12 @@ test "Parse comment" {
         token.TokenType.tok_end_module,
         token.TokenType.tok_string,
         token.TokenType.tok_string,
+        token.TokenType.tok_string,
+        token.TokenType.tok_string,
+        token.TokenType.tok_word,
     };
 
-    var tokenizer = createTokenizer(forthic, allocator);
+    var tokenizer = createTokenizer(forthic_fragments, allocator);
     defer tokenizer.deinit();
 
     for (expected_types) |expected_type| {
