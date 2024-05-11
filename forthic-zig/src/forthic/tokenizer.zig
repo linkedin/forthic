@@ -116,30 +116,19 @@ test "Parse comment" {
         \\@: MESSAGE
         \\;
     ;
+    const expected_types = [_]token.TokenType{
+        token.TokenType.tok_comment,
+        token.TokenType.tok_start_definition,
+        token.TokenType.tok_start_memo,
+        token.TokenType.tok_end_definition,
+    };
+
     var tokenizer = createTokenizer(forthic, allocator);
 
-    // Test comment
-    var tok_comment = try tokenizer.nextToken();
-    defer tok_comment.deinit();
-    std.debug.print("Token: {any}\n", .{tok_comment.token_type});
-    std.testing.expect(tok_comment.token_type == token.TokenType.tok_comment) catch @panic("TEST FAIL");
-    // tokenizer.printInput();
-
-    // Test start definition
-    var tok_start_definition = try tokenizer.nextToken();
-    defer tok_start_definition.deinit();
-    std.debug.print("Token: {any}\n", .{tok_start_definition.token_type});
-    std.testing.expect(tok_start_definition.token_type == token.TokenType.tok_start_definition) catch @panic("TEST FAIL");
-
-    // Test start memo
-    var tok_start_memo = try tokenizer.nextToken();
-    defer tok_start_memo.deinit();
-    std.debug.print("Token: {any}\n", .{tok_start_memo.token_type});
-    std.testing.expect(tok_start_memo.token_type == token.TokenType.tok_start_memo) catch @panic("TEST FAIL");
-
-    // Test end definition
-    var tok_end_definition = try tokenizer.nextToken();
-    defer tok_end_definition.deinit();
-    std.debug.print("Token: {any}\n", .{tok_end_definition.token_type});
-    std.testing.expect(tok_end_definition.token_type == token.TokenType.tok_end_definition) catch @panic("TEST FAIL");
+    for (expected_types) |expected_type| {
+        var tok = try tokenizer.nextToken();
+        defer tok.deinit();
+        std.debug.print("Token: {any}\n", .{tok.token_type});
+        std.testing.expect(tok.token_type == expected_type) catch @panic("TEST FAIL");
+    }
 }
