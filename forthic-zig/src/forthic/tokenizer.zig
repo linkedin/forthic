@@ -30,6 +30,8 @@ pub const Tokenizer = struct {
                 continue;
             } else if (c == '#') {
                 return self.transitionFromCOMMENT();
+            } else if (c == ':') {
+                return self.transitionFromSTART_DEFINITION();
             }
         }
         return token.createToken(token.TokenType.tok_eos, "", self.allocator);
@@ -44,6 +46,18 @@ pub const Tokenizer = struct {
             }
         }
         return token.createToken(token.TokenType.tok_comment, self.token_string.items, self.allocator);
+    }
+
+    fn transitionFromSTART_DEFINITION(self: *Tokenizer) error{OutOfMemory}!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            self.position += 1;
+            if (self.isWhitespace(c)) {
+                break;
+            }
+            try self.token_string.append(c);
+        }
+        return token.createToken(token.TokenType.tok_start_definition, self.token_string.items, self.allocator);
     }
 
     pub fn printInput(self: *Tokenizer) void {
@@ -70,8 +84,17 @@ test "tokenizer" {
         //fail test; can't try in defer as defer is executed after we return
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
+
+    // Look for comment
     var tokenizer = createTokenizer("# HOWDY", allocator);
-    const tok = try tokenizer.nextToken();
+    var tok = try tokenizer.nextToken();
     std.debug.print("Token: {any}\n", .{tok.token_type});
+    std.testing.expect(tok.token_type == token.TokenType.tok_comment) catch @panic("TEST FAIL");
     // tokenizer.printInput();
+
+    // Look for start definition
+    tokenizer = createTokenizer(": MESSAGE   'Howdy';", allocator);
+    tok = try tokenizer.nextToken();
+    std.debug.print("Token: {any}\n", .{tok.token_type});
+    std.testing.expect(tok.token_type == token.TokenType.tok_start_definition) catch @panic("TEST FAIL");
 }
