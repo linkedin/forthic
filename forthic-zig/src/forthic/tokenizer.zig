@@ -22,6 +22,13 @@ pub const Tokenizer = struct {
         return std.mem.indexOfScalar(u8, self.whitespace, c) != null;
     }
 
+    fn isStartMemo(self: *Tokenizer, position: u32) bool {
+        if (position + 1 < self.input_string.len) {
+            return self.input_string[position] == '@' and self.input_string[position + 1] == ':';
+        }
+        return false;
+    }
+
     fn transitionFromSTART(self: *Tokenizer) error{OutOfMemory}!token.Token {
         while (self.position < self.input_string.len) {
             const c = self.input_string[self.position];
@@ -32,6 +39,9 @@ pub const Tokenizer = struct {
                 return self.transitionFromCOMMENT();
             } else if (c == ':') {
                 return self.transitionFromSTART_DEFINITION();
+            } else if (self.isStartMemo(self.position - 1)) {
+                self.position += 1; // Skip over ":" in "@:"
+                return self.transitionFromSTART_MEMO();
             }
         }
         return token.createToken(token.TokenType.tok_eos, "", self.allocator);
@@ -60,6 +70,18 @@ pub const Tokenizer = struct {
         return token.createToken(token.TokenType.tok_start_definition, self.token_string.items, self.allocator);
     }
 
+    fn transitionFromSTART_MEMO(self: *Tokenizer) error{OutOfMemory}!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            self.position += 1;
+            if (self.isWhitespace(c)) {
+                break;
+            }
+            try self.token_string.append(c);
+        }
+        return token.createToken(token.TokenType.tok_start_memo, self.token_string.items, self.allocator);
+    }
+
     pub fn printInput(self: *Tokenizer) void {
         std.debug.print("Input: {s}\n", .{self.input_string[0..1]});
     }
@@ -85,16 +107,28 @@ test "tokenizer" {
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
 
-    // Look for comment
+    // Test comment
     var tokenizer = createTokenizer("# HOWDY", allocator);
     var tok = try tokenizer.nextToken();
     std.debug.print("Token: {any}\n", .{tok.token_type});
     std.testing.expect(tok.token_type == token.TokenType.tok_comment) catch @panic("TEST FAIL");
     // tokenizer.printInput();
 
-    // Look for start definition
+    // Test start definition
     tokenizer = createTokenizer(": MESSAGE   'Howdy';", allocator);
     tok = try tokenizer.nextToken();
     std.debug.print("Token: {any}\n", .{tok.token_type});
     std.testing.expect(tok.token_type == token.TokenType.tok_start_definition) catch @panic("TEST FAIL");
+
+    // Test start definition
+    tokenizer = createTokenizer(": MESSAGE   'Howdy';", allocator);
+    tok = try tokenizer.nextToken();
+    std.debug.print("Token: {any}\n", .{tok.token_type});
+    std.testing.expect(tok.token_type == token.TokenType.tok_start_definition) catch @panic("TEST FAIL");
+
+    // Test start memo
+    tokenizer = createTokenizer("@: MESSAGE   'Howdy';", allocator);
+    tok = try tokenizer.nextToken();
+    std.debug.print("Token: {any}\n", .{tok.token_type});
+    std.testing.expect(tok.token_type == token.TokenType.tok_start_memo) catch @panic("TEST FAIL");
 }
