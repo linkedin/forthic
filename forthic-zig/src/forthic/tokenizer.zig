@@ -7,12 +7,25 @@ pub fn getNumber() u8 {
 
 const TokenizerError = error{ UnterminatedStringError, InvalidDefinition };
 
+/// Tokenizer is a struct that can be used to tokenize a forthic string.
+/// It implements a state machine for doing this.
 pub const Tokenizer = struct {
+    /// The input string to tokenize
     input_string: []const u8,
+
+    /// The current position in the input string
     position: u32,
+
+    /// Characters that are considered whitespace
     whitespace: []const u8,
+
+    /// Characters that are considered quotes
     quote_chars: []const u8,
+
+    /// The current token string being built
     token_string: std.ArrayList(u8),
+
+    /// The allocator to use for allocating memory for the token string
     allocator: std.mem.Allocator,
 
     pub fn deinit(self: *Tokenizer) void {
@@ -49,6 +62,7 @@ pub const Tokenizer = struct {
         return false;
     }
 
+    /// This is the starting point for all tokenization
     fn transitionFromSTART(self: *Tokenizer) error{ OutOfMemory, UnterminatedStringError, InvalidDefinition }!token.Token {
         while (self.position < self.input_string.len) {
             const c = self.input_string[self.position];
@@ -211,6 +225,7 @@ pub const Tokenizer = struct {
     }
 };
 
+/// Helper function to create a new Tokenizer
 pub fn createTokenizer(input_string: []const u8, allocator: std.mem.Allocator) Tokenizer {
     return Tokenizer{
         .input_string = input_string,
@@ -222,7 +237,8 @@ pub fn createTokenizer(input_string: []const u8, allocator: std.mem.Allocator) T
     };
 }
 
-test "Parse comment" {
+// ----- TESTS ------------------------------------------------------------------------------------
+test "Tokenize forthic fragments" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer {
