@@ -13,6 +13,10 @@ pub const Tokenizer = struct {
     token_string: std.ArrayList(u8),
     allocator: std.mem.Allocator,
 
+    pub fn deinit(self: *Tokenizer) void {
+        self.token_string.deinit();
+    }
+
     pub fn nextToken(self: *Tokenizer) error{OutOfMemory}!token.Token {
         self.token_string.clearRetainingCapacity();
         return self.transitionFromSTART();
@@ -49,7 +53,7 @@ pub const Tokenizer = struct {
             } else if (c == ']') {
                 return token.createToken(token.TokenType.tok_end_array, "]", self.allocator);
             } else if (c == '{') {
-                // return self.transitionFromGATHER_MODULE();
+                return self.transitionFromGATHER_MODULE();
             }
         }
         return token.createToken(token.TokenType.tok_eos, "", self.allocator);
@@ -90,6 +94,22 @@ pub const Tokenizer = struct {
         return token.createToken(token.TokenType.tok_start_memo, self.token_string.items, self.allocator);
     }
 
+    fn transitionFromGATHER_MODULE(self: *Tokenizer) error{OutOfMemory}!token.Token {
+        while (self.position < self.input_string.len) {
+            const c = self.input_string[self.position];
+            self.position += 1;
+            if (self.isWhitespace(c)) {
+                break;
+            } else if (c == '}') {
+                self.position -= 1;
+                break;
+            } else {
+                try self.token_string.append(c);
+            }
+        }
+        return token.createToken(token.TokenType.tok_start_module, self.token_string.items, self.allocator);
+    }
+
     pub fn printInput(self: *Tokenizer) void {
         std.debug.print("Input: {s}\n", .{self.input_string[0..1]});
     }
@@ -111,9 +131,8 @@ test "Parse comment" {
     const allocator = gpa.allocator();
     defer {
         const deinit_status = gpa.deinit();
-        std.debug.print("Deinit status: {any}\n", .{deinit_status});
         //fail test; can't try in defer as defer is executed after we return
-        // if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
+        if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
 
     const forthic =
@@ -123,6 +142,7 @@ test "Parse comment" {
         \\;
         \\[
         \\]
+        \\{test-module
     ;
     const expected_types = [_]token.TokenType{
         token.TokenType.tok_comment,
@@ -131,9 +151,11 @@ test "Parse comment" {
         token.TokenType.tok_end_definition,
         token.TokenType.tok_start_array,
         token.TokenType.tok_end_array,
+        token.TokenType.tok_start_module,
     };
 
     var tokenizer = createTokenizer(forthic, allocator);
+    defer tokenizer.deinit();
 
     for (expected_types) |expected_type| {
         var tok = try tokenizer.nextToken();
