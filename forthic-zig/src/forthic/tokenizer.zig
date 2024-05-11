@@ -44,6 +44,12 @@ pub const Tokenizer = struct {
                 return self.transitionFromSTART_MEMO();
             } else if (c == ';') {
                 return token.createToken(token.TokenType.tok_end_definition, ";", self.allocator);
+            } else if (c == '[') {
+                return token.createToken(token.TokenType.tok_start_array, "[", self.allocator);
+            } else if (c == ']') {
+                return token.createToken(token.TokenType.tok_end_array, "]", self.allocator);
+            } else if (c == '{') {
+                // return self.transitionFromGATHER_MODULE();
             }
         }
         return token.createToken(token.TokenType.tok_eos, "", self.allocator);
@@ -115,12 +121,16 @@ test "Parse comment" {
         \\: MESSAGE
         \\@: MESSAGE
         \\;
+        \\[
+        \\]
     ;
     const expected_types = [_]token.TokenType{
         token.TokenType.tok_comment,
         token.TokenType.tok_start_definition,
         token.TokenType.tok_start_memo,
         token.TokenType.tok_end_definition,
+        token.TokenType.tok_start_array,
+        token.TokenType.tok_end_array,
     };
 
     var tokenizer = createTokenizer(forthic, allocator);
