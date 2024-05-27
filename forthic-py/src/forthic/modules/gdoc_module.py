@@ -1,29 +1,31 @@
 import json
-from requests_oauthlib import OAuth2Session   # type: ignore
+from requests_oauthlib import OAuth2Session  # type: ignore
 import oauthlib.oauth2.rfc6749.errors
 from ..module import Module
 from ..interfaces import IInterpreter
-from ...utils.errors import (
-    GdocError,
-    ExpiredGdocOAuthToken
-)
+from ..utils.errors import GdocError, ExpiredGdocOAuthToken
 from typing import List, Any, Dict
 
 
 def raises_ExpiredGdocOAuthToken(fn):
     """Decorator that catches expiration errors and raises ExpiredGdocOAuthToken instead"""
+
     def wrapper(*args, **kwargs):
         res = None
         try:
             res = fn(*args, **kwargs)
-        except (oauthlib.oauth2.rfc6749.errors.TokenExpiredError, oauthlib.oauth2.rfc6749.errors.InvalidGrantError):
+        except (
+            oauthlib.oauth2.rfc6749.errors.TokenExpiredError,
+            oauthlib.oauth2.rfc6749.errors.InvalidGrantError,
+        ):
             raise ExpiredGdocOAuthToken()
         return res
+
     return wrapper
 
 
-FORTHIC = '''
-'''
+FORTHIC = """
+"""
 
 
 # TODO: Need to rework this so it matches the gsheet module
@@ -32,34 +34,37 @@ class GdocModule(Module):
 
     See `docs/modules/gdoc_module.md` for detailed descriptions of each word.
     """
+
     def __init__(self, interp: IInterpreter):
-        super().__init__('gdoc', interp, FORTHIC)
-        self.context_stack: List['CredsContext'] = []
+        super().__init__("gdoc", interp, FORTHIC)
+        self.context_stack: List["CredsContext"] = []
 
-        self.add_module_word('PUSH-CONTEXT!', self.word_PUSH_CONTEXT_bang)
-        self.add_module_word('POP-CONTEXT!', self.word_POP_CONTEXT_bang)
+        self.add_module_word("PUSH-CONTEXT!", self.word_PUSH_CONTEXT_bang)
+        self.add_module_word("POP-CONTEXT!", self.word_POP_CONTEXT_bang)
 
-        self.add_module_word('DOC', self.word_DOC)
-        self.add_module_word('NEW-DOC', self.word_NEW_DOC)
-        self.add_module_word('BATCH-UPDATE', self.word_BATCH_UPDATE)
-        self.add_module_word('INSERT', self.word_INSERT)
+        self.add_module_word("DOC", self.word_DOC)
+        self.add_module_word("NEW-DOC", self.word_NEW_DOC)
+        self.add_module_word("BATCH-UPDATE", self.word_BATCH_UPDATE)
+        self.add_module_word("INSERT", self.word_INSERT)
 
-        self.add_module_word('PT', self.word_PT)
-        self.add_module_word('COLOR', self.word_COLOR)
+        self.add_module_word("PT", self.word_PT)
+        self.add_module_word("COLOR", self.word_COLOR)
 
         # ----- Content
-        self.add_module_word('TABLE', self.word_TABLE)
-        self.add_module_word('TEXT', self.word_TEXT)
-        self.add_module_word('PAGE-BREAK', self.word_PAGE_BREAK)
+        self.add_module_word("TABLE", self.word_TABLE)
+        self.add_module_word("TEXT", self.word_TEXT)
+        self.add_module_word("PAGE-BREAK", self.word_PAGE_BREAK)
 
         # ----- Content manipulation
-        self.add_module_word('TEXT-CONCAT', self.word_TEXT_CONCAT)
-        self.add_module_word('<PARAGRAPH-STYLE', self.word_l_PARAGRAPH_STYLE)
-        self.add_module_word('<TABLE-STYLE', self.word_l_TABLE_STYLE)
-        self.add_module_word('<TABLE-COLUMN-PROPERTIES', self.word_l_TABLE_COLUMN_PROPERTIES)
-        self.add_module_word('<FULL-TABLE-STYLE', self.word_l_FULL_TABLE_STYLE)
-        self.add_module_word('<MERGE-TABLE-CELLS', self.word_l_MERGE_TABLE_CELLS)
-        self.add_module_word('<TEXT-STYLE', self.word_l_TEXT_STYLE)
+        self.add_module_word("TEXT-CONCAT", self.word_TEXT_CONCAT)
+        self.add_module_word("<PARAGRAPH-STYLE", self.word_l_PARAGRAPH_STYLE)
+        self.add_module_word("<TABLE-STYLE", self.word_l_TABLE_STYLE)
+        self.add_module_word(
+            "<TABLE-COLUMN-PROPERTIES", self.word_l_TABLE_COLUMN_PROPERTIES
+        )
+        self.add_module_word("<FULL-TABLE-STYLE", self.word_l_FULL_TABLE_STYLE)
+        self.add_module_word("<MERGE-TABLE-CELLS", self.word_l_MERGE_TABLE_CELLS)
+        self.add_module_word("<TEXT-STYLE", self.word_l_TEXT_STYLE)
 
     # ( creds_context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
@@ -76,7 +81,9 @@ class GdocModule(Module):
         doc_id = interp.stack_pop()
 
         gdoc_session = self.get_gdoc_session()
-        response = self.gdoc_get(gdoc_session, f'https://docs.googleapis.com/v1/documents/{doc_id}')
+        response = self.gdoc_get(
+            gdoc_session, f"https://docs.googleapis.com/v1/documents/{doc_id}"
+        )
         result = response.json()
         interp.stack_push(result)
 
@@ -86,8 +93,10 @@ class GdocModule(Module):
         title = interp.stack_pop()
 
         gdoc_session = self.get_gdoc_session()
-        body_data = {'title': title}
-        response = self.gdoc_post(gdoc_session, 'https://docs.googleapis.com/v1/documents', body_data)
+        body_data = {"title": title}
+        response = self.gdoc_post(
+            gdoc_session, "https://docs.googleapis.com/v1/documents", body_data
+        )
         result = response.json()
         interp.stack_push(result)
 
@@ -98,15 +107,19 @@ class GdocModule(Module):
         doc_id = interp.stack_pop()
 
         def is_empty_insert(update):
-            insertText = update.get('insertText')
-            if insertText and insertText['text'] == '':
+            insertText = update.get("insertText")
+            if insertText and insertText["text"] == "":
                 return True
             return False
 
         non_empty_updates = [u for u in updates if not is_empty_insert(u)]
         gdoc_session = self.get_gdoc_session()
-        body_data = {'requests': non_empty_updates}
-        response = self.gdoc_post(gdoc_session, f'https://docs.googleapis.com/v1/documents/{doc_id}:batchUpdate', body_data)
+        body_data = {"requests": non_empty_updates}
+        response = self.gdoc_post(
+            gdoc_session,
+            f"https://docs.googleapis.com/v1/documents/{doc_id}:batchUpdate",
+            body_data,
+        )
         result = response.json()
         if "error" in result:
             raise RuntimeError(result)
@@ -115,10 +128,7 @@ class GdocModule(Module):
     # ( number -- dimension )
     def word_PT(self, interp: IInterpreter):
         number = interp.stack_pop()
-        result = {
-            "magnitude": number,
-            "unit": "PT"
-        }
+        result = {"magnitude": number, "unit": "PT"}
         interp.stack_push(result)
 
     # ( red green blue -- Color )
@@ -265,22 +275,21 @@ class GdocModule(Module):
             raise ExpiredGdocOAuthToken()
         return response
 
-    def gdoc_post(self, gdoc_session: OAuth2Session, api_url: str, body_data: Dict[str, Any]):
+    def gdoc_post(
+        self, gdoc_session: OAuth2Session, api_url: str, body_data: Dict[str, Any]
+    ):
         context = self.get_context()
         response = gdoc_session.post(
-            api_url,
-            data=json.dumps(body_data),
-            proxies=context.get_proxies())
+            api_url, data=json.dumps(body_data), proxies=context.get_proxies()
+        )
 
         if response.status_code == 403:
             raise ExpiredGdocOAuthToken()
         return response
 
-    def get_context(self) -> 'CredsContext':
+    def get_context(self) -> "CredsContext":
         if not self.context_stack:
-            raise GdocError(
-                'Use gdoc.PUSH-CONTEXT! to provide a Google context'
-            )
+            raise GdocError("Use gdoc.PUSH-CONTEXT! to provide a Google context")
         result = self.context_stack[-1]
         return result
 
@@ -292,9 +301,9 @@ class GdocModule(Module):
         def token_updater(token):
             pass
 
-        refresh_url = 'https://oauth2.googleapis.com/token'
+        refresh_url = "https://oauth2.googleapis.com/token"
         result = OAuth2Session(
-            app_creds['client_id'],
+            app_creds["client_id"],
             token=token,
             auto_refresh_kwargs=app_creds,
             auto_refresh_url=refresh_url,
@@ -311,6 +320,7 @@ class Content:
     interface is a union of all possible gdoc content methods and provides sensible defaults so all content
     objects can be used in all rendering situations.
     """
+
     def __init__(self):
         self.start_index = 0
         self.end_index = 0
@@ -371,8 +381,8 @@ class PageBreak(Content):
 
 
 class Text(Content):
-    """This represents text that's being accumulated in a content array for a batch render
-    """
+    """This represents text that's being accumulated in a content array for a batch render"""
+
     def __init__(self, text):
         super().__init__()
         self.text = text
@@ -383,15 +393,17 @@ class Text(Content):
         return self.text
 
     def update_start_index(self, index: int):
-        """Updates the start/end indexes of the content and style
-        """
+        """Updates the start/end indexes of the content and style"""
         self.start_index = index
         self.end_index = index + len(self.text) + 1  # Add implicit newline
         cur_index = index
 
         # Update style requests
         def update_style(update_type: str, style: Dict[str, Any]):
-            num_chars = style[update_type]["range"]["endIndex"] - style[update_type]["range"]["startIndex"]
+            num_chars = (
+                style[update_type]["range"]["endIndex"]
+                - style[update_type]["range"]["startIndex"]
+            )
             style[update_type]["range"]["startIndex"] = cur_index
             style[update_type]["range"]["endIndex"] = cur_index + num_chars
             return
@@ -408,7 +420,7 @@ class Text(Content):
         result = {
             "insertText": {
                 "text": self.text,
-                "location": {"segmentId": "", "index": self.start_index}
+                "location": {"segmentId": "", "index": self.start_index},
             }
         }
         return result
@@ -421,8 +433,8 @@ class Text(Content):
                 "range": {
                     "segmentId": "",
                     "startIndex": self.start_index,
-                    "endIndex": self.end_index
-                }
+                    "endIndex": self.end_index,
+                },
             }
         }
         self.style_requests.append(style_request)
@@ -435,8 +447,8 @@ class Text(Content):
                 "range": {
                     "segmentId": "",
                     "startIndex": self.start_index,
-                    "endIndex": self.end_index
-                }
+                    "endIndex": self.end_index,
+                },
             }
         }
         self.style_requests.append(style_request)
@@ -446,8 +458,8 @@ class Text(Content):
 
 
 class ConcatText(Content):
-    """This represents an array of Text that's being concatenated
-    """
+    """This represents an array of Text that's being concatenated"""
+
     def __init__(self, text_items: List[Text]):
         super().__init__()
         self.text_items = text_items
@@ -460,8 +472,7 @@ class ConcatText(Content):
         return result
 
     def update_start_index(self, index: int):
-        """Updates the start/end indexes of the content and style
-        """
+        """Updates the start/end indexes of the content and style"""
         text = self.get_text()
         self.start_index = index
         self.end_index = index + len(text) + 1  # Add implicit newline
@@ -475,7 +486,7 @@ class ConcatText(Content):
         result = {
             "insertText": {
                 "text": self.get_text(),
-                "location": {"segmentId": "", "index": self.start_index}
+                "location": {"segmentId": "", "index": self.start_index},
             }
         }
         return result
@@ -488,8 +499,8 @@ class ConcatText(Content):
 
 
 class Table(Content):
-    """This represents a table to render
-    """
+    """This represents a table to render"""
+
     def __init__(self, table_rows: List[List[Content]]):
         super().__init__()
         self.table_rows = self.normalize_rows(table_rows)
@@ -528,13 +539,15 @@ class Table(Content):
 
         # Update merge cells requests
         for m in self.merges:
-            m["mergeTableCells"]["tableRange"]["tableCellLocation"]["tableStartLocation"]["index"] = self.start_index
+            m["mergeTableCells"]["tableRange"]["tableCellLocation"][
+                "tableStartLocation"
+            ]["index"] = self.start_index
 
         # Add indexes to table content
         self.table_rows_w_indexes = []
-        cur_index = index + 1   # Advance index for rows container
+        cur_index = index + 1  # Advance index for rows container
         for r in self.table_rows:
-            cur_index += 1      # Advance index for row
+            cur_index += 1  # Advance index for row
             row_w_index = []
             for c in r:
                 cur_index += 1  # Advance index for start cell
@@ -544,20 +557,25 @@ class Table(Content):
             self.table_rows_w_indexes.append(row_w_index)
         return
 
-    def add_table_style(self, style: Dict[str, Any], row: int, col: int, row_span: int, col_span: int):
+    def add_table_style(
+        self, style: Dict[str, Any], row: int, col: int, row_span: int, col_span: int
+    ):
         request = {
             "updateTableCellStyle": {
                 "tableCellStyle": style,
                 "fields": ",".join(style.keys()),
                 "tableRange": {
                     "tableCellLocation": {
-                        "tableStartLocation": {"segmentId": "", "index": self.start_index},
+                        "tableStartLocation": {
+                            "segmentId": "",
+                            "index": self.start_index,
+                        },
                         "rowIndex": row,
-                        "columnIndex": col
+                        "columnIndex": col,
                     },
                     "rowSpan": row_span,
-                    "columnSpan": col_span
-                }
+                    "columnSpan": col_span,
+                },
             }
         }
         self.table_styles.append(request)
@@ -568,25 +586,21 @@ class Table(Content):
             "updateTableCellStyle": {
                 "tableCellStyle": style,
                 "fields": ",".join(style.keys()),
-                "tableStartLocation": {
-                    "segmentId": "",
-                    "index": self.start_index
-                }
+                "tableStartLocation": {"segmentId": "", "index": self.start_index},
             }
         }
         self.table_styles.append(request)
         return
 
-    def add_column_properties(self, column_properties: Dict[str, Any], column_indices: List[int]):
+    def add_column_properties(
+        self, column_properties: Dict[str, Any], column_indices: List[int]
+    ):
         request = {
             "updateTableColumnProperties": {
-                "tableStartLocation": {
-                    "segmentId": "",
-                    "index": self.start_index
-                },
+                "tableStartLocation": {"segmentId": "", "index": self.start_index},
                 "columnIndices": column_indices,
                 "tableColumnProperties": column_properties,
-                "fields": ",".join(column_properties.keys())
+                "fields": ",".join(column_properties.keys()),
             }
         }
         self.table_styles.append(request)
@@ -597,12 +611,15 @@ class Table(Content):
             "mergeTableCells": {
                 "tableRange": {
                     "tableCellLocation": {
-                        "tableStartLocation": {"segmentId": "", "index": self.start_index},
+                        "tableStartLocation": {
+                            "segmentId": "",
+                            "index": self.start_index,
+                        },
                         "rowIndex": row,
-                        "columnIndex": col
+                        "columnIndex": col,
                     },
                     "rowSpan": row_span,
-                    "columnSpan": col_span
+                    "columnSpan": col_span,
                 }
             }
         }
@@ -623,7 +640,9 @@ class Table(Content):
         for style in self.table_styles:
             style_update = get_style_update(style)
             if "tableRange" in style_update:
-                style_update["tableRange"]["tableCellLocation"]["tableStartLocation"]["index"] = self.start_index
+                style_update["tableRange"]["tableCellLocation"]["tableStartLocation"][
+                    "index"
+                ] = self.start_index
             else:
                 style_update["tableStartLocation"]["index"] = self.start_index
         return self.table_styles
@@ -632,8 +651,13 @@ class Table(Content):
         result = {
             "insertTable": {
                 "rows": len(self.table_rows),
-                "columns": len(self.table_rows[0]),  # We've normalized table rows, so there will be a valid row
-                "location": {"segmentId": "", "index": self.start_index - 1}   # Bring within paragraph
+                "columns": len(
+                    self.table_rows[0]
+                ),  # We've normalized table rows, so there will be a valid row
+                "location": {
+                    "segmentId": "",
+                    "index": self.start_index - 1,
+                },  # Bring within paragraph
             }
         }
 
@@ -652,7 +676,9 @@ class Table(Content):
         return result
 
 
-def normalize_content_array(char_index: int, content_array: List[Content]) -> List[Content]:
+def normalize_content_array(
+    char_index: int, content_array: List[Content]
+) -> List[Content]:
     cur_index = char_index
     result: List[Content] = []
     last_content = None

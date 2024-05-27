@@ -1,5 +1,5 @@
 import json
-from forthic.v3.modules.jira_module import JiraContext
+from forthic.modules.jira_module import JiraContext
 
 
 class ServerResponse:
@@ -20,11 +20,14 @@ class JiraTestContext(JiraContext):
 
     def requests_get(self, api_url, session=None):
         result = ServerResponse("null")
-        if api_url == '/rest/api/2/field':
+        if api_url == "/rest/api/2/field":
             result = ServerResponse(REST_API_2_FIELD_RESPONSE)
-        elif api_url == '/rest/api/2/issue/SAMPLE-101/votes':
+        elif api_url == "/rest/api/2/issue/SAMPLE-101/votes":
             result = ServerResponse(VOTE_RESPONSE)
-        elif api_url == '/rest/api/2/issue/SAMPLE-101?expand=changelog&fields=customfield_10460,created':
+        elif (
+            api_url
+            == "/rest/api/2/issue/SAMPLE-101?expand=changelog&fields=customfield_10460,created"
+        ):
             result = ServerResponse(CHANGELOG_RESPONSE)
         else:
             raise Exception(f"Unknown route: {api_url}")
@@ -32,14 +35,16 @@ class JiraTestContext(JiraContext):
 
     def requests_post(self, api_url, json=None, session=None):
         result = ServerResponse("null")
-        if api_url == '/rest/api/2/search':
-            if json["jql"] == 'assignee=testuser and resolution is null' and json["fields"] == ['summary', 'assignee']:
+        if api_url == "/rest/api/2/search":
+            if json["jql"] == "assignee=testuser and resolution is null" and json[
+                "fields"
+            ] == ["summary", "assignee"]:
                 result = ServerResponse(SEARCH_RESPONSE1)
-        elif api_url == '/rest/api/2/issue':
+        elif api_url == "/rest/api/2/issue":
             result = ServerResponse('{"key": "SAMPLE-12345"}', 201)
-        elif api_url == '/rest/api/2/issue/SAMPLE-1234/watchers':
+        elif api_url == "/rest/api/2/issue/SAMPLE-1234/watchers":
             result = ServerResponse("null", 204)
-        elif api_url == '/rest/api/2/issueLink':
+        elif api_url == "/rest/api/2/issueLink":
             result = ServerResponse("null", 201)
         else:
             raise Exception(f"Unknown route: {api_url}")
@@ -47,14 +52,14 @@ class JiraTestContext(JiraContext):
 
     def requests_put(self, api_url, json=None, session=None):
         result = ServerResponse("null")
-        if api_url == '/rest/api/2/issue/SAMPLE-1234':
+        if api_url == "/rest/api/2/issue/SAMPLE-1234":
             result = ServerResponse("null", 204)
         else:
             raise Exception(f"Unknown route: {api_url}")
         return result
 
 
-REST_API_2_FIELD_RESPONSE = '''
+REST_API_2_FIELD_RESPONSE = """
 [{"id":"issuekey","name":"Key","custom":false,"orderable":false,"navigable":true,"searchable":false,
 "clauseNames":["id","issue","issuekey","key"]},
 {"id":"assignee","name":"Assignee","custom":false,"orderable":true,"navigable":true,"searchable":true,
@@ -71,9 +76,9 @@ REST_API_2_FIELD_RESPONSE = '''
 "clauseNames":["cf[10460]","Risk_Factor"],"schema":{"type":"option","custom":"com.atlassian.jira.plugin.system.customfieldtypes:select","customId":10460}},
 {"id":"timespent","name":"Time Spent","custom":false,"orderable":false,"navigable":true,"searchable":false,
 "clauseNames":["timespent"],"schema":{"type":"number","system":"timespent"}}]
-'''
+"""
 
-SEARCH_RESPONSE1 = '''
+SEARCH_RESPONSE1 = """
 {
     "expand": "schema,names",
     "startAt": 0,
@@ -129,9 +134,9 @@ SEARCH_RESPONSE1 = '''
             }
         }]
 }
-'''
+"""
 
-VOTE_RESPONSE = '''
+VOTE_RESPONSE = """
 {
     "self": "https://testcontext/rest/api/2/issue/SAMPLE-101/votes",
     "votes": 2,
@@ -164,9 +169,9 @@ VOTE_RESPONSE = '''
             "active": false
         }
     ]
-}'''
+}"""
 
-CHANGELOG_RESPONSE = '''
+CHANGELOG_RESPONSE = """
 {
     "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
     "id": "15117861",
@@ -314,4 +319,4 @@ CHANGELOG_RESPONSE = '''
             }
     ]}
 }
-'''
+"""

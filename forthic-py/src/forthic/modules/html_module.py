@@ -4,14 +4,11 @@ import markdown
 from ..module import Module
 import random
 from ..interfaces import IInterpreter
-from ...utils.errors import (
-    HtmlModuleError,
-    InvalidForthicWordError
-)
+from ..utils.errors import HtmlModuleError, InvalidForthicWordError
 from typing import List, Dict, Optional
 
 
-ASYNC_BUTTON_KEY = '_async_forthic_button_state'
+ASYNC_BUTTON_KEY = "_async_forthic_button_state"
 
 
 class HtmlModule(Module):
@@ -21,35 +18,36 @@ class HtmlModule(Module):
 
     See `docs/modules/html_module.md` for detailed descriptions of each word.
     """
-    def __init__(self, interp: IInterpreter):
-        super().__init__('html', interp, HTML_FORTHIC)
-        self.add_module_word('ELEMENT', self.word_ELEMENT)
-        self.add_module_word('RAW-HTML', self.word_RAW_HTML)
-        self.add_module_word('<APPEND', self.word_l_APPEND)
-        self.add_module_word('CHILD-NODES', self.word_CHILD_NODES)
-        self.add_module_word('<INNER-HTML!', self.word_l_INNER_HTML_bang)
-        self.add_module_word('<INNER-TEXT!', self.word_l_INNER_TEXT_bang)
-        self.add_module_word('INNER-HTML', self.word_INNER_HTML)
-        self.add_module_word('<INSERT-ADJ-HTML', self.word_l_INSERT_ADJ_HTML)
-        self.add_module_word('<ATTR!', self.word_l_ATTR_bang)
-        self.add_module_word('ATTR', self.word_ATTR)
-        self.add_module_word('VALUE', self.word_VALUE)
 
-        self.add_module_word('<ADD-CLASS', self.word_l_ADD_CLASS)
-        self.add_module_word('<REMOVE-CLASS', self.word_l_REMOVE_CLASS)
-        self.add_module_word('CLASSES', self.word_CLASSES)
+    def __init__(self, interp: IInterpreter):
+        super().__init__("html", interp, HTML_FORTHIC)
+        self.add_module_word("ELEMENT", self.word_ELEMENT)
+        self.add_module_word("RAW-HTML", self.word_RAW_HTML)
+        self.add_module_word("<APPEND", self.word_l_APPEND)
+        self.add_module_word("CHILD-NODES", self.word_CHILD_NODES)
+        self.add_module_word("<INNER-HTML!", self.word_l_INNER_HTML_bang)
+        self.add_module_word("<INNER-TEXT!", self.word_l_INNER_TEXT_bang)
+        self.add_module_word("INNER-HTML", self.word_INNER_HTML)
+        self.add_module_word("<INSERT-ADJ-HTML", self.word_l_INSERT_ADJ_HTML)
+        self.add_module_word("<ATTR!", self.word_l_ATTR_bang)
+        self.add_module_word("ATTR", self.word_ATTR)
+        self.add_module_word("VALUE", self.word_VALUE)
+
+        self.add_module_word("<ADD-CLASS", self.word_l_ADD_CLASS)
+        self.add_module_word("<REMOVE-CLASS", self.word_l_REMOVE_CLASS)
+        self.add_module_word("CLASSES", self.word_CLASSES)
 
         # Python only
-        self.add_module_word('MARKDOWN>HTML', self.word_MARKDOWN_to_HTML)
-        self.add_module_word('RENDER', self.word_RENDER)
-        self.add_module_word('JS-PATH!', self.word_JS_PATH_bang)
-        self.add_module_word('RUN-FORTHIC.JS', self.word_RUN_FORTHIC_JS)
-        self.add_module_word('FORTHIC-BUTTON', self.word_FORTHIC_BUTTON)
+        self.add_module_word("MARKDOWN>HTML", self.word_MARKDOWN_to_HTML)
+        self.add_module_word("RENDER", self.word_RENDER)
+        self.add_module_word("JS-PATH!", self.word_JS_PATH_bang)
+        self.add_module_word("RUN-FORTHIC.JS", self.word_RUN_FORTHIC_JS)
+        self.add_module_word("FORTHIC-BUTTON", self.word_FORTHIC_BUTTON)
 
-        self.add_module_word('ASYNC-FORTHIC-BUTTON', self.word_ASYNC_FORTHIC_BUTTON)
-        self.add_module_word('RUN-ASYNC-BUTTON', self.word_RUN_ASYNC_BUTTON)
+        self.add_module_word("ASYNC-FORTHIC-BUTTON", self.word_ASYNC_FORTHIC_BUTTON)
+        self.add_module_word("RUN-ASYNC-BUTTON", self.word_RUN_ASYNC_BUTTON)
 
-        self.js_path = '/static/js/forthic/v2/'
+        self.js_path = "/static/js/forthic/v2/"
 
     # ( type -- element )
     def word_ELEMENT(self, interp: IInterpreter):
@@ -191,7 +189,7 @@ class HtmlModule(Module):
         else:
             elements = [element]
 
-        result = ''
+        result = ""
         for e in elements:
             result += e.render()
         interp.stack_push(result)
@@ -208,17 +206,17 @@ class HtmlModule(Module):
         and runs a forthic string
         """
         forthic = interp.stack_pop()
-        result = Element('script')
-        result.setAttribute('type', 'module')
+        result = Element("script")
+        result.setAttribute("type", "module")
         random_str = random.uniform(0, 1)
         result.setInnerHTML(
-            f'''
+            f"""
             import {{ Interpreter }} from "{self.js_path}/interpreter.mjs?version={random_str}";
             let interp = new Interpreter();
             interp.run(`{forthic}`)
             .then(() => {{
                 window.FORTHIC_INTERP = interp
-            }})'''
+            }})"""
         )
         interp.stack_push(result)
 
@@ -261,22 +259,22 @@ class HtmlModule(Module):
             state_info = button_states.get(button_id)
             if not state_info:
                 state_info = {}
-            state = state_info.get('state')
-            res = state == 'RUNNING'
+            state = state_info.get("state")
+            res = state == "RUNNING"
             return res
 
         if is_running():
             return
 
         try:
-            store_button_states(button_id, {'state': 'RUNNING'})
+            store_button_states(button_id, {"state": "RUNNING"})
             interp.run(forthic)
-            store_button_states(button_id, {'state': ''})
+            store_button_states(button_id, {"state": ""})
         except Exception as e:
-            store_button_states(button_id, {'state': 'ERROR', 'message': str(e)})
+            store_button_states(button_id, {"state": "ERROR", "message": str(e)})
 
 
-HTML_FORTHIC = '''
+HTML_FORTHIC = """
 : COMMON-TYPES   ["H1" "H2" "H3" "H4" "H5" "H6"
                   "P" "UL" "OL" "LI"
                   "A" "SPAN"
@@ -294,27 +292,27 @@ COMMON-TYPES "FDEFINE-ELEMENT INTERPRET" FOREACH
 
 COMMON-TYPES EXPORT
 ["SVG"] EXPORT
-'''
+"""
 
 
 VOID_ELEMENTS = [
-    'area',
-    'base',
-    'br',
-    'col',
-    'embed',
-    'hr',
-    'img',
-    'input',
-    'link',
-    'meta',
-    'param',
-    'source',
-    'track',
-    'wbr',
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
 ]
 
-VALID_POSITIONS = ['beforebegin', 'afterbegin', 'beforeend', 'afterend']
+VALID_POSITIONS = ["beforebegin", "afterbegin", "beforeend", "afterend"]
 
 
 class Element:
@@ -322,14 +320,14 @@ class Element:
         self.tagName = elem_type.upper()
         self.childNodes: List[Element] = []
         self.attributes: Dict[str, str] = {}
-        self.beforeBegin: str = ''
-        self.afterEnd: str = ''
+        self.beforeBegin: str = ""
+        self.afterEnd: str = ""
         self.innerHTML: Optional[str] = None
 
-    def appendChild(self, item: 'Element'):
+    def appendChild(self, item: "Element"):
         self.childNodes.append(item)
 
-    def getChildNodes(self) -> List['Element']:
+    def getChildNodes(self) -> List["Element"]:
         return self.childNodes
 
     def setInnerHTML(self, string: str):
@@ -343,28 +341,28 @@ class Element:
         if self.innerHTML is not None:
             return self.innerHTML
 
-        result = ''
+        result = ""
         for child in self.childNodes:
             result += child.render()
         return result
 
     def insertAdjacentHTML(self, position: str, string: str):
-        if position == 'beforebegin':
+        if position == "beforebegin":
             self.beforeBegin += string
-        elif position == 'afterbegin':
+        elif position == "afterbegin":
             raw_items: List[Element] = [RawHtml(string)]
             self.childNodes = raw_items + self.childNodes
-        elif position == 'beforeend':
+        elif position == "beforeend":
             self.childNodes.append(RawHtml(string))
-        elif position == 'afterend':
+        elif position == "afterend":
             self.afterEnd += string
         else:
-            raise HtmlModuleError(f'Unhandled position: {position}')
+            raise HtmlModuleError(f"Unhandled position: {position}")
 
     def getAttribute(self, key: str) -> str:
         result = self.attributes.get(key)
         if result is None:
-            result = ''
+            result = ""
         return result
 
     def setAttribute(self, key, val: Optional[str] = None):
@@ -381,15 +379,15 @@ class Element:
         self.setClasses(element_classes)
 
     def getClasses(self) -> List[str]:
-        class_string = self.attributes.get('class')
+        class_string = self.attributes.get("class")
         if not class_string:
             return []
-        result = class_string.strip().split(' ')
+        result = class_string.strip().split(" ")
         return result
 
     def setClasses(self, classes: List[str]):
-        class_string = ' '.join(classes)
-        self.attributes['class'] = class_string
+        class_string = " ".join(classes)
+        self.attributes["class"] = class_string
 
     def removeClasses(self, classes: List[str]):
         element_classes = self.getClasses()
@@ -408,21 +406,21 @@ class Element:
                 if self.attributes[key] is None:
                     fragment = key
                 fragments.append(fragment)
-            res = ' '.join(fragments)
-            if res != '':
-                res = ' ' + res
+            res = " ".join(fragments)
+            if res != "":
+                res = " " + res
             return res
 
         tag = self.tagName.lower()
         attributes = get_attr_string()
 
         if tag in VOID_ELEMENTS:
-            result = f'<{tag}{attributes}>'
+            result = f"<{tag}{attributes}>"
         else:
             result = self.beforeBegin
-            result += f'<{tag}{attributes}>'
+            result += f"<{tag}{attributes}>"
             result += self.getInnerHTML()
-            result += f'</{tag}>'
+            result += f"</{tag}>"
             result += self.afterEnd
         return result
 
@@ -442,9 +440,9 @@ class ForthicButton:
         self.forthic = forthic
 
         self.options = {
-            'reload_page': False,
-            'post_data_ids': None,
-            'confirmable': False,
+            "reload_page": False,
+            "post_data_ids": None,
+            "confirmable": False,
         }
 
     def __getitem__(self, key: str) -> Optional[bool]:
@@ -458,49 +456,47 @@ class ForthicButton:
 
     def render(self) -> str:
         def get_done_code() -> str:
-            if self.options['reload_page']:
-                res = '''
+            if self.options["reload_page"]:
+                res = """
                 window.location.reload(true);
-                '''
+                """
             else:
-                res = '''
+                res = """
                 $('#{html_id}').prop("disabled", false);
                 alert("Done!");
-                '''.format(
+                """.format(
                     html_id=self.html_id
                 )
             return res
 
         def get_confirm_code() -> str:
-            res = 'true'
-            if self.options['confirmable']:
+            res = "true"
+            if self.options["confirmable"]:
                 res = 'confirm("Are you sure?")'
             return res
 
         def make_func_gather_data() -> str:
-            res = 'function gather_data() {\n'
-            res += '    var fields = %s\n;' % json.dumps(
-                self.options['post_data_ids']
-            )
-            res += '    var res = {};\n'
+            res = "function gather_data() {\n"
+            res += "    var fields = %s\n;" % json.dumps(self.options["post_data_ids"])
+            res += "    var res = {};\n"
             res += "    fields.forEach(f => res[f] = $('#' + f).val());\n"
-            res += '    return res;\n'
-            res += '}\n'
+            res += "    return res;\n"
+            res += "}\n"
             return res
 
         def make_func_prepend_data() -> str:
-            res = 'function prepend_data(forthic) {\n'
-            if self.options['post_data_ids']:
+            res = "function prepend_data(forthic) {\n"
+            if self.options["post_data_ids"]:
                 res += make_func_gather_data()
-                res += 'var data = gather_data();\n'
+                res += "var data = gather_data();\n"
                 res += "var res = `'${JSON.stringify(data)}' ${forthic}`;\n"
             else:
-                res += 'var res = forthic;\n'
-            res += '    return res;\n'
-            res += '}\n'
+                res += "var res = forthic;\n"
+            res += "    return res;\n"
+            res += "}\n"
             return res
 
-        result = '''
+        result = """
         <button id='{html_id}' type='button'>{label}</button>
         <script>
             $('#{html_id}').click(function() {{
@@ -532,7 +528,7 @@ class ForthicButton:
                 }}
             }});
         </script>
-        '''.format(
+        """.format(
             html_id=self.html_id,
             label=self.label,
             forthic=self.forthic,
@@ -551,13 +547,13 @@ class AsyncForthicButton:
         self.interp = interp
 
         # Ensure that `forthic` is just a Forthic word
-        if ' ' in forthic or "'" in forthic or '"' in forthic:
+        if " " in forthic or "'" in forthic or '"' in forthic:
             raise InvalidForthicWordError(forthic)
 
         self.options = {
-            'reload_page': False,
-            'post_data_ids': None,
-            'confirmable': False,
+            "reload_page": False,
+            "post_data_ids": None,
+            "confirmable": False,
         }
 
     def __getitem__(self, key: str) -> Optional[bool]:
@@ -581,51 +577,49 @@ class AsyncForthicButton:
 
     def render(self) -> str:
         def get_done_code() -> str:
-            if self.options['reload_page']:
-                res = '''
+            if self.options["reload_page"]:
+                res = """
                 window.location.reload(true);
-                '''
+                """
             else:
-                res = '''
+                res = """
                 $('#{html_id}').prop("disabled", false);
                 alert("Done!");
-                '''.format(
+                """.format(
                     html_id=self.html_id
                 )
             return res
 
         def get_confirm_code() -> str:
-            res = 'true'
-            if self.options['confirmable']:
+            res = "true"
+            if self.options["confirmable"]:
                 res = 'confirm("Are you sure?")'
             return res
 
         def make_func_gather_data() -> str:
-            res = 'function gather_data() {\n'
-            res += '    var fields = %s\n;' % json.dumps(
-                self.options['post_data_ids']
-            )
-            res += '    var res = {};\n'
+            res = "function gather_data() {\n"
+            res += "    var fields = %s\n;" % json.dumps(self.options["post_data_ids"])
+            res += "    var res = {};\n"
             res += "    fields.forEach(f => res[f] = $('#' + f).val());\n"
-            res += '    return res;\n'
-            res += '}\n'
+            res += "    return res;\n"
+            res += "}\n"
             return res
 
         def make_func_prepend_data() -> str:
-            res = 'function prepend_data(forthic) {\n'
-            if self.options['post_data_ids']:
+            res = "function prepend_data(forthic) {\n"
+            if self.options["post_data_ids"]:
                 res += make_func_gather_data()
-                res += 'var data = gather_data();\n'
+                res += "var data = gather_data();\n"
                 res += "var res = `'${JSON.stringify(data)}' ${forthic}`;\n"
             else:
-                res += 'var res = forthic;\n'
-            res += '    return res;\n'
-            res += '}\n'
+                res += "var res = forthic;\n"
+            res += "    return res;\n"
+            res += "}\n"
             return res
 
         async_state = self.get_async_state()
 
-        result = f'''
+        result = f"""
         <style>
         .busy-indicator {{
             display: inline-block;
@@ -752,5 +746,5 @@ class AsyncForthicButton:
                 }}
             }})()
         </script>
-        '''
+        """
         return result

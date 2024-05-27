@@ -2,8 +2,8 @@ import os
 import json
 import unittest
 
-from forthic.v3.interpreter import Interpreter
-from forthic.v3.modules.datasets_module import DatasetsModule
+from forthic.interpreter import Interpreter
+from forthic.modules.datasets_module import DatasetsModule
 
 
 def get_data_dir():

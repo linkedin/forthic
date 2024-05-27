@@ -3,7 +3,7 @@ name = "forthic"
 version = "4.0.0"
 description = "A stack-based language for concisely building tweakable apps"
 authors = ["Rino Jose <rjose@forthix.com>"]
-license = {file = "LICENSE"}
+license = "BSD 2-CLAUSE LICENSE"
 readme = "README.md"
 
 [tool.poetry.dependencies]

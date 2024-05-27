@@ -1,26 +1,28 @@
 import re
 import json
 import urllib.parse
-from requests_oauthlib import OAuth2Session   # type: ignore
+from requests_oauthlib import OAuth2Session  # type: ignore
 import oauthlib.oauth2.rfc6749.errors
 from ..module import Module
 from ..interfaces import IInterpreter
-from ...utils.errors import (
-    GsheetError,
-    ExpiredGsheetOAuthToken
-)
+from ..utils.errors import GsheetError, ExpiredGsheetOAuthToken
 from typing import List, Any, Dict, Tuple
 
 
 def raises_ExpiredGsheetOAuthToken(fn):
     """Decorator that catches expiration errors and raises ExpiredGsheetOAuthToken instead"""
+
     def wrapper(*args, **kwargs):
         res = None
         try:
             res = fn(*args, **kwargs)
-        except (oauthlib.oauth2.rfc6749.errors.TokenExpiredError, oauthlib.oauth2.rfc6749.errors.InvalidGrantError):
+        except (
+            oauthlib.oauth2.rfc6749.errors.TokenExpiredError,
+            oauthlib.oauth2.rfc6749.errors.InvalidGrantError,
+        ):
             raise ExpiredGsheetOAuthToken()
         return res
+
     return wrapper
 
 
@@ -28,12 +30,11 @@ FORTHIC = ""
 
 
 class GsheetModule(Module):
-    """This implements access to gsheets via Google's [Sheets API](https://developers.google.com/sheets/api)
-    """
+    """This implements access to gsheets via Google's [Sheets API](https://developers.google.com/sheets/api)"""
 
     def __init__(self, interp: IInterpreter):
-        super().__init__('gsheet', interp, FORTHIC)
-        self.context_stack: List['CredsContext'] = []
+        super().__init__("gsheet", interp, FORTHIC)
+        self.context_stack: List["CredsContext"] = []
 
         # These are set by "flag words" to change the behavior of the words in this module
         self.flags = {
@@ -43,37 +44,36 @@ class GsheetModule(Module):
             "null_on_error": False,
         }
 
-        self.add_module_word('PUSH-CONTEXT!', self.word_PUSH_CONTEXT_bang)
-        self.add_module_word('POP-CONTEXT!', self.word_POP_CONTEXT_bang)
+        self.add_module_word("PUSH-CONTEXT!", self.word_PUSH_CONTEXT_bang)
+        self.add_module_word("POP-CONTEXT!", self.word_POP_CONTEXT_bang)
 
-        self.add_module_word('SPREADSHEET', self.word_SPREADSHEET)
-        self.add_module_word('TAB', self.word_TAB)
-        self.add_module_word('TAB@', self.word_TAB_at)
-        self.add_module_word('ENSURE-TAB!', self.word_ENSURE_TAB_bang)
+        self.add_module_word("SPREADSHEET", self.word_SPREADSHEET)
+        self.add_module_word("TAB", self.word_TAB)
+        self.add_module_word("TAB@", self.word_TAB_at)
+        self.add_module_word("ENSURE-TAB!", self.word_ENSURE_TAB_bang)
 
-        self.add_module_word('ROWS', self.word_ROWS)
-        self.add_module_word('ROWS!', self.word_ROWS_bang)
+        self.add_module_word("ROWS", self.word_ROWS)
+        self.add_module_word("ROWS!", self.word_ROWS_bang)
 
-        self.add_module_word('CLEAR!', self.word_CLEAR_bang)
+        self.add_module_word("CLEAR!", self.word_CLEAR_bang)
 
-        self.add_module_word('RECORDS', self.word_RECORDS)
-        self.add_module_word('RECORDS!', self.word_RECORDS_bang)
-        self.add_module_word('BATCH-UPDATE-TAB!', self.word_BATCH_UPDATE_TAB_bang)
+        self.add_module_word("RECORDS", self.word_RECORDS)
+        self.add_module_word("RECORDS!", self.word_RECORDS_bang)
+        self.add_module_word("BATCH-UPDATE-TAB!", self.word_BATCH_UPDATE_TAB_bang)
 
         # Flag words
-        self.add_module_word('!RANGE', self.word_bang_RANGE)
-        self.add_module_word('!TRANSPOSE', self.word_bang_TRANSPOSE)
-        self.add_module_word('!CELL-FORMAT', self.word_bang_CELL_FORMAT)
-        self.add_module_word('!NULL-ON-ERROR', self.word_bang_NULL_ON_ERROR)
+        self.add_module_word("!RANGE", self.word_bang_RANGE)
+        self.add_module_word("!TRANSPOSE", self.word_bang_TRANSPOSE)
+        self.add_module_word("!CELL-FORMAT", self.word_bang_CELL_FORMAT)
+        self.add_module_word("!NULL-ON-ERROR", self.word_bang_NULL_ON_ERROR)
 
         # Utils
-        self.add_module_word('INDEX>COL-NAME', self.word_INDEX_to_COL_NAME)
-        self.add_module_word('COL-NAME>INDEX', self.word_COL_NAME_to_INDEX)
+        self.add_module_word("INDEX>COL-NAME", self.word_INDEX_to_COL_NAME)
+        self.add_module_word("COL-NAME>INDEX", self.word_COL_NAME_to_INDEX)
 
     # ( creds_context -- )
     def word_PUSH_CONTEXT_bang(self, interp: IInterpreter):
-        """Sets the credentials context used to make calls against the API
-        """
+        """Sets the credentials context used to make calls against the API"""
         creds_context = interp.stack_pop()
         self.context_stack.append(creds_context)
 
@@ -85,8 +85,7 @@ class GsheetModule(Module):
     # ( Tab -- Spreadsheet )
     @raises_ExpiredGsheetOAuthToken
     def word_SPREADSHEET(self, interp: IInterpreter):
-        """Creates a `Spreadsheet` object from a url or extracts the parent spreadsheet from a `Tab` object
-        """
+        """Creates a `Spreadsheet` object from a url or extracts the parent spreadsheet from a `Tab` object"""
         arg = interp.stack_pop()
 
         context = self.get_context()
@@ -103,8 +102,7 @@ class GsheetModule(Module):
     # ( url -- Tab )
     @raises_ExpiredGsheetOAuthToken
     def word_TAB(self, interp: IInterpreter):
-        """Creates a `Tab` object from a url
-        """
+        """Creates a `Tab` object from a url"""
         url = interp.stack_pop()
 
         try:
@@ -115,19 +113,16 @@ class GsheetModule(Module):
             interp.stack_push(result)
         except RuntimeError:
             flags = self.get_flags()
-            if flags.get('null_on_error'):
+            if flags.get("null_on_error"):
                 interp.stack_push(None)
             else:
                 raise
-
-
 
     # ( Spreadsheet id -- Tab )
     # ( Spreadsheet name -- Tab )
     @raises_ExpiredGsheetOAuthToken
     def word_TAB_at(self, interp: IInterpreter):
-        """Retrieves a `Tab` from a `Spreadsheet` using its id or name
-        """
+        """Retrieves a `Tab` from a `Spreadsheet` using its id or name"""
         id_or_name = interp.stack_pop()
         spreadsheet = interp.stack_pop()
 
@@ -136,11 +131,10 @@ class GsheetModule(Module):
             interp.stack_push(result)
         except RuntimeError:
             flags = self.get_flags()
-            if flags.get('null_on_error'):
+            if flags.get("null_on_error"):
                 interp.stack_push(None)
             else:
                 raise
-
 
     # ( Tab -- rows )
     @raises_ExpiredGsheetOAuthToken
@@ -155,20 +149,24 @@ class GsheetModule(Module):
 
         flags = self.get_flags()
 
-        if flags.get('range'):
+        if flags.get("range"):
             tab_range = f"{tab.get_name()}!{flags.get('range')}"
         else:
             tab_range = tab.get_name()
 
         try:
-            result = get_rows(tab.get_context(), tab.get_spreadsheet_id(), tab_range, flags.get('transpose'))
+            result = get_rows(
+                tab.get_context(),
+                tab.get_spreadsheet_id(),
+                tab_range,
+                flags.get("transpose"),
+            )
             interp.stack_push(result)
         except RuntimeError:
-            if flags.get('null_on_error'):
+            if flags.get("null_on_error"):
                 interp.stack_push(None)
             else:
                 raise
-
 
     # ( Tab rows -- )
     @raises_ExpiredGsheetOAuthToken
@@ -188,15 +186,15 @@ class GsheetModule(Module):
 
         flags = self.get_flags()
 
-        if flags.get('range'):
+        if flags.get("range"):
             tab_range = f"{tab.get_name()}!{flags.get('range')}"
         else:
             tab_range = tab.get_name()
 
-        if flags.get('cell_format'):
-            write_cells(tab, tab_range, rows, flags.get('transpose'))
+        if flags.get("cell_format"):
+            write_cells(tab, tab_range, rows, flags.get("transpose"))
         else:
-            write_rows(tab, tab_range, rows, flags.get('transpose'))
+            write_rows(tab, tab_range, rows, flags.get("transpose"))
 
     # ( Tab header -- Records )
     @raises_ExpiredGsheetOAuthToken
@@ -217,7 +215,7 @@ class GsheetModule(Module):
         try:
             # Check flags
             flags = self.get_flags()
-            if flags.get('range'):
+            if flags.get("range"):
                 tab_range = f"{tab.get_name()}!{flags.get('range')}"
             else:
                 tab_range = tab.get_name()
@@ -225,7 +223,7 @@ class GsheetModule(Module):
             rows = get_rows(tab.get_context(), tab.get_spreadsheet_id(), tab_range)
 
             def to_ascii(value: str) -> str:
-                res = ''.join([c for c in value if ord(c) < 128]).strip()
+                res = "".join([c for c in value if ord(c) < 128]).strip()
                 return res
 
             def get_header_to_column(values: List[str]) -> Dict[str, int]:
@@ -248,8 +246,8 @@ class GsheetModule(Module):
                             break
                     if found_all:
                         res = {
-                            'header_row': i,
-                            'header_to_column': header_to_column,
+                            "header_row": i,
+                            "header_to_column": header_to_column,
                         }
                         break
                 return res
@@ -263,17 +261,17 @@ class GsheetModule(Module):
             def row_to_rec(row: List[str]) -> Dict[str, Any]:
                 res = {}
                 for h in header:
-                    col = header_info['header_to_column'][h]
+                    col = header_info["header_to_column"][h]
                     res[h] = row[col]
                 return res
 
             result = []
-            for r in rows[header_info['header_row'] + 1:]:
+            for r in rows[header_info["header_row"] + 1 :]:
                 result.append(row_to_rec(r))
 
             interp.stack_push(result)
         except RuntimeError:
-            if flags.get('null_on_error'):
+            if flags.get("null_on_error"):
                 interp.stack_push(None)
             else:
                 raise
@@ -291,7 +289,7 @@ class GsheetModule(Module):
         tab = interp.stack_pop()
 
         # Peek at cell_format flag, but don't clear them since ROWS! will use them
-        use_cell_format = self.flags.get('cell_format')
+        use_cell_format = self.flags.get("cell_format")
 
         header_values = header
         default_value = ""
@@ -327,16 +325,14 @@ class GsheetModule(Module):
     # ( Tab -- )
     @raises_ExpiredGsheetOAuthToken
     def word_CLEAR_bang(self, interp: IInterpreter):
-        """Clears the contents of a `Tab`
-        """
+        """Clears the contents of a `Tab`"""
         tab = interp.stack_pop()
         clear_tab(tab)
 
     # ( Spreadsheet tab_name -- Tab)
     @raises_ExpiredGsheetOAuthToken
     def word_ENSURE_TAB_bang(self, interp: IInterpreter):
-        """Ensures that the specified `Tab` exists in the gsheet and then returns it
-        """
+        """Ensures that the specified `Tab` exists in the gsheet and then returns it"""
         tab_name = interp.stack_pop()
         spreadsheet = interp.stack_pop()
         result = ensure_tab(spreadsheet, tab_name)
@@ -344,43 +340,37 @@ class GsheetModule(Module):
 
     # ( index -- col_name )
     def word_INDEX_to_COL_NAME(self, interp: IInterpreter):
-        """Converts an integer index to a character column name
-        """
+        """Converts an integer index to a character column name"""
         index = interp.stack_pop()
         result = index_to_col_name(index)
         interp.stack_push(result)
 
     # ( col_name -- index )
     def word_COL_NAME_to_INDEX(self, interp: IInterpreter):
-        """Converts a character column name to an index
-        """
+        """Converts a character column name to an index"""
         col_name = interp.stack_pop()
         result = col_name_to_index(col_name)
         interp.stack_push(result)
 
     # ( range -- )
     def word_bang_RANGE(self, interp: IInterpreter):
-        """Sets a spreadsheet `range` flag
-        """
+        """Sets a spreadsheet `range` flag"""
         tab_range = interp.stack_pop()
         self.flags["range"] = tab_range
 
     # ( -- )
     def word_bang_TRANSPOSE(self, interp: IInterpreter):
-        """Sets a `transpose` flag to treat data as columns instead of rows
-        """
+        """Sets a `transpose` flag to treat data as columns instead of rows"""
         self.flags["transpose"] = True
 
     # ( -- )
     def word_bang_CELL_FORMAT(self, interp: IInterpreter):
-        """Sets a `cell_format` flag to indicate that data is provided in "cell" format rather than as strings
-        """
+        """Sets a `cell_format` flag to indicate that data is provided in "cell" format rather than as strings"""
         self.flags["cell_format"] = True
 
     # ( -- )
     def word_bang_NULL_ON_ERROR(self, interp: IInterpreter):
-        """When TRUE, if a word were to return a result and an error occurs, return NULL instead
-        """
+        """When TRUE, if a word were to return a result and an error occurs, return NULL instead"""
         self.flags["null_on_error"] = True
 
     # =================================
@@ -390,11 +380,9 @@ class GsheetModule(Module):
         self.flags = {}
         return flags
 
-    def get_context(self) -> 'CredsContext':
+    def get_context(self) -> "CredsContext":
         if not self.context_stack:
-            raise GsheetError(
-                'Use gsheet.PUSH-CONTEXT! to provide a Google context'
-            )
+            raise GsheetError("Use gsheet.PUSH-CONTEXT! to provide a Google context")
         result = self.context_stack[-1]
         return result
 
@@ -408,9 +396,9 @@ def get_gsheets_session(context) -> OAuth2Session:
     def token_updater(token):
         pass
 
-    refresh_url = 'https://oauth2.googleapis.com/token'
+    refresh_url = "https://oauth2.googleapis.com/token"
     result = OAuth2Session(
-        app_creds['client_id'],
+        app_creds["client_id"],
         token=token,
         auto_refresh_kwargs=app_creds,
         auto_refresh_url=refresh_url,
@@ -420,13 +408,10 @@ def get_gsheets_session(context) -> OAuth2Session:
 
 
 def get_gsheet_id_and_tab_id(url: str) -> Tuple[str, str]:
-    """Parses a spreadsheet ID and tab ID from a gsheet URL
-    """
-    match = re.match(r'.*docs\.google\.com.*\/d\/([^\/]+).*gid=(\d+)', url)
+    """Parses a spreadsheet ID and tab ID from a gsheet URL"""
+    match = re.match(r".*docs\.google\.com.*\/d\/([^\/]+).*gid=(\d+)", url)
     if not match:
-        raise GsheetError(
-            f'Unable to find gsheet_id and tab key from: {url}'
-        )
+        raise GsheetError(f"Unable to find gsheet_id and tab key from: {url}")
     gsheet_id = match.group(1)
     tab_id = int(match.group(2))
     return gsheet_id, tab_id
@@ -435,7 +420,7 @@ def get_gsheet_id_and_tab_id(url: str) -> Tuple[str, str]:
 def get_sheet_info(context, gsheet_id: str) -> Any:
     gsheets_session = get_gsheets_session(context)
     response = gsheets_session.get(
-        f'https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}',
+        f"https://sheets.googleapis.com/v4/spreadsheets/{gsheet_id}",
         proxies=context.get_proxies(),
     )
     if not response.ok:
@@ -444,16 +429,18 @@ def get_sheet_info(context, gsheet_id: str) -> Any:
     return result
 
 
-def get_rows(context, spreadsheet_id: str, spreadsheet_range: str, transpose: bool = False) -> List[List[str]]:
+def get_rows(
+    context, spreadsheet_id: str, spreadsheet_range: str, transpose: bool = False
+) -> List[List[str]]:
     spreadsheet_range_url_encoded = urllib.parse.quote_plus(spreadsheet_range)
     gsheets_session = get_gsheets_session(context)
 
     if transpose:
-        majorDimension = 'COLUMNS'
+        majorDimension = "COLUMNS"
     else:
-        majorDimension = 'ROWS'
+        majorDimension = "ROWS"
 
-    base = 'https://sheets.googleapis.com/v4/spreadsheets'
+    base = "https://sheets.googleapis.com/v4/spreadsheets"
     api_url = f"{base}/{spreadsheet_id}/values/{spreadsheet_range_url_encoded}?majorDimension={majorDimension}"
     response = gsheets_session.get(api_url, proxies=context.get_proxies())
     if not response.ok:
@@ -463,7 +450,7 @@ def get_rows(context, spreadsheet_id: str, spreadsheet_range: str, transpose: bo
     if "values" not in data:
         rows = []
     else:
-        rows = data['values']
+        rows = data["values"]
 
     # We add empty cells where needed to make all rows the same length
     def pad_rows(rows: List[List[str]]) -> List[List[str]]:
@@ -477,7 +464,7 @@ def get_rows(context, spreadsheet_id: str, spreadsheet_range: str, transpose: bo
             padded_row = r
             if len(r) < max_length:
                 for _ in range(max_length - len(r)):
-                    padded_row.append('')
+                    padded_row.append("")
             res.append(padded_row)
         return res
 
@@ -485,7 +472,9 @@ def get_rows(context, spreadsheet_id: str, spreadsheet_range: str, transpose: bo
     return result
 
 
-def write_rows(tab: "Tab", spreadsheet_range: str, rows: List[List[str]], transpose: bool = False):
+def write_rows(
+    tab: "Tab", spreadsheet_range: str, rows: List[List[str]], transpose: bool = False
+):
     context = tab.get_context()
     spreadsheet_id = tab.get_spreadsheet_id()
 
@@ -495,35 +484,39 @@ def write_rows(tab: "Tab", spreadsheet_range: str, rows: List[List[str]], transp
         return
 
     if transpose:
-        majorDimension = 'COLUMNS'
+        majorDimension = "COLUMNS"
     else:
-        majorDimension = 'ROWS'
+        majorDimension = "ROWS"
 
     gsheets_session = get_gsheets_session(context)
     update_data = {
-        'range': spreadsheet_range,
-        'majorDimension': majorDimension,
-        'values': rows,
+        "range": spreadsheet_range,
+        "majorDimension": majorDimension,
+        "values": rows,
     }
-    input_option = 'USER_ENTERED'
-    api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{spreadsheet_range_url_encoded}?valueInputOption={input_option}'
+    input_option = "USER_ENTERED"
+    api_url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{spreadsheet_range_url_encoded}?valueInputOption={input_option}"
     status = gsheets_session.put(
         api_url,
         data=json.dumps(update_data),
         proxies=context.get_proxies(),
     )
     if not status.ok:
-        raise GsheetError(f'Problem writing to gsheet {spreadsheet_id} {spreadsheet_range}: {status.text}')
+        raise GsheetError(
+            f"Problem writing to gsheet {spreadsheet_id} {spreadsheet_range}: {status.text}"
+        )
 
 
-def write_cells(tab: "Tab", spreadsheet_range: str, rows: List[List[Any]], transpose: bool = False):
+def write_cells(
+    tab: "Tab", spreadsheet_range: str, rows: List[List[Any]], transpose: bool = False
+):
     spreadsheet_id = tab.get_spreadsheet_id()
 
     content_rows = []
     for r in rows:
         content_row = []
         for cell in r:
-            content_row.append(cell.get('content'))
+            content_row.append(cell.get("content"))
         content_rows.append(content_row)
 
     # Write content
@@ -541,7 +534,7 @@ def write_cells(tab: "Tab", spreadsheet_range: str, rows: List[List[Any]], trans
         else:
             range_pieces = pieces[1].split(":")
             range_start = range_pieces[0]
-            match = re.match(r'([A-Z]+)(\d+)', range_start)
+            match = re.match(r"([A-Z]+)(\d+)", range_start)
 
             column_name = match.group(1)
             row = int(match.group(2))
@@ -558,9 +551,7 @@ def write_cells(tab: "Tab", spreadsheet_range: str, rows: List[List[Any]], trans
         values = []
         for cell in row:
             values.append(cell.get("updateRequest") or {})
-        result = {
-            "values": values
-        }
+        result = {"values": values}
         return result
 
     def transpose_rows(rows):
@@ -603,17 +594,19 @@ def write_cells(tab: "Tab", spreadsheet_range: str, rows: List[List[Any]], trans
     if not fields:
         return
 
-    update_requests = [{
-        "updateCells": {
-            "range": {
-                "sheetId": spreadsheet_id,
-                "startRowIndex": startRowIndex,
-                "startColumnIndex": startColumnIndex,
-            },
-            "rows": update_request_rows,
-            "fields": ",".join(fields)
+    update_requests = [
+        {
+            "updateCells": {
+                "range": {
+                    "sheetId": spreadsheet_id,
+                    "startRowIndex": startRowIndex,
+                    "startColumnIndex": startColumnIndex,
+                },
+                "rows": update_request_rows,
+                "fields": ",".join(fields),
+            }
         }
-    }]
+    ]
 
     batch_update_tab(tab, update_requests)
 
@@ -625,23 +618,27 @@ def clear_tab(tab: "Tab"):
 
     gsheets_session = get_gsheets_session(context)
     update_data = {
-        'requests': [
+        "requests": [
             {
-                'updateCells': {
-                    'range': {'sheetId': tab_id},
-                    'fields': 'userEnteredValue',
+                "updateCells": {
+                    "range": {"sheetId": tab_id},
+                    "fields": "userEnteredValue",
                 }
             },
         ]
     }
-    api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate'
+    api_url = (
+        f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate"
+    )
     status = gsheets_session.post(
         api_url,
         data=json.dumps(update_data),
         proxies=context.get_proxies(),
     )
     if not status.ok:
-        raise GsheetError(f'Problem clearing gsheet {spreadsheet_id} {tab.get_name()}: {status.text}')
+        raise GsheetError(
+            f"Problem clearing gsheet {spreadsheet_id} {tab.get_name()}: {status.text}"
+        )
 
 
 def ensure_tab(spreadsheet: "Spreadsheet", tab_name: str) -> "Tab":
@@ -652,25 +649,23 @@ def ensure_tab(spreadsheet: "Spreadsheet", tab_name: str) -> "Tab":
     context = spreadsheet.get_context()
     gsheets_session = get_gsheets_session(context)
     update_data = {
-        'requests': [
-            {
-                'addSheet': {
-                    'properties': {
-                        'title': tab_name
-                    }
-                }
-            },
+        "requests": [
+            {"addSheet": {"properties": {"title": tab_name}}},
         ]
     }
     spreadsheet_id = spreadsheet.get_spreadsheet_id()
-    api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate'
+    api_url = (
+        f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate"
+    )
     status = gsheets_session.post(
         api_url,
         data=json.dumps(update_data),
         proxies=context.get_proxies(),
     )
     if not status.ok:
-        raise GsheetError(f'Problem adding sheet to gsheet {spreadsheet_id}: {status.text}')
+        raise GsheetError(
+            f"Problem adding sheet to gsheet {spreadsheet_id}: {status.text}"
+        )
 
     # Update spreadsheet
     updated_spreadsheet = Spreadsheet(context, spreadsheet.get_url())
@@ -688,38 +683,40 @@ def batch_update_tab(tab: "Tab", update_requests):
     def add_sheet_id(update_requests):
         for r in update_requests:
             for v in r.values():
-                if 'range' in v:
-                    v['range']['sheetId'] = tab_id
+                if "range" in v:
+                    v["range"]["sheetId"] = tab_id
         return
 
     add_sheet_id(update_requests)
-    data = {
-        'requests': update_requests
-    }
+    data = {"requests": update_requests}
 
-    api_url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate'
+    api_url = (
+        f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}:batchUpdate"
+    )
     status = gsheets_session.post(
         api_url,
         data=json.dumps(data),
         proxies=context.get_proxies(),
     )
     if not status.ok:
-        raise GsheetError(f'Problem running batch_update_tab {spreadsheet_id} {tab.get_name()}: {status.text}')
+        raise GsheetError(
+            f"Problem running batch_update_tab {spreadsheet_id} {tab.get_name()}: {status.text}"
+        )
 
 
 def index_to_col_name(zero_based_index: int) -> str:
     if zero_based_index < 0:
-        raise GsheetError(f'Index ({zero_based_index}) must be >= 0')
+        raise GsheetError(f"Index ({zero_based_index}) must be >= 0")
 
     one_based_index = zero_based_index + 1
 
     def rightmost_digit(num):
         modulo = num % 26
         if modulo == 0:
-            res = 'Z'
+            res = "Z"
         else:
             offset = modulo - 1
-            res = chr(ord('A') + offset)
+            res = chr(ord("A") + offset)
         return res
 
     def downshift(num):
@@ -731,26 +728,26 @@ def index_to_col_name(zero_based_index: int) -> str:
         digits.append(rightmost_digit(one_based_index))
         one_based_index = downshift(one_based_index)
     digits.reverse()
-    result = ''.join(digits)
+    result = "".join(digits)
     return result
 
 
 def col_name_to_index(col_name: str) -> int:
     col_name = col_name.upper().strip()
-    if not re.match('^[A-Z]+$', col_name):
-        raise GsheetError(f'Column name ({col_name}) must be all letters')
+    if not re.match("^[A-Z]+$", col_name):
+        raise GsheetError(f"Column name ({col_name}) must be all letters")
 
     def char_to_val(c):
-        res = ord(c) - ord('A') + 1
+        res = ord(c) - ord("A") + 1
         return res
 
     reversed_col_name = col_name[::-1]
     result = 0
     for i in range(len(reversed_col_name)):
         char = reversed_col_name[i]
-        result += char_to_val(char) * (26 ** i)
+        result += char_to_val(char) * (26**i)
 
-    result = result - 1   # Convert to 0-based index
+    result = result - 1  # Convert to 0-based index
     return result
 
 
@@ -798,20 +795,20 @@ class Spreadsheet:
         return self.spreadsheet_id
 
     def has_tab(self, id_or_name):
-        sheets = self.sheet_info['sheets']
+        sheets = self.sheet_info["sheets"]
         for s in sheets:
-            properties = s['properties']
-            if properties['sheetId'] == id_or_name or properties['title'] == id_or_name:
+            properties = s["properties"]
+            if properties["sheetId"] == id_or_name or properties["title"] == id_or_name:
                 return True
         return False
 
     def get_tab(self, id_or_name):
-        sheets = self.sheet_info['sheets']
+        sheets = self.sheet_info["sheets"]
 
         tab_properties = None
         for s in sheets:
-            properties = s['properties']
-            if properties['sheetId'] == id_or_name or properties['title'] == id_or_name:
+            properties = s["properties"]
+            if properties["sheetId"] == id_or_name or properties["title"] == id_or_name:
                 tab_properties = properties
                 break
 
@@ -838,7 +835,7 @@ class Tab:
         return self.spreadsheet.spreadsheet_id
 
     def get_id(self):
-        return self.tab_properties['sheetId']
+        return self.tab_properties["sheetId"]
 
     def get_name(self):
-        return self.tab_properties['title']
+        return self.tab_properties["title"]

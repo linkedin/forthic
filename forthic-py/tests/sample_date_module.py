@@ -1,4 +1,4 @@
-from forthic.v3.module import Module
+from forthic.module import Module
 import datetime
 
 
@@ -9,7 +9,6 @@ class SampleDateModule(Module):
 
     # ( -- today )
     def word_TODAY(self, interp):
-        """Pushes today's date
-        """
+        """Pushes today's date"""
         result = datetime.date.today()
         interp.stack_push(result)

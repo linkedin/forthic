@@ -1,9 +1,9 @@
 import unittest
 import datetime
 import pytz
-from forthic.v3.interpreter import Interpreter, UnknownWordError
-from forthic.v3.tokenizer import DLE
-from forthic.v3.global_module import GlobalModuleError
+from forthic.interpreter import Interpreter, UnknownWordError
+from forthic.tokenizer import DLE
+from forthic.global_module import GlobalModuleError
 
 
 

@@ -1,8 +1,9 @@
 import unittest
 import datetime
 
-from ...src.forthic.interpreter import Interpreter
-from ...src.forthic.modules.jira_module import JiraModule
+
+from forthic.interpreter import Interpreter
+from forthic.modules.jira_module import JiraModule
 from .jira_context import JiraTestContext
 
 

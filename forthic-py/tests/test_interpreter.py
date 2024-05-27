@@ -1,8 +1,8 @@
 import unittest
 import datetime
-from forthic.v3.interpreter import Interpreter
-from forthic.v3.module import Module, ModuleWord
-from tests.tests_py.v3.sample_date_module import SampleDateModule
+from forthic.interpreter import Interpreter
+from forthic.module import Module, ModuleWord
+from .sample_date_module import SampleDateModule
 
 
 class TestInterpreter(unittest.TestCase):
@@ -106,35 +106,41 @@ class TestInterpreter(unittest.TestCase):
 
     def test_word_scope(self):
         interp = Interpreter()
-        interp.run("""
+        interp.run(
+            """
         : APP-MESSAGE   "Hello (from app)";
         {module1
             APP-MESSAGE
         }
-        """)
+        """
+        )
         self.assertEqual("Hello (from app)", interp.stack[0])
 
     def test_open_module(self):
         # Test word
         interp = Interpreter()
-        interp.run("""
+        interp.run(
+            """
         {mymodule
            : MESSAGE   "Hello (from mymodule)";
         }
         : MESSAGE   {mymodule MESSAGE };
         MESSAGE
-        """)
+        """
+        )
         self.assertEqual("Hello (from mymodule)", interp.stack[0])
 
         # Test memo
         interp = Interpreter()
-        interp.run("""
+        interp.run(
+            """
         {mymodule
            @: MESSAGE-MEMO   "Hello (from mymodule memo)";
         }
         : MESSAGE   {mymodule MESSAGE-MEMO };
         MESSAGE
-        """)
+        """
+        )
         self.assertEqual("Hello (from mymodule memo)", interp.stack[0])
 
     def test_word(self):
@@ -194,8 +200,10 @@ class TestInterpreter(unittest.TestCase):
         self.assertEqual(today, interp.stack[0])
         self.assertEqual(1, len(interp.app_module.words))
         self.assertEqual("module-a.MY-TODAY", interp.app_module.words[0].name)
-        self.assertEqual("date1.TODAY", interp.app_module.modules['module-a'].words[-1].name)
+        self.assertEqual(
+            "date1.TODAY", interp.app_module.modules["module-a"].words[-1].name
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,17 @@
 import unittest
-from forthic.v3.tokenizer import Tokenizer, DLE
-from forthic.v3.tokens import StringToken, StartArrayToken, EndArrayToken, StartModuleToken,\
-    EndModuleToken, StartDefinitionToken, EndDefinitionToken, StartMemoToken, WordToken, EOSToken
+from forthic.tokenizer import Tokenizer, DLE
+from forthic.tokens import (
+    StringToken,
+    StartArrayToken,
+    EndArrayToken,
+    StartModuleToken,
+    EndModuleToken,
+    StartDefinitionToken,
+    EndDefinitionToken,
+    StartMemoToken,
+    WordToken,
+    EOSToken,
+)
 
 
 def get_tokens(tokenizer):
@@ -39,12 +49,21 @@ def is_start_module_token(token, name):
 
 class TestTokenizer(unittest.TestCase):
     def test_basic(self):
-        """Checks to see that all basic tokens are recognized
-        """
+        """Checks to see that all basic tokens are recognized"""
         tokenizer = Tokenizer("[ ] : DEFINITION ; { } '' WORD  @: MEMO")
         tokens = get_tokens(tokenizer)
-        expected = [StartArrayToken, EndArrayToken, StartDefinitionToken, EndDefinitionToken,
-                    StartModuleToken, EndModuleToken, StringToken, WordToken, StartMemoToken, EOSToken]
+        expected = [
+            StartArrayToken,
+            EndArrayToken,
+            StartDefinitionToken,
+            EndDefinitionToken,
+            StartModuleToken,
+            EndModuleToken,
+            StringToken,
+            WordToken,
+            StartMemoToken,
+            EOSToken,
+        ]
 
         self.assertEqual(len(expected), len(tokens))
 
@@ -52,8 +71,7 @@ class TestTokenizer(unittest.TestCase):
             self.assertIsInstance(tokens[i], expected[i])
 
     def test_end_definition(self):
-        """Checks that end definition (;) is recognized even at end of word
-        """
+        """Checks that end definition (;) is recognized even at end of word"""
         tokenizer = Tokenizer("WORD; WORD2")
         tokens = get_tokens(tokenizer)
 
@@ -70,7 +88,9 @@ class TestTokenizer(unittest.TestCase):
 
     def test_strings(self):
 
-        tokenizer = Tokenizer(f"'Single' ^Caret^ '''Triple Single''' ^^^Triple Caret^^^ {DLE}Single DLE{DLE}")
+        tokenizer = Tokenizer(
+            f"'Single' ^Caret^ '''Triple Single''' ^^^Triple Caret^^^ {DLE}Single DLE{DLE}"
+        )
         tokens = get_tokens(tokenizer)
 
         self.assertTrue(is_string_token(tokens[0], "Single"))
@@ -110,5 +130,5 @@ class TestTokenizer(unittest.TestCase):
         self.assertTrue(is_word_token(tokens[2], "WORD2"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
