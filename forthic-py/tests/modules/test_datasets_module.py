@@ -1,24 +1,30 @@
 import os
 import json
 import unittest
+
 from forthic.v3.interpreter import Interpreter
 from forthic.v3.modules.datasets_module import DatasetsModule
+
 
 def get_data_dir():
     return f"{os.getcwd()}/tests/tests_py/v3/modules/datasets_data"
 
+
 def get_dataset_file(dataset_name):
     return f"{get_data_dir()}/datasets/{dataset_name}.dataset"
+
 
 def load_dataset(dataset_name):
     with open(get_dataset_file(dataset_name)) as f:
         result = json.loads(f.read())
     return result
 
+
 def clear_dataset(dataset_name):
     dataset_file = get_dataset_file(dataset_name)
     if os.path.isfile(dataset_file):
         os.remove(dataset_file)
+
 
 def get_interp():
     result = Interpreter()
@@ -34,10 +40,7 @@ class TestDatasetsModule(unittest.TestCase):
 
     def test_DATASET_bang(self):
         # Test: Store data
-        dataset = {
-            "alpha": [1, 2, 3],
-            "beta": [4, 5, 6]
-        }
+        dataset = {"alpha": [1, 2, 3], "beta": [4, 5, 6]}
         self.interp.stack_push(dataset)
         self.interp.run("'greek' datasets.DATASET!")
 
@@ -45,37 +48,24 @@ class TestDatasetsModule(unittest.TestCase):
         self.assertDictEqual(dataset, loaded_data)
 
         # Test: Add data to existing dataset
-        dataset = {
-            "gamma": [7, 8, 9]
-        }
+        dataset = {"gamma": [7, 8, 9]}
         self.interp.stack_push(dataset)
         self.interp.run("'greek' datasets.DATASET!")
         loaded_data = load_dataset("greek")
-        modified_dataset = {
-            "alpha": [1, 2, 3],
-            "beta": [4, 5, 6],
-            "gamma": [7, 8, 9]
-        }
+        modified_dataset = {"alpha": [1, 2, 3], "beta": [4, 5, 6], "gamma": [7, 8, 9]}
         self.assertDictEqual(modified_dataset, loaded_data)
 
         # Test: Ovewrite existing dataset
-        dataset = {
-            "delta": [10, 11, 12]
-        }
+        dataset = {"delta": [10, 11, 12]}
         self.interp.stack_push(dataset)
         self.interp.run("'greek' datasets.!OVERWRITE datasets.DATASET!")
         loaded_data = load_dataset("greek")
-        new_dataset = {
-            "delta": [10, 11, 12]
-        }
+        new_dataset = {"delta": [10, 11, 12]}
         self.assertDictEqual(new_dataset, loaded_data)
 
     def test_DATASET(self):
         # Store dataset
-        dataset = {
-            "alpha": [1, 2, 3],
-            "beta": [4, 5, 6]
-        }
+        dataset = {"alpha": [1, 2, 3], "beta": [4, 5, 6]}
         self.interp.stack_push(dataset)
         self.interp.run("'greek' datasets.DATASET!")
 
@@ -85,10 +75,7 @@ class TestDatasetsModule(unittest.TestCase):
 
     def test_RECORDS(self):
         # Store dataset
-        dataset = {
-            "alpha": [1, 2, 3],
-            "beta": [4, 5, 6]
-        }
+        dataset = {"alpha": [1, 2, 3], "beta": [4, 5, 6]}
         self.interp.stack_push(dataset)
         self.interp.run("'greek' datasets.DATASET!")
 
@@ -101,7 +88,11 @@ class TestDatasetsModule(unittest.TestCase):
         self.assertEqual([[4, 5, 6], None, [1, 2, 3]], self.interp.stack[-1])
 
         # Get records dropping NULLs for missing keys
-        self.interp.run("'greek' ['beta' 'MISSING' 'alpha'] datasets.!DROP-NULLS datasets.RECORDS")
+        self.interp.run(
+            "'greek' ['beta' 'MISSING' 'alpha'] datasets.!DROP-NULLS datasets.RECORDS"
+        )
         self.assertEqual([[4, 5, 6], [1, 2, 3]], self.interp.stack[-1])
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     unittest.main()
