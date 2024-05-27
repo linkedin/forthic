@@ -14,12 +14,13 @@ setup(
     description="A stack-based language for concisely building tweakable apps",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    license='BSD 2-CLAUSE LICENSE',
-    keywords='forth language',
-    url='https://forthic.readthedocs.io',
+    license="BSD 2-CLAUSE LICENSE",
+    keywords="forth language",
+    url="https://forthic.readthedocs.io",
     download_url="https://github.com/linkedin/forthic",
-    packages=find_namespace_packages(where='.', exclude=['test*', 'docs', 'forthic-js', 'apps']),
-    namespace_packages=['forthic'],
+    packages=find_namespace_packages(
+        where=".", exclude=["test*", "docs", "forthic-js", "apps"]
+    ),
     package_data={
         "forthic": ["py.typed"],
     },
@@ -35,19 +36,19 @@ setup(
         "Jinja2",
         "markdown",
         "trino",
-        "pandas"
+        "pandas",
     ],
     project_urls={
-        'Documentation': 'https://forthic.readthedocs.io',
-        'Source': 'https://github.com/linkedin/forthic',
-        'Tracker': 'https://github.com/linkedin/forthic/issues',
-        },
+        "Documentation": "https://forthic.readthedocs.io",
+        "Source": "https://github.com/linkedin/forthic",
+        "Tracker": "https://github.com/linkedin/forthic/issues",
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD 2-CLAUSE",
         "Operating System :: OS Independent",
-        'Intended Audience :: Developers',
-        'Development Status :: 5 - Production/Stable',
+        "Intended Audience :: Developers",
+        "Development Status :: 5 - Production/Stable",
     ],
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )
