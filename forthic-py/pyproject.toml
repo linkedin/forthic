@@ -1,24 +1,14 @@
-[tool.poetry]
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
 name = "forthic"
+authors = [{name = "Rino Jose", email = "rjose@forthix.com"}]
+license = {file = "LICENSE"}
+readme = "README.md"
 version = "4.0.0"
 description = "A stack-based language for concisely building tweakable apps"
-authors = ["Rino Jose <rjose@forthix.com>"]
-license = "BSD 2-CLAUSE LICENSE"
-readme = "README.md"
 
-[tool.poetry.dependencies]
-python = "^3.9"
-urllib3 = "1.26.10"
-pytz = "^2024.1"
-cryptography = "^42.0.7"
-python-dateutil = "^2.9.0.post0"
-requests-oauthlib = "^2.0.0"
-Jinja2 = "^3.1.4"
-Markdown = "^3.6"
-
-[tool.poetry.group.dev.dependencies]
-Flask = "^3.0.3"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[project.urls]
+Home = "https://github.com/linkedin/forthic"
