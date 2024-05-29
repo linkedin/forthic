@@ -9,6 +9,17 @@ license = {file = "LICENSE"}
 readme = "README.md"
 version = "4.0.0"
 description = "A stack-based language for concisely building tweakable apps"
+dependencies = [
+    "urllib3==1.26.10",
+    "pytz",
+    "cryptography",
+    "python-dateutil",
+    "requests-oauthlib",
+    "Jinja2",
+    "Markdown",
+]
 
 [project.urls]
 Home = "https://github.com/linkedin/forthic"
+
+
