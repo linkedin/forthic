@@ -266,7 +266,7 @@ class GsheetModule(Module):
                 return res
 
             result = []
-            for r in rows[header_info["header_row"] + 1 :]:
+            for r in rows[header_info["header_row"] + 1:]:
                 result.append(row_to_rec(r))
 
             interp.stack_push(result)

@@ -1,10 +1,9 @@
 import unittest
 import datetime
 import pytz
-from forthic.interpreter import Interpreter, UnknownWordError
+from forthic.interpreter import Interpreter
 from forthic.tokenizer import DLE
 from forthic.global_module import GlobalModuleError
-
 
 
 class TestGlobalModule(unittest.TestCase):
@@ -351,7 +350,7 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(grouped, grouped_rec)
 
         # Test grouping a list-valued field
-        interp.stack_push([{"id": 1, "attrs":["blue", "important"]}, {"id": 2, "attrs":["red"]}])
+        interp.stack_push([{"id": 1, "attrs": ["blue", "important"]}, {"id": 2, "attrs": ["red"]}])
         interp.run("'attrs' GROUP-BY-FIELD")
         grouped_rec = interp.stack[-1]
         self.assertEqual(1, grouped_rec["blue"][0]["id"])
@@ -547,7 +546,7 @@ class TestGlobalModule(unittest.TestCase):
         DEEP-LIST "2 *" 2 !DEPTH MAP
         ''')
         array = interp.stack[-1]
-        self.assertEqual(array, [ [ [4, 6] ], [ [6, 8] ] ])
+        self.assertEqual(array, [[[4, 6]], [[6, 8]]])
 
     def test_map_depth_w_error(self):
         interp = Interpreter()
@@ -976,7 +975,6 @@ class TestGlobalModule(unittest.TestCase):
         self.assertEqual(len(stack[0]), 2)
         self.assertEqual(len(stack[1]), 1)
 
-
     def test_drop(self):
         interp = Interpreter()
         interp.run("""
@@ -1196,7 +1194,7 @@ class TestGlobalModule(unittest.TestCase):
               [ [4 5]       ] ] 0 !DEPTH FLATTEN
         """)
         array = interp.stack[-1]
-        self.assertEqual(array, [[[0, 1] , [2, 3]], [[4, 5]]])
+        self.assertEqual(array, [[[0, 1], [2, 3]], [[4, 5]]])
 
         interp.run("""
             [ [ [0 1] [2 3] ]
@@ -1217,7 +1215,6 @@ class TestGlobalModule(unittest.TestCase):
         record = interp.stack[0]
         self.assertEqual(sorted(record.keys()), ['a', 'b.alpha', 'c'])
         return
-
 
     def test_key_of(self):
         interp = Interpreter()

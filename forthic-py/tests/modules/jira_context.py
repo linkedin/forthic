@@ -24,10 +24,7 @@ class JiraTestContext(JiraContext):
             result = ServerResponse(REST_API_2_FIELD_RESPONSE)
         elif api_url == "/rest/api/2/issue/SAMPLE-101/votes":
             result = ServerResponse(VOTE_RESPONSE)
-        elif (
-            api_url
-            == "/rest/api/2/issue/SAMPLE-101?expand=changelog&fields=customfield_10460,created"
-        ):
+        elif (api_url == "/rest/api/2/issue/SAMPLE-101?expand=changelog&fields=customfield_10460,created"):
             result = ServerResponse(CHANGELOG_RESPONSE)
         else:
             raise Exception(f"Unknown route: {api_url}")

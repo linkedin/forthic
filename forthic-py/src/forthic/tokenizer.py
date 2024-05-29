@@ -1,4 +1,4 @@
-from .tokens import StartArrayToken, EndArrayToken, StartDefinitionToken, EndDefinitionToken,\
+from .tokens import StartArrayToken, EndArrayToken, StartDefinitionToken, EndDefinitionToken, \
     StartMemoToken, CommentToken, StartModuleToken, EndModuleToken, StringToken, WordToken, EOSToken, Token
 from typing import List
 
@@ -175,7 +175,7 @@ class Tokenizer:
             else:
                 self.position += 1
                 self.token_string += char
-        raise UnterminatedStringError(f"Unterminated triple quoted string ({string_delimiter*3})")
+        raise UnterminatedStringError(f"Unterminated triple quoted string ({string_delimiter * 3})")
 
     def transition_from_GATHER_STRING(self, string_delimiter: str) -> StringToken:
         while self.position < len(self.input_string):

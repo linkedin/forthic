@@ -401,8 +401,7 @@ class Text(Content):
         # Update style requests
         def update_style(update_type: str, style: Dict[str, Any]):
             num_chars = (
-                style[update_type]["range"]["endIndex"]
-                - style[update_type]["range"]["startIndex"]
+                style[update_type]["range"]["endIndex"] - style[update_type]["range"]["startIndex"]
             )
             style[update_type]["range"]["startIndex"] = cur_index
             style[update_type]["range"]["endIndex"] = cur_index + num_chars
