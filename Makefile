@@ -46,7 +46,7 @@ test-js:
 	@echo
 	@echo "Forthic JS tests"
 	@echo "============"
-	node --experimental-modules ./tests/tests_js/test_all.mjs
+	node --experimental-modules ./forthic-js/tests/test_all.mjs
 
 test-react:
 	@echo
@@ -58,4 +58,4 @@ test-rs:
 	@echo
 	@echo "Forthic Rust tests"
 	@echo "============"
-	cargo test --manifest-path tests/tests_rs/Cargo.toml
+	cargo test --manifest-path forthic-rs/tests/Cargo.toml
