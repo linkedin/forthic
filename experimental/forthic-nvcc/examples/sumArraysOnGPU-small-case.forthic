@@ -1,0 +1,46 @@
+# Sum Arrays on host and GPU
+
+[ cuda ch2 ] USE-MODULES
+
+[ "h_A" "h_B" "h_C" "gpuRef" ] VARIABLES
+[ "d_A" "d_B" "d_C" ] VARIABLES
+
+# --------------------------------------
+# Managing memory
+
+: NUM-ELEMS     1 5 << ;
+: NUM-BYTES     NUM-ELEMS FLOAT SIZEOF * ;
+: h_A!          NUM-BYTES MALLOC h_A !       h_A @ NUM-ELEMS INIT-DATA ;
+: h_B!          NUM-BYTES MALLOC h_B !       h_B @ NUM-ELEMS INIT-DATA ;
+: h_C!          NUM-BYTES MALLOC h_C !       h_C @ 0 NUM-BYTES MEMSET ;
+: gpuRef!       NUM-BYTES MALLOC gpuRef !    gpuRef  @ 0 NUM-BYTES MEMSET ;
+: d_A!          NUM-BYTES CUDA-MALLOC d_A !  d_A @ h_A @ NUM-BYTES CUDA-MEMCPY-HtD ;
+: d_B!          NUM-BYTES CUDA-MALLOC d_B !  d_B @ h_B @ NUM-BYTES CUDA-MEMCPY-HtD ;
+: d_C!          NUM-BYTES CUDA-MALLOC d_C !  d_C @ gpuRef @ NUM-BYTES CUDA-MEMCPY-HtD ;
+: INIT-DEV      0 CUDA-SET-DEVICE ;
+: INIT-DATA     h_A! h_B! h_C! gpuRef! d_A! d_B! d_C! ;
+: INIT          INIT-DEV INIT-DATA ;
+: FREE-DATA     [ h_A h_B h_C gpuRef ] "@ FREE" FOREACH  [ d_A d_B d_C ] "@ CUDA-FREE" FOREACH ;
+
+# --------------------------------------
+# Computation
+
+: GRID          1 ;
+: BLOCK         NUM-ELEMS ;
+: LOAD-SUM      gpuRef @ d_C @ NUM-BYTES CUDA-MEMCPY-DtH ;
+: DEV-SUM       GRID BLOCK  d_A @ d_B @ d_C @ NUM-ELEMS D-SUM-ARRAYS LOAD-SUM ;
+: HOST-SUM      h_A @  h_B @  h_C @ NUM-ELEMS  H-SUM-ARRAYS ;
+: CHECK-SUM     h_C @ gpuRef @ NUM-ELEMS CHECK-RESULT ;
+
+
+# --------------------------------------
+# Printing
+
+: PRINT-A       "A: " PRINT  h_A @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-B       "B: " PRINT  h_B @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-C       "C: " PRINT  h_C @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-GPU-C   "C (GPU): " PRINT  gpuRef @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-RESULT  PRINT-A PRINT-B PRINT-C PRINT-GPU-C ;
+
+: RUN           INIT DEV-SUM HOST-SUM CHECK-SUM PRINT-RESULT FREE-DATA ;
+RUN

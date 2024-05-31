@@ -1,0 +1,18 @@
+%%==============================================================================
+%% File:            PROCESS_LOOP.txt
+%% Created date:    12/16/2017
+%% Last update:     12/16/2017
+%% Author:          Rino Jose
+%% Description:     Describes how parsed input is executed
+%%
+
+To process a list of input words, we call execute_words.
+
+|execute_words| takes a Forrth record and a list of input words.
+
+Each input word is looked up in the Forrth dictionary.
+
+If an entry is found, its routine is executed.
+
+If an entry is not found, we call an error routine to print a message and reset Forrth.
+

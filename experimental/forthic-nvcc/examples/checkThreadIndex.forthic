@@ -1,0 +1,35 @@
+# Check Thread Index
+
+[ cuda ch2 ] USE-MODULES
+
+# --------------------------------------
+# Init
+: DEV-INDEX   0 ;
+: DEV-NAME    DEV-INDEX CUDA-GET-DEVICE-PROPERTIES "name" DEV-PROP ;
+: INIT-DEV    DEV-NAME PRINT  DEV-INDEX CUDA-SET-DEVICE ;
+
+# --------------------------------------
+# Memory allocation and initialization
+[ "h_A" ] VARIABLES
+[ "d_A" ] VARIABLES
+
+: NX          8 ;
+: NY          6 ;
+: NXY         NX NY * ;
+: NUM-BYTES   NXY INT SIZEOF * ;
+: h_A!        NUM-BYTES MALLOC h_A !       h_A @ NXY INITIAL-INT ;
+: d_A!        NUM-BYTES CUDA-MALLOC d_A !  d_A @ h_A @ NUM-BYTES CUDA-MEMCPY-HtD ;
+
+: INIT        INIT-DEV h_A! d_A! ;
+
+# --------------------------------------
+# Run
+: BLOCK          4 2 1 DIM3 ;
+: GRID           (NX BLOCK >x + 1 - BLOCK >x /) (NY BLOCK >y + 1 - BLOCK >y /) 1 DIM3 ;
+: PRINT-A        h_A @ NX NY PRINT-INT-MATRIX ;
+: PRINT-CONFIG   [ "Block: " BLOCK ] CONCAT PRINT  [ "Grid: " GRID ] CONCAT PRINT ;
+: GPU-RUN        GRID BLOCK d_A @ NX NY PRINT-THREAD-INDEX ;
+: FREE-MEM       h_A @ FREE  d_A @ CUDA-FREE ;
+: RUN            INIT PRINT-A PRINT-CONFIG GPU-RUN FREE-MEM CUDA-DEVICE-RESET ;
+
+RUN

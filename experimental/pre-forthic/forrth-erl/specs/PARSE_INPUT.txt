@@ -1,0 +1,33 @@
+%%==============================================================================
+%% File:            PARSE_INPUT.txt
+%% Created date:    12/16/2017
+%% Last update:     12/16/2017
+%% Author:          Rino Jose
+%% Description:     Describes how input is parsed
+%%
+
+A Forrth string is submitted as input.
+
+The parser starts in a START state.
+
+START
+
+If character is a space, continue.
+If a character is a ".", add character to current word, set state to CHECKSTRING and continue.
+Otherwise, add character to current word, set state to NORMAL and continue.
+
+NORMAL
+
+If character is a space, add current word to words and set cur word to "", and set state to START
+If character is a ".", add to current word and set state to CHECKSTRING
+
+CHECKSTRING
+
+If character is a '"', set cur word to "", and set state to COLLECTSTRING.
+If a character is not a '"', add to current word and set state to NORMAL.
+
+COLLECTSTRING
+
+If a character is not a '"', add char to current word and continue.
+If character is a '"', remove first char from cur_word, add cur word to words, set cur word = "",
+set state to START and continue.

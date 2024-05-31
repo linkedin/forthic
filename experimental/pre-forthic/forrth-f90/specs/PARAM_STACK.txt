@@ -1,0 +1,31 @@
+!!==============================================================================
+!! File:            PARAM_STACK.txt
+!! Created date:    12/30/2017
+!! Last update:     01/01/2018
+!! Author:          Rino Jose
+!! Description:     Describes how the parameter stack works
+!!
+
+
+ITEM MODULES
+
+There will be an items module that contains arrays of every type of item that could be a parameter.
+That includes entries.
+An ItemArray type will maintain the current count and the max size of the array.
+When the count == max size and another item is added, we double the size of the array.
+We will have an array of ItemArray elements that are keyed by the ItemType.
+
+
+ITEM POINTER
+
+An ItemPointer will have the type of the item and its index into the ItemArray.
+The ItemPointer will be defined in the forrth_types module.
+All item types will also be defined in the forrth_types module.
+
+
+ENTRY PARAMETERS, PARAMETER STACK, DICTIONARY
+
+The parameters in an entry will be an array of ItemPointers.
+The resize sequence for entry parameters is 0, 1, 5, then double each time
+The elements of the parameter stack will also be ItemPointers.
+The forrth dictionary would simply be an array of integer indcies into the entry array.

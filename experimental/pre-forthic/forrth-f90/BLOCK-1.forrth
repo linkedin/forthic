@@ -1,0 +1,3 @@
+# Defines a couple of new words
+: TACO   PRINT-HI PRINT-HI ;
+: 2TACO   TACO TACO ;

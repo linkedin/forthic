@@ -1,0 +1,37 @@
+%%==============================================================================
+%% File:            FERRTH.txt
+%% Created date:    12/15/2017
+%% Last update:     12/17/2017
+%% Author:          Rino Jose
+%% Description:     Describes design of Ferlang
+%%
+
+Ferlang is an implementation of Forrth in Erlang.
+
+Each Ferlang server runs an instance of a Forrth interpreter.
+
+Forrth messages can be sent to Ferlang servers.
+
+The Forrth interpreter state is passed with each request.
+
+A request may have an empty Forrth state but use a Ferlang server to get a copy
+
+We should send Forrth messages to processes.
+
+When a process starts, it should create Forrth data items and initialize the dictionary.
+
+We should start by building a single forrth interpreter and seeing what it takes to implement.
+
+Should a server implement only one function?
+
+Server type: WordGetter
+Server type: Dictionary
+Server type: ProcessInput
+
+This doesn't seem right.
+
+A Forrth-ts system should be able to call into a Ferlang cluster.
+
+QUESTIONS
+
+* How do we deal with Forrth interpreters with different dictionaries?

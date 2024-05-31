@@ -1,0 +1,41 @@
+﻿;;==============================================================================
+;; File:            COMMANDLINE_UI.txt
+;; Created date:    12/03/2017
+;; Last update:     12/03/2017
+;; Author:          Rino Jose
+;; Description:     Describes how to get keyboard input into a Hololens app and
+;;                  how to see the results (text).
+;;
+
+STARTUP SEQUENCE
+
+There is a Program class that has a Main function. This is the starting point for a Holographic app.
+The Main function instantiates an AppViewSource and sends it to CoreApplication.Run. This starts the event loop.
+One of the steps in the event loop is to call CreateView on the AppViewSource.
+AppViewSource::CreateView creates and returns an AppView and hooks it into the framework.
+The AppView has functions like Initialize, SetWindow, Load, Uninitialize, and Run.
+The SetWindow function is where the event handlers are defined and registered.
+The handlers for window.KeyDown and window.KeyUp are important for our commandline UI.
+The AppView wraps a HoloForrthMain object and calls it "main".
+Events are forwarded to the main object.
+The HoloForrthMain object is like a controller object that handles events and updates state.
+
+
+MESSAGE BUFFER
+
+The keyboard support for the Hololens is fairly low level.
+We can register for KeyDown and KeyUp events, but we only get actual key presses, not characters.
+For instance, we know when a LEFT-SHIFT is pressed and when a ';' is pressed, but not that it was a ':' char.
+A Forrth object should contain a MessageBuffer object.
+HoloForrthMain should contain a Forrth object and route the keydown and keyup events to it. Forrth relays those to its MessageBuffer
+When an ENTER is received, the Forrth's Execute method should be called with the input.
+
+TEXT OUTPUT
+
+For now, we'll just use Debug.Writeline to print text back to the user.
+Another option is using sprites to render text. This may need to wait until we have more in place.
+
+TASKS
+
+* Build Forrth interpereter in C#
+* Display input buffer in Hololens (HARD)

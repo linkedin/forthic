@@ -1,0 +1,39 @@
+# Section 2.3: Simplex full example
+
+[ cuda gauss ] USE-MODULES
+
+: METAL-WORKING-DAYS   24 ;
+: WOOD-WORKING-DAYS    60 ;
+
+: NUM-ROWS   3 ;
+: NUM-COLS   6 ;
+: NUM-ELEMS  NUM-ROWS NUM-COLS * ;
+[ "_A" "_x" ] VARIABLES
+: A!   [ 0                    6  14  13  0  0  # Objective
+         METAL-WORKING-DAYS 0.5   2   1  1  0
+         WOOD-WORKING-DAYS    1   2   4  0  1  ]
+       NUM-ROWS NUM-COLS GPU-MATRIX _A ! ;
+
+: A   NUM-ROWS NUM-COLS _A @ ;
+: FREE-A   _A @ CUDA-FREE ;
+
+# Define kernel launch config
+: THREADS/BLOCK  1024 ;
+: BLOCKS/GRID    NUM-ELEMS THREADS/BLOCK + 1 - THREADS/BLOCK / ;
+: BLOCK          THREADS/BLOCK 1 1 DIM3 ;
+: GRID           BLOCKS/GRID   1 1 DIM3 ;
+
+[ "pivot_row" "pivot_col" ] VARIABLES
+: DO-PIVOT      GRID BLOCK A pivot_row @ pivot_col @ PIVOT ;
+: PRINT-PIVOT   [ "Pivot " pivot_row @ " " pivot_col @ ] CONCAT PRINT  A PRINT-MATRIX ;
+: PIVOT-A       (pivot_col ! pivot_row !) DO-PIVOT PRINT-PIVOT ;
+
+# Solve equations
+A!  A PRINT-MATRIX
+1 2 PIVOT-A
+2 3 PIVOT-A
+1 1 PIVOT-A
+
+# Cleanup
+FREE-A
+CUDA-DEVICE-RESET

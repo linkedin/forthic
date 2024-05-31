@@ -1,0 +1,24 @@
+# Section 2.3: Simplex full example using LP
+
+[ cuda linear-program ] USE-MODULES
+
+[ "prob" ] VARIABLES
+
+: X           [ "num_flatbed" "num_economy" "num_luxury" ] ;
+: OBJECTIVE   [ 0 6 14 13  ]  "Objective" LP-EQN ;
+: C-METAL     [ 24 0.5 2 1 ] "Metal Hours" LP-EQN ;
+: C-WOOD      [ 60  1 2 4 ] "Woodworking Hours" LP-EQN ;
+
+: PROB!       X OBJECTIVE [ C-METAL C-WOOD ] LP-NEW prob ! ;
+: PROB        prob @ ;
+: CLEANUP     PROB LP-FREE  CUDA-DEVICE-RESET ;
+
+PROB!
+PROB LP-PRINT-MATRIX
+
+# Manually run pivot steps
+# PROB 1 2 LP-PIVOT   PROB LP-PRINT
+# PROB 2 3 LP-PIVOT   PROB LP-PRINT
+# PROB 1 1 LP-PIVOT   PROB LP-PRINT
+
+CLEANUP

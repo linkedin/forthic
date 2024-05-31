@@ -1,0 +1,41 @@
+# Sum Arrays on host and GPU
+
+[ cuda ch2 ] USE-MODULES
+
+[ "A" "B" "C" "gpuRef" ] VARIABLES
+
+# --------------------------------------
+# Managing memory
+
+: NUM-ELEMS   1 24 << ;
+: NUM-BYTES   NUM-ELEMS FLOAT SIZEOF * ;
+: A!          NUM-BYTES CUDA-MALLOC-MANAGED A !       A @ NUM-ELEMS INIT-DATA ;
+: B!          NUM-BYTES CUDA-MALLOC-MANAGED B !       B @ NUM-ELEMS INIT-DATA ;
+: C!          NUM-BYTES CUDA-MALLOC-MANAGED C !       C @ 0 NUM-BYTES MEMSET ;
+: gpuRef!     NUM-BYTES CUDA-MALLOC-MANAGED gpuRef !    gpuRef  @ 0 NUM-BYTES MEMSET ;
+: INIT-DEV    0 CUDA-SET-DEVICE ;
+: INIT-DATA   A! B! C! gpuRef! ;
+: INIT        INIT-DEV INIT-DATA ;
+: FREE-DATA   [ A B C gpuRef ] "@ CUDA-FREE" ;
+
+# --------------------------------------
+# Computation
+
+: BLOCK         1024 ;
+: GRID          NUM-ELEMS BLOCK + 1 - BLOCK / ;
+: DEV-SUM       GRID BLOCK  A @ B @ C @ NUM-ELEMS D-SUM-ARRAYS CUDA-DEVICE-SYNCHRONIZE ;
+: HOST-SUM      NOW  A @  B @  gpuRef @ NUM-ELEMS  H-SUM-ARRAYS NOW SINCE PRINT ;
+: CHECK-SUM     C @ gpuRef @ NUM-ELEMS CHECK-RESULT ;
+
+
+# --------------------------------------
+# Printing
+
+: PRINT-A       "A: " PRINT  A @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-B       "B: " PRINT  B @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-C       "C: " PRINT  C @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-GPU-C   "C (GPU): " PRINT  gpuRef @ 0 NUM-ELEMS FLOAT PRINT-MEM  ENDL PRINT ;
+: PRINT-CONFIG   [ "Grid: " GRID ", Block: " BLOCK ] CONCAT PRINT ;
+
+: RUN           PRINT-CONFIG INIT DEV-SUM HOST-SUM CHECK-SUM DEV-SUM FREE-DATA ;
+RUN

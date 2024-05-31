@@ -1,0 +1,32 @@
+;;==============================================================================
+;; File:            STRINGS.txt
+;; Created date:    12/01/2017
+;; Last update:     12/01/2017
+;; Author:          Rino Jose
+;; Description:     Describes a design for handling character strings
+;;
+
+WHEN NOT TO COPY STRINGS
+
+Moore's advice is to leave a character string where you find it and process it as soon as you can.
+If a string is part of input, it will be in the message buffer.
+A string that comes from LOADing a block will be in the message buffer as well.
+Literal strings in the message buffer will automatically be trashed.
+
+
+WHEN TO COPY STRINGS
+
+A string that is compiled into a definition needs to be stored somewhere.
+Compiled strings should be stored in an uninitialized chunk of memory called DictionaryStrings_.
+We will need to maintain a DictionaryStringPos_ as well.
+
+
+STRING (AND COMMENT) LITERALS
+
+A string literal begins with { ." } and continues to the next { " }.
+A comment literal starts with { ( } and continues to the next { ) }
+A comment literal also starts with { # } and continues to the end of the line (or 0)
+
+TASKS
+
+* Have C++ allocate memory for dictionary strings

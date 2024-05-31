@@ -3,9 +3,8 @@ import os
 import json
 from requests_oauthlib import OAuth2Session
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import interp_v2
-import interp_v3
-from forthic.v3.modules.ui_module import ForthicReact
+from .interp import get_interp
+from forthic.modules.ui_module import ForthicReact
 
 # Forthic utils
 from forthic.utils.creds import (
@@ -18,21 +17,23 @@ from forthic.utils.creds import (
 from forthic.utils.errors import UnauthorizedError
 
 # Allow us to use http locally
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-SECRETS_DIR = '.'
+SECRETS_DIR = "."
 
 creds = Creds(SECRETS_DIR)
 creds.ensure_key()
 
 app = Flask(__name__)
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.secret_key = creds.get_key()
 
 
 class UnknownInterpreterVersion(RuntimeError):
     def __init__(self, app_dir, forthic_version):
-        super().__init__(f"Can't find Forthic version {forthic_version} for app {app_dir}")
+        super().__init__(
+            f"Can't find Forthic version {forthic_version} for app {app_dir}"
+        )
 
 
 @app.after_request
@@ -42,7 +43,7 @@ def add_header(response):
 
 
 # # ===== Routes =================================================================
-@app.route('/')
+@app.route("/")
 def home():
     coding_forthic_apps = os.listdir("./apps/coding-forthic")
     archetype_apps = os.listdir("./apps/archetypes")
@@ -50,13 +51,13 @@ def home():
     apps = {
         "coding-forthic": coding_forthic_apps,
         "archetypes": archetype_apps,
-        "tests": test_apps
+        "tests": test_apps,
     }
-    return render_template('home.html', apps=apps)
+    return render_template("home.html", apps=apps)
 
 
-@app.route('/<group>/<app>/')
-@app.route('/<group>/<app>/<path:rest>')
+@app.route("/<group>/<app>/")
+@app.route("/<group>/<app>/<path:rest>")
 def forthic_app(group, app, rest=None):
     """
     Renders a Forthic app at the specified group/app directory
@@ -72,44 +73,52 @@ def forthic_app(group, app, rest=None):
     # The secrets file is where we store all passwords/tokens/credentials (encrypted)
     except MissingSecretsFile:
         creds.ensure_secrets_file()
-        return redirect(url_for('forthic_app', group=group, app=app, rest=rest))
+        return redirect(url_for("forthic_app", group=group, app=app, rest=rest))
 
     # Some credentials require a username and password
     except (MissingPasswordCreds, UnauthorizedError) as e:
-        return redirect(url_for('update_password_form', group=group, app=app, field=e.field, rest=rest))
+        return redirect(
+            url_for(
+                "update_password_form", group=group, app=app, field=e.field, rest=rest
+            )
+        )
 
     # For some services (like Google), we need to authenticate our Forthic app itself so we can access the APIs
     except MissingAppCreds as e:
-        return redirect(url_for('update_app_creds_form', group=group, app=app, field=e.field, rest=rest))
+        return redirect(
+            url_for(
+                "update_app_creds_form", group=group, app=app, field=e.field, rest=rest
+            )
+        )
 
     # Some services require an OAuth/access token
     except MissingOAuthToken as e:
-        session['group'] = group
-        session['app'] = app
+        session["group"] = group
+        session["app"] = app
         session["rest"] = rest
-        if e.field == 'GOOGLE_TOKEN':
+        if e.field == "GOOGLE_TOKEN":
             return redirect(get_google_auth_url())
         else:
-            raise RuntimeError(f'Unknown OAuth token type: {e.field}')
+            raise RuntimeError(f"Unknown OAuth token type: {e.field}")
 
     # At this point, we were able to run the app Forthic and "MAIN-PAGE"
     if isinstance(main_page, str):
-        result = render_template('basic.html', main_page=main_page)
+        result = render_template("basic.html", main_page=main_page)
     elif isinstance(main_page, ForthicReact):
         result = render_template(
             get_forthic_react_template(main_page),
             css=main_page.css,
             jsx=main_page.jsx,
             forthic=main_page.forthic,
-            basename=f"/{group}/{app}")
+            basename=f"/{group}/{app}",
+        )
     else:
         raise RuntimeError(f"Unable to render main_page: {main_page}")
 
     return result
 
 
-
-@app.route('/<group>/<app>/forthic', methods=["POST"])
+@app.route("/<group>/<app>/forthic", methods=["POST"])
 def run_forthic(group, app):
     app_directory = f"./apps/{group}/{app}"
     interp = get_interp(app_directory)
@@ -117,8 +126,8 @@ def run_forthic(group, app):
     form = request.form
     if request.is_json:
         form = request.json
-    forthic = form['forthic']
-    fullstack_response = form.get('fullstack_response')
+    forthic = form["forthic"]
+    fullstack_response = form.get("fullstack_response")
 
     def run_forthic():
         run_app_forthic(interp, app_directory)
@@ -134,7 +143,7 @@ def run_forthic(group, app):
 
     try:
         res = run_forthic()
-        result = jsonify({'message': 'OK', 'result': res})
+        result = jsonify({"message": "OK", "result": res})
     except RuntimeError as e:
         result = jsonify(str(e))
         result.status_code = 400
@@ -144,55 +153,57 @@ def run_forthic(group, app):
     return result
 
 
-@app.route('/update_password_form/<group>/<app>/<field>/')
-@app.route('/update_password_form/<group>/<app>/<field>/<path:rest>')
+@app.route("/update_password_form/<group>/<app>/<field>/")
+@app.route("/update_password_form/<group>/<app>/<field>/<path:rest>")
 def update_password_form(group, app, field, rest=None):
     return render_template(
-        'update_password_form.html', group=group, app=app, field=field, rest=rest
+        "update_password_form.html", group=group, app=app, field=field, rest=rest
     )
 
-@app.route('/update_password', methods=['POST'])
+
+@app.route("/update_password", methods=["POST"])
 def update_password():
-    group = request.form['group']
-    app = request.form['app']
-    rest = request.form['rest']
-    field = request.form['field']
+    group = request.form["group"]
+    app = request.form["app"]
+    rest = request.form["rest"]
+    field = request.form["field"]
     creds.store_password_creds(
         field,
-        request.form['host'],
-        request.form['username'],
-        request.form['password'],
+        request.form["host"],
+        request.form["username"],
+        request.form["password"],
     )
-    return redirect(url_for('forthic_app', group=group, app=app, rest=rest))
+    return redirect(url_for("forthic_app", group=group, app=app, rest=rest))
 
 
-@app.route('/update_app_creds_form/<group>/<app>/<field>')
-@app.route('/update_app_creds_form/<group>/<app>/<field>/<path:rest>')
+@app.route("/update_app_creds_form/<group>/<app>/<field>")
+@app.route("/update_app_creds_form/<group>/<app>/<field>/<path:rest>")
 def update_app_creds_form(group, app, field, rest=None):
     return render_template(
-        'update_app_creds_form.html', group=group, app=app, field=field, rest=rest
+        "update_app_creds_form.html", group=group, app=app, field=field, rest=rest
     )
 
-@app.route('/update_app_creds', methods=['POST'])
+
+@app.route("/update_app_creds", methods=["POST"])
 def update_app_creds():
-    group = request.form['group']
-    app = request.form['app']
-    field = request.form['field']
-    rest = request.form['rest']
+    group = request.form["group"]
+    app = request.form["app"]
+    field = request.form["field"]
+    rest = request.form["rest"]
     creds.store_app_creds(
-        field, request.form['client_id'], request.form['client_secret']
+        field, request.form["client_id"], request.form["client_secret"]
     )
-    return redirect(url_for('forthic_app', group=group, app=app, rest=rest))
+    return redirect(url_for("forthic_app", group=group, app=app, rest=rest))
 
 
-@app.route('/update_google_oauth_token')
+@app.route("/update_google_oauth_token")
 def update_google_oauth_token():
-    token = get_google_token(creds, request.args['code'])
-    creds.store_oauth_token('GOOGLE_TOKEN', token)
-    group = session['group']
-    app = session['app']
+    token = get_google_token(creds, request.args["code"])
+    creds.store_oauth_token("GOOGLE_TOKEN", token)
+    group = session["group"]
+    app = session["app"]
     rest = session["rest"]
-    return redirect(url_for('forthic_app', group=group, app=app, rest=rest))
+    return redirect(url_for("forthic_app", group=group, app=app, rest=rest))
 
 
 # -----------------------------------------------------------------------------
@@ -200,7 +211,7 @@ def update_google_oauth_token():
 
 
 def read_file(filename):
-    res = ''
+    res = ""
     if os.path.exists(filename):
         with open(filename) as f:
             res = f.read()
@@ -208,7 +219,7 @@ def read_file(filename):
 
 
 def get_main_forthic(app_dir):
-    main_forthic_filename = f'{app_dir}/main.forthic'
+    main_forthic_filename = f"{app_dir}/main.forthic"
     result = read_file(main_forthic_filename)
     return result
 
@@ -230,47 +241,37 @@ def get_forthic_version(app_dir):
     return result
 
 
-def get_interp(app_dir):
-    forthic_version = get_forthic_version(app_dir)
-    if (forthic_version == "v2"):
-        return interp_v2.get_interp(app_dir)
-    elif (forthic_version == "v3"):
-        return interp_v3.get_interp(app_dir)
-    else:
-        raise UnknownInterpreterVersion(app_dir, forthic_version)
-
-
 def get_forthic_react_template(forthic_react):
     result = ""
     if forthic_react.version == "v1":
-        result = 'react/react-app/v1/main.html'
+        result = "react/react-app/v1/main.html"
     else:
         raise RuntimeError(f"Unknown ForthicReact version: {forthic_react.version}")
     return result
 
 
 def get_google_auth_url():
-    app_creds = creds.get_app_creds('GOOGLE_APP')
-    client_id = app_creds['client_id']
-    redirect_uri = 'http://localhost:8000/update_google_oauth_token'
-    scope = creds.get_oauth_cfg('GOOGLE_OAUTH_SCOPES')
+    app_creds = creds.get_app_creds("GOOGLE_APP")
+    client_id = app_creds["client_id"]
+    redirect_uri = "http://localhost:8000/update_google_oauth_token"
+    scope = creds.get_oauth_cfg("GOOGLE_OAUTH_SCOPES")
     oauth = OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
     result, _ = oauth.authorization_url(
-        'https://accounts.google.com/o/oauth2/v2/auth',
-        access_type='offline',
-        prompt='consent',
+        "https://accounts.google.com/o/oauth2/v2/auth",
+        access_type="offline",
+        prompt="consent",
     )
     return result
 
 
 def get_google_token(creds, code):
-    app_creds = creds.get_app_creds('GOOGLE_APP')
-    client_id = app_creds['client_id']
-    client_secret = app_creds['client_secret']
-    redirect_uri = 'http://localhost:8000/update_google_oauth_token'
+    app_creds = creds.get_app_creds("GOOGLE_APP")
+    client_id = app_creds["client_id"]
+    client_secret = app_creds["client_secret"]
+    redirect_uri = "http://localhost:8000/update_google_oauth_token"
     oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
     result = oauth.fetch_token(
-        'https://oauth2.googleapis.com/token',
+        "https://oauth2.googleapis.com/token",
         code=code,
         client_secret=client_secret,
     )
@@ -302,8 +303,7 @@ def get_app_forthic(app_dir):
 
 
 def run_app_forthic(interp, app_dir):
-    """Runs the forthic in the app dir
-    """
+    """Runs the forthic in the app dir"""
     # Store screens for this app in the app module
     forthic_screens = get_forthic_app_screens(app_dir)
     for s in forthic_screens:

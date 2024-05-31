@@ -1,0 +1,21 @@
+: DATA   ["1" "2" "3"];
+: 2DATA   DATA DATA;
+: MY-MATRIX   `[1 2 3; 4 5 6]`;
+MY-MATRIX
+
+"4DATA"   "2DATA 2DATA"   MEMO
+# 4DATA
+
+# 42 42.24 2021-09-04
+
+["record"] VARIABLES
+[
+    ["alpha"   42]
+    ["beta"   [["date" 2021-09-04]] REC]
+] REC record !
+
+record @ ["beta" "date"] REC@
+
+record @ "OUCH" "gamma" <REC!
+
+"[1 2 3 4; 5 6 7 8; 9 10 11 12]" EVAL

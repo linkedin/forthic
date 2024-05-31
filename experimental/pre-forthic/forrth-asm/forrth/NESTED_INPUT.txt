@@ -1,0 +1,42 @@
+;;==============================================================================
+;; File:            NESTED_INPUT.txt
+;; Created date:    11/30/2017
+;; Last update:     12/01/2017
+;; Author:          Rino Jose
+;; Description:     Describes a design for handling words that cause "nested input"
+;;                  such as when you load and interpret a block or expand a macro.
+;;
+
+NORMAL INPUT PROCESSING
+
+Normally, input is processed at the top level by the Execute_ function.
+Execute_ is called at the top of the control loop and initiates writing to the beginning of the MessageBuffer_
+The Execute_ function is special and should only be called by the top level loop.
+
+
+EXPANDING THE PROCESSING OF INPUT
+
+There are words that change the way the MessageBuffer_ is processed.
+INTERPRET, for instance, causes an "expansion" in code that is executed before the rest of the MessageBuffer_ is processed.
+This expansion of code is analogous to the execution of an instruction.
+In both cases, there is an interruption in the process flow.
+
+One way to model INTERPRET is to push the current MessageBufferPos_ onto a "code stack" and set MessageBufferPos_ to the start of a new string.
+When we are finished executing an input string, we should pop the code stack into the MessageBufferPos_ and continue from the old location.
+If the code stack is empty when we are finished executing a string, we are done and should return to the top of the control loop.
+
+Because the MessageBuffer_ could be viewed as stack memory, we could model it using a big chunk of memory.
+When we push a new string onto the code stack, means advancing MessageBufferPos through MessageBuffer_
+There is no need to have a specific MessageBuffer_ length.
+
+
+USING MACROS
+
+A macro can be defined in terms of INTERPRET. The first part of a macro would create a string. The second part would interpret it.
+When a macro executes, it generates code that should be executed.
+
+
+LOADING FILES
+
+LOAD can also be implemented in terms of INTERPRET.
+The LOAD word could push the MessageBufferPos_ onto the code stack, copy a block into the next free MessageBuffer position, and then update MessageBufferPos.

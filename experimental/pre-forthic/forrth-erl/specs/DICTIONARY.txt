@@ -1,0 +1,29 @@
+%%==============================================================================
+%% File:            DICTIONARY.txt
+%% Created date:    12/16/2017
+%% Last update:     12/16/2017
+%% Author:          Rino Jose
+%% Description:     Describes dictionaries
+%%
+
+A dictionary is a list of entries.
+
+A dictionary is traversed from most recent addition to least.
+
+An entry has the following form:
+
+    -record(entry, {word, routine, parameters, immediate}).
+
+A dictionary is a list of entries in a forrth record.
+
+A forrth record has the following form:
+
+    -record(forrth, {dictionary, stack, return_stack, compiling})
+
+A forrth record is created on initialization. This also creates a dictionary.
+
+The core words are added during initialization.
+
+There is a function called find_entry that searches a forrth dictionary for a word.
+
+We use undefined to indicate that an entry could not be found.
