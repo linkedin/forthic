@@ -7,7 +7,7 @@ name = "forthic"
 authors = [{name = "Rino Jose", email = "rjose@forthix.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
-version = "4.0.1"
+version = "4.0.0"
 description = "A stack-based language for concisely building tweakable apps"
 dependencies = [
     "urllib3",

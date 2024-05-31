@@ -35,7 +35,7 @@ test-js:
 test-react:
 	cd forthic-react/v1 && make test
 
-test-all: test-py test-js test-react
+test: test-py test-react
 
 
 test-rs:
