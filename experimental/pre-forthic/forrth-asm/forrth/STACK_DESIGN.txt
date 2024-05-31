@@ -1,0 +1,37 @@
+;;==============================================================================
+;; File:            STACK_DESIGN.txt
+;; Created date:    11/22/2017
+;; Last update:     11/22/2017
+;; Author:          Rino Jose
+;; Description:     Describes the design of the parameter stack
+;;
+
+The start of the stack is given by the variable Stack_.
+The stack pointer variable SP_ points to the next free slot on the stack.
+When the stack is empty, SP_ == Stack_.
+The top of the stack is SP_ + 4
+
+The parameter stack consists of double word (32 bit) sized slots.
+The stack grows downwards similar to the program stack.
+When an item is pushed onto the stack, SP_ is decremented by 4 (bytes)
+The stack size should be 4MB.
+During development, we may keep the stack size small so that all memory can be viewed in one screen.
+Stack overflow and underflow are non-fatal.
+The stack should underflow into the message buffer and overflow into the return stack.
+
+Stack operations are implemented as macros in StackMacros_.
+
+The contents of a stack are usually things like addresses (functions/memory) or 32 bit integers that fit into one slot.
+However, the stack may contain literals whose size is larger than one double word.
+Entries that are more than one double word are in little endian order.
+The programmer is responsible for keeping track of what is on the stack.
+
+Strings that are passed into Forrth from C++ should be managed by C++.
+Strings should be terminated with a \0.
+Strings defined in Forrth should either be pushed onto the stack or copied to the parameter of dictionary entries.
+When a string is stored on the stack, the start is at its lowest address.
+
+Floating point numbers must be translated into a binary representation by C++.
+Single precision floating point numbers are 32 bits and will fit into one slot.
+Double precision floating point numbers are 64 bits and require two slots.
+The code in Literals_.asm should handle the parsing of numbers and floating point values.

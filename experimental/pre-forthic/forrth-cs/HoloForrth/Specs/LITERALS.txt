@@ -1,0 +1,15 @@
+﻿;;==============================================================================
+;; File:            LITERALS.txt
+;; Created date:    12/07/2017
+;; Last update:     12/07/2017
+;; Author:          Rino Jose
+;; Description:     Describes treatment of literals
+;;
+
+If a word cannot be found in the dictionary, the next step is to try viewing it as a literal value.
+
+First, we should see if the string is an integer.
+
+Second, we should see if the string is a floating point.
+
+If a literal is found, we return a PseudoEntry that pushes the value onto the stack.

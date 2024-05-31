@@ -1,0 +1,13 @@
+﻿;;==============================================================================
+;; File:            PROCESSING_INPUT.txt
+;; Created date:    12/03/2017
+;; Last update:     12/03/2017
+;; Author:          Rino Jose
+;; Description:     Describes how the input string is processed
+;;
+
+The first step is to break the input string into a linked list of words.
+We'll use a regular expression to parse out the word and the rest of the string and loop until done.
+Each word will be added to the end of a linked list.
+When a word is executed, it may result in a nested execution.
+In this case, words are added after the word that was executed and execution continues from there.

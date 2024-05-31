@@ -1,0 +1,34 @@
+!!==============================================================================
+!! File:            DEFINITIONS.txt
+!! Created date:    01/02/2018
+!! Last update:     01/02/2018
+!! Author:          Rino Jose
+!! Description:     Describes definitions
+!!
+
+DEFINING A DEFINITION
+
+A definition is a ForrthEntry whose routine is execute_definition.
+A definition's parameters are an array of item pointers to other entries
+A definition is defined using the { : } word.
+This sets the forrth interpreter to "compiling".
+It also creates a new entry item and sets forrth%cur_def to it.
+
+When compiling, we add the next entry's item pointer to cur_def's parameters.
+If the we don't have enough items, we add another 5 slots.
+The last entry in a definition is the ExitDefinitionEntry.
+We should store the index of ExitDefinitionEntry after we add it to the entry items.
+
+
+EXECUTING A DEFINITION
+
+To execute a definition, we push the current instruction pointer onto the stack.
+Then, we set the IP to the definition to execute and index 1.
+We also set "is_executing_definition" to .true.
+get_next_entry returns the entry pointer to execute next and advances the IP.
+Some executions can modify the IP.
+
+When the "ExitDefinitionEntry" is executed we do one of two things.
+If the return stack is empty, we set "is_executing_definition" to .false.
+Otherwise, we pop the previous IP from the return stack and continue.
+

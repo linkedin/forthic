@@ -1,0 +1,6 @@
+: taco  PRINT-HI PRINT-HI ;
+
+: M1   ." This is message1!" ;
+: M2   ." Second message?!"  ;
+
+M1 M2 .S .S

@@ -1,0 +1,42 @@
+# Ex 2.2: Infeasible
+
+[ cuda gauss ] USE-MODULES
+
+# Set up problem
+: b1   2 ;
+: b2   3 ;
+: b3   3 ;
+
+[ "_A" "_x" ] VARIABLES
+: NUM-ROWS   3 ;
+: NUM-COLS   4 ;
+: NUM-ELEMS  NUM-ROWS NUM-COLS * ;
+: A!   [ -1  1 -1 b1
+          1  1  2 b2
+          1  3  3 b3 ] NUM-ROWS NUM-COLS GPU-MATRIX  _A ! ;
+: A   NUM-ROWS NUM-COLS _A @ ;
+: FREE-A   _A @ CUDA-FREE ;
+
+# Define kernel launch config
+: THREADS/BLOCK  1024 ;
+: BLOCKS/GRID    NUM-ELEMS THREADS/BLOCK + 1 - THREADS/BLOCK / ;
+: BLOCK          THREADS/BLOCK 1 1 DIM3 ;
+: GRID           BLOCKS/GRID   1 1 DIM3 ;
+
+[ "pivot_row" "pivot_col" ] VARIABLES
+: DO-PIVOT      GRID BLOCK A pivot_row @ pivot_col @ PIVOT ;
+: PRINT-PIVOT   [ "Pivot " pivot_row @ " " pivot_col @ ] CONCAT PRINT  A PRINT-MATRIX ;
+: PIVOT-A       (pivot_col ! pivot_row !) DO-PIVOT PRINT-PIVOT ;
+
+# Solve equations
+A!  A PRINT-MATRIX
+0 0 PIVOT-A
+1 1 PIVOT-A
+2 2 PIVOT-A
+
+# If a row has all zeroes for the LHS, and its RHS is not 0, then there is no solution.
+# If a row has all zeroes for the LHS, and its RHS is 0, then there are infinite solutions.
+
+# Cleanup
+FREE-A
+CUDA-DEVICE-RESET

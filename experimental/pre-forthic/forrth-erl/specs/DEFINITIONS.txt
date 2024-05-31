@@ -1,0 +1,34 @@
+%%==============================================================================
+%% File:            DEFINITIONS.txt
+%% Created date:    12/17/2017
+%% Last update:     12/17/2017
+%% Author:          Rino Jose
+%% Description:     Describes implementation of definitions
+%%
+
+A definition is started with the { : } word. 
+
+This creates a new entry and puts the forrth interpreter into compiling mode.
+
+The routine associated with this entry is execute_definition
+
+Any entries are compiled into the parameters of the current entry
+
+If an entry is immediate, it is executed right away.
+
+A definition is ended with the { ; } word.
+
+This compiles an exit_definition_entry into the current entry and clears compiling mode.
+
+
+Executing a definition pushes the current instruction pointer onto the return stack.
+
+This also sets the execution mode to "execute definition".
+
+The instruction pointer is then set to 0.
+
+In the main loop, we get the next instruction entry instead of finding it.
+
+The exit_definition_entry pops the previous instruction pointer.
+
+If the return stack is empty, it switches back to normal execution mode.

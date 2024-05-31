@@ -1,0 +1,22 @@
+# This tests executing Forthic in different contexts
+
+: MESSAGE   "Outer message" ;
+
+{my-module
+    : MESSAGE   "Inner message" ;
+    : RUN1       "MESSAGE" INTERPRET ;
+    : RUN2       "MESSAGE" /INTERPRET ;
+    : RUN3       "RUN1 RUN2" INTERPRET ;
+    [ "RUN1" "RUN2" "RUN3" ] PUBLISH
+}
+
+[ my-module ] USE-MODULES
+
+# RUN1 .s   # ( "Inner message" )
+# POP
+# RUN2 .s   # ( "Outer message" )
+RUN3 .s
+
+# INTERPRET runs by searching the module stack at the point of definition
+# *INTERPRET runs by searching the module stack at the point of execution
+

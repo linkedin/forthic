@@ -1,0 +1,30 @@
+;;==============================================================================
+;; File:            LITERALS_DESIGN.txt
+;; Created date:    11/23/2017
+;; Last update:     11/23/2017
+;; Author:          Rino Jose
+;; Description:     Describe the treatment of literals in Forrth
+;;
+
+A literal is any Forrth word not in the Dictionary_ that can be parsed as some value.
+Once a literal is parsed, its value is pushed onto the stack and a NOPEntry is returned for the address of the entry.
+If a literal cannot be parsed, NULL is returned for address of the entry;
+
+The value of a literal may take up more than one double word entry on the stack or in a parameter.
+Words that use literals must know what type of literal is on the stack.
+When a multi-slot literal value is stored in an Entry parameter, it is the responsibility of that entry to know how to handle it.
+
+
+HANDLING NUMBERS
+
+By default, literals are treated as signed integers.
+If the first part of a literal can be treated as an integer, it will be and the rest of the word will be ignored.
+To handle floating point, a special word must precede the literal. For example, "FLOAT 6.55" or "DOUBLE 2.334"
+
+
+PSEUDO ENTRIES FOR LITERALS DURING COMPILATION
+
+During compilation, a special PseudoEntry is compiled into the definition with the value of the literal immediately following it.
+A PseudoEntry for a literal simply pushes the value after it in the definition onto the stack and advances the instruction pointer.
+The instruction pointer and the entry must be known in order for a PseudoEntry to be executed properly.
+Different pseudo entries are needed to push literals of different sizes.

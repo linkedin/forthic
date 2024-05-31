@@ -1,0 +1,62 @@
+!!==============================================================================
+!! File:            PARSE_INPUT.txt
+!! Created date:    12/28/2017
+!! Last update:     12/28/2017
+!! Author:          Rino Jose
+!! Description:     Describes parsing input in Forrthtran
+!!
+
+We're going to use the same approach as in forrth-ts.
+We're going to look at a character at a time and use a state machine.
+
+I believe we should implement this closer to assembly than to typescript.
+The message buffer may contain multiple input strings.
+When input is loaded from a file, the entire file is copied to the message buffer.
+When a new input string is added to the message buffer, we push the previous position onto a
+"code stack".
+
+When input is to be executed, it is loaded into the MessageBuffer at the next position.
+After we copy input to the message buffer, we note the next available spot in the _csp variable.
+After we pop the message buffer, we set _csp to the start of the old input.
+
+We parse input by advancing mbpos through the message buffer and going through an FSM.
+We only parse one word at a time.
+
+After a string is copied to the message buffer, we know its length.
+
+We use the length and the mbpos to compute the index of the end of string.
+
+The cur_string variable stores the start and end indexes for the currently parsed string.
+
+As the string is parsed, the start index of cur_string is adjusted.
+
+STATE MACHINE
+
+If no more input (i.e., mbpos = end of string + 1)
+    If state == COLLECT_STRING or NORMAL, set end of word to mbpos-1 and return HAVE_WORD
+    Otherwise, return END_OF_STRING
+
+START:
+    If char is a space or newline, continue
+    If char is a #, set start of word to mbpos and set state to CHECK_COMMENT
+    If char is a ", set start of word to mbpos and set state to COLLECT_STRING
+    Otherwise, set start of word to mbpos and set state to NORMAL
+
+NORMAL:
+    If char is a space or newline, set end of word to mbpos-1, state=START, return HAVE_WORD
+    If char is a #, set state to CHECK_COMMENT
+    Otherwise, continue
+
+CHECK_COMMENT:
+    If char is a space, set end of word to mbpos-2, set state to SKIP_COMMENT
+        If start < end, result = HAVE_WORD
+        Otherwise, result NO_WORD
+    Otherwise, set state to NORMAL and continue
+
+SKIP_COMMENT:
+    If char is not a NEWLINE, continue
+    Otherwise, set state to START and continue
+
+COLLECT_STRING:
+    If char is ", set end of word to mbpos, state = START, return HAVE_WORD
+    Otherwise, continue

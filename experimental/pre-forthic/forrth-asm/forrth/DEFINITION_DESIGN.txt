@@ -1,0 +1,46 @@
+;;==============================================================================
+;; File:            DEFINITION_DESIGN.txt
+;; Created date:    11/25/2017
+;; Last update:     11/25/2017
+;; Author:          Rino Jose
+;; Description:     Describes defining and executing a definition
+;;
+
+DEFINING A DEFINITION
+
+The start of a definition is defined with a { : } word.
+The { : } word first reads the next word in using GetNextWord_ and writes is as the new entry's EntryWord.
+Next, the routine for the new entry is set to ExecuteDefinition using the SetRoutine macro
+Next, the Previous entry is set using SetPrevious.
+Finally, we set the control loop to "compiling mode" by setting the Compiling_ flag.
+The DP_ value is pushed onto the return stack to preserve it, and then DP_ is set to the first parameter of the new entry.
+In compiling mode, entries are written to DP_ and DP_ is advanced by 4. However, if the word has an Immediate flag, it is executed as if in "execution mode".
+In compiling mode, FindLiteralEntry_ behaves differently. It compiles a PushValue pseudo entry of some kind followed by the value to push.
+
+The word { ; } ends a definition.
+When { ; } is found, it is executed immediately by virtue of an Immediate flag in the Entry.
+The { ; } word executes an EndDefinition routine that compiles an ExitDefinition entry into the next parameter slot, pops the return stack to restore the DP_ pointer, calls CompleteEntry, and clears the Compiling flag.
+
+If an error occurs during compiling of a definition, the DP_ pointer must be restored
+
+
+EXECUTING A DEFINITION
+
+When a definition word is executed, its Routine, ExecuteDefinition, is called.
+ExecuteDefinition pushes the instruction pointer onto the return stack, sets IP_ to be the first parameter of the definition, and sets GetNextEntry_ to Next_I_
+On the next iteration of the control loop, GetNextEntry_ (being Next_I_) returns the routine address that IP_ points to and then advances IP_.
+The routine may also modify IP_ if needed. For instance, the pseudo entry to push an integer literal will push the value after IP_ onto the stack and then advance IP_.
+
+The last instruction in a definition is ExitDefinition.
+ExitDefinition pops the previous value from the return stack into IP_. If the return stack is empty, GetNextEntry_ is set to Next_W_.
+
+
+TEST DEFINITION WITH LITERALS
+
+* Put breakpoint on new entry
+* Observe parameters
+* Run word and observe stack
+
+TASKS
+
+* Rewrite all files

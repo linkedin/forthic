@@ -1,0 +1,7 @@
+app
+*.o
+*.swp
+.vscode
+test/test
+tmp
+old

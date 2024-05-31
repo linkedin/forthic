@@ -1,0 +1,43 @@
+!!==============================================================================
+!! File:            PROCESS_INPUT.txt
+!! Created date:    12/30/2017
+!! Last update:     01/02/2018
+!! Author:          Rino Jose
+!! Description:     Describes how input is processed
+!!
+
+GET NEXT ENTRY
+
+get_next_entry returns OK, END_OF_BUFFER, or ERROR.
+    OK means that an entry was found.
+    END_OF_BUFFER means we've reached the end of the message buffer.
+    ERROR means that something went wrong and we need to reset the forrth state.
+
+Some of these entries may be definitions.
+For definitions, get_next_entry returns the next instruction in that definition.
+Some of these entries may be "pseudo entries" that push literals onto the stack.
+
+
+PROCESS INPUT LOOP
+
+The process_input routine is called to process input in a forrth message buffer.
+While there is something to process in the message buffer, this calls get_next_entry.
+It executes each entry until there are no more entries.
+
+Some of these entries will be entries in the forrth dictionary.
+Some words may alter the message buffer.
+For instance, LOAD pushes the message buffer, loads a new buffer, runs it, and then restores.
+Similarly, INTERPRET pushes the buffer, sets the buffer to a string, runs it, and restores.
+
+When process_input gets END_OF_BUFFER, it should check the message buffer stack.
+If there are elements on the stack, it should pop one and then continue.
+In addition to the message buffer, we should also have a position in that buffer.
+
+
+APPENDIX
+
+In order to have an entry, we need to have procedure pointers.
+An example online (https://gist.github.com/Sharpie/349107) uses an interface.
+An INTERFACE is meant to convey type information between modules.
+We need to use an interface so that we can specify the type of a procedure pointer.
+Any routine that is the target of a function pointer also needs an interface.

@@ -1,0 +1,64 @@
+;;==============================================================================
+;; File:            REWRITE_1.txt
+;; Created date:    11/26/2017
+;; Last update:     11/26/2017
+;; Author:          Rino Jose
+;; Description:     Lays out thinking about forrth rewrite #1
+;;
+
+FILES
+
+CoreWords_.asm
+	Adds ":", ";" words. Defines ExitDefinition, EndDefinition, StartDefinition, AddCoreWords
+	Perhaps we could add another file called Definitions.asm?
+
+Dictionary_.asm
+	Defines FindEntry_ and MatchWord.
+	Perhaps other functions could go here?
+
+Error_.asm
+	Defines UnknownWordError, ResetInterpreterState
+
+forrth.cpp
+	We may want to combine calls to StoreInput_ and ProcessInput_ into a generic Run_ function.
+
+ForrthData_.asm
+	Defines all of the global data
+	We may want to move the comments to the public declarations and group them
+	We may want to move all of the data so far into this file and initialize it in one place
+	Lexicons would maintain their own data
+
+Initialize_.asm
+	Defines the Initialize_, AddStartEntry, and NOPEntry_
+	We may want to move this to the Forrth data file
+
+Literals_.asm
+	Defines FindLiteralEntry_, PushIntegerPseudoRoutine
+	We may want to move the routine and the entry to ForrthData
+
+ProcessInput_.asm
+	Defines ProcessInput_, Next_W_, GetNextWord_, Next_I_
+	We may want to rename this to Engine.asm
+	We may want to clean up some of the parsing.
+
+StoreInput_.asm
+	Defines StoreInput_
+	We may want to move this to an Engine.asm
+
+Constants.inc
+	Defines constants
+
+DictionaryMacros.inc
+	Defines macros for interacting with dictionary
+	Aside from a scrub, this seems to be fine
+
+Entity.inc
+	This is in good shape.
+
+
+GENERAL THOUGHTS
+
+We should remove the underscore from the filenames.
+The trailing underscore is a good convention for public filenames.
+We should do a general scrub of all files once the general rewrite lines are drawn. This will make things consistent.
+We should keep on the lookout for macros that might clean up things (stack operations, entry addition)

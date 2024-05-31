@@ -1,0 +1,11 @@
+.vs/
+*.swp
+*/bin/
+*/obj/
+obj
+bin
+packages/
+Debug/
+App2/
+Direct3D/
+Generated\ Files

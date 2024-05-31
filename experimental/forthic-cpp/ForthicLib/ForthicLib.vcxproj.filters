@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="ForthicLib.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Tokenizer.cpp" />
+    <ClCompile Include="Token.cpp" />
+    <ClCompile Include="Interpreter.cpp" />
+    <ClCompile Include="StackItems\StringItem.cpp" />
+    <ClCompile Include="StackItems\StackItem.cpp" />
+    <ClCompile Include="Words\Word.cpp" />
+    <ClCompile Include="Words\PushItemWord.cpp" />
+    <ClCompile Include="StackItems\ArrayItem.cpp" />
+    <ClCompile Include="StackItems\StartArrayItem.cpp" />
+    <ClCompile Include="Words\EndArrayWord.cpp" />
+    <ClCompile Include="Modules\GlobalItemGetters.cpp" />
+    <ClCompile Include="Modules\Module.cpp" />
+    <ClCompile Include="StackItems\VariableItem.cpp" />
+    <ClCompile Include="Words\DefinitionWord.cpp" />
+    <ClCompile Include="Modules\GlobalModule.cpp" />
+    <ClCompile Include="StackItems\ModuleItem.cpp" />
+    <ClCompile Include="StackItems\FloatItem.cpp" />
+    <ClCompile Include="StackItems\IntItem.cpp" />
+    <ClCompile Include="Modules\GlobalModuleWords.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ForthicLib.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Tokenizer.h" />
+    <ClInclude Include="Token.h" />
+    <ClInclude Include="Interpreter.h" />
+    <ClInclude Include="Defines.h" />
+    <ClInclude Include="StackItems\StringItem.h" />
+    <ClInclude Include="StackItems\StackItem.h" />
+    <ClInclude Include="Words\Word.h" />
+    <ClInclude Include="Words\PushItemWord.h" />
+    <ClInclude Include="StackItems\ArrayItem.h" />
+    <ClInclude Include="StackItems\StartArrayItem.h" />
+    <ClInclude Include="Words\EndArrayWord.h" />
+    <ClInclude Include="Modules\GlobalItemGetters.h" />
+    <ClInclude Include="Modules\Module.h" />
+    <ClInclude Include="StackItems\VariableItem.h" />
+    <ClInclude Include="Words\DefinitionWord.h" />
+    <ClInclude Include="Modules\GlobalModule.h" />
+    <ClInclude Include="StackItems\ModuleItem.h" />
+    <ClInclude Include="StackItems\FloatItem.h" />
+    <ClInclude Include="StackItems\IntItem.h" />
+    <ClInclude Include="Modules\GlobalModuleWords.h" />
+  </ItemGroup>
+</Project>

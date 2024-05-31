@@ -1,0 +1,22 @@
+;;==============================================================================
+;; File:            ERROR_DESIGN.txt
+;; Created date:    11/25/2017
+;; Last update:     11/25/2017
+;; Author:          Rino Jose
+;; Description:     Describes error handling
+;;
+
+One type of error is the invalid word.
+If a word is not in the dictionary and cannot be parsed as a literal, it is an invalid word.
+To handle an invalid word, we print the word and then reset the Forrth state.
+During the next pass of the control loop, the next word will be read from input.
+
+
+Another type of error is when something goes wrong with the execution of an instruction. 
+We must check the result of executing an instruction and indicate what went wrong if possible.
+After that, we reset the interpreter state.
+
+
+RESETTING FORRTH STATE
+
+To handle an invalid word, we print the word and then reset the parameter stack, return stack, instruction pointer, GetNextWord func ptr.

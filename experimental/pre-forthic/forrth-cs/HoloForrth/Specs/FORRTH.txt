@@ -1,0 +1,79 @@
+﻿;;==============================================================================
+;; File:            FORRTH.txt
+;; Created date:    12/03/2017
+;; Last update:     12/10/2017
+;; Author:          Rino Jose
+;; Description:     Describes general architecture of Forrth interpreter
+;;
+
+EXECUTION
+
+An Execute function is called to start processing.
+The first step is to break the input into an array of words.
+The next step is to examine each word.
+If there is an entry in the dictionary, the routine for that word is executed.
+If there isn't an entry, we try to interpret the word as a literal. Literals are pushed onto the stack
+This is repeated until all the words are exhausted.
+The GetNextEntry function should abstract away the differences between a word being executed and an instruction in a definition.
+
+ENTRIES
+
+An Entry has a word, paramters, and a routine.
+The routine is a .NET delegate.
+
+A dictionary is an array of entries.
+
+DEFINITIONS
+
+During the processing of input, a definition may be executed.
+A definition may cause the current word to be advanced or it might alter what the next word is.
+
+If a Forrth interpreter is in compiling mode, the entries that are found are added to the parameters of the entry being defined.
+
+Adding a lexicon should be done outside of the Forrth interpreter to make customization easier.
+
+
+EXECUTING A DEFINITION
+
+When a definition word is executed, its Routine, ExecuteDefinition, is called.
+ExecuteDefinition pushes the instruction pointer onto the return stack, sets IP_ to be the first parameter of the definition, and sets GetNextEntry_ to Next_I_
+On the next iteration of the control loop, GetNextEntry_ (being Next_I_) returns the routine address that IP_ points to and then advances IP_.
+The routine may also modify IP_ if needed. For instance, the pseudo entry to push an integer literal will push the value after IP_ onto the stack and then advance IP_.
+
+The last instruction in a definition is ExitDefinition.
+ExitDefinition pops the previous value from the return stack into IP_. If the return stack is empty, GetNextEntry_ is set to Next_W_.
+
+COMMENTS
+
+The pattern /# .*\n/ should mark a comment.
+Given a string, we can first split by \n.
+For each line, we can split by "# ". The first element will be code.
+For each of the elements, we can split by whitespace and create a linked list of words.
+
+
+STRINGS
+
+A string begins with a { ." } word and continues till the next { " }.
+We'll cheat a little on this one and do comparison on words split by spaces. What we lose is multiple spaces between words.
+
+
+INTERPRET AND LOAD
+
+The INTERPRET word takes a string from the stack and executes it.
+
+The string is wordified, the cur_word is pushed onto a cur_word stack, and cur_word is set to the first word of the new word list.
+
+In the main loop, if the cur_word_node is null and the cur_word stack has elements, we pop and restore the previous cur_word_node.
+
+To test this, try
+
+	." SAMPLE" INTERPRET SAMPLE
+
+This should result in SAMPLE being executed twice
+
+
+The LOAD word reads the next word and uses that as a block ID.
+
+The contents of the block are loaded as a string, pushed onto the stack, and then INTERPRETed.
+
+We will use a class to store all of the blocks and retrieve them.

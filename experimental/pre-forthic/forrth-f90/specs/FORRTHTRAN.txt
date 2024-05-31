@@ -1,0 +1,25 @@
+!!==============================================================================
+!! File:            FORRTHTRAN.txt
+!! Created date:    12/28/2017
+!! Last update:     12/28/2017
+!! Author:          Rino Jose
+!! Description:     Describes overall design of Forrthtran
+!!
+
+All constants should be defined in a constants.f90 file.
+
+The Forrth state should be held in a Forrth object.
+
+The Forrth state should be passed into every subroutine that works on Forrth.
+
+When parameters are built up, we should use a linked list.
+
+When a definition is done, we should allocate an array, copy the list, and free the list.
+
+We need to implement a linked list type.
+
+The linked list type will be used with the dictionary.
+
+When we parse words out of the message buffer, we will use two integers (start and end).
+
+This will be managed by a type called StringIndexes.
