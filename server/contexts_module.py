@@ -1,7 +1,8 @@
 """Provides contexts for modules that interact with external services/data
 """
-from forthic.v2.module import Module
-from forthic.v2.modules import (
+
+from forthic.module import Module
+from forthic.modules import (
     jira_module,
     gsheet_module,
     excel_module,
@@ -11,40 +12,40 @@ from forthic.utils.creds import Creds
 
 CONTEXTS = {}
 
-SECRETS_DIR = '.'
+SECRETS_DIR = "."
 
 
 class ContextsModule(Module):
     def __init__(self, interp):
-        super().__init__('contexts', interp, FORTHIC)
-        self.add_module_word('JIRA-PROD', self.word_JIRA_PROD)
-        self.add_module_word('JIRA-STG', self.word_JIRA_STG)
-        self.add_module_word('CONFLUENCE', self.word_CONFLUENCE)
-        self.add_module_word('GOOGLE', self.word_GOOGLE)
-        self.add_module_word('MSGRAPH', self.word_MSGRAPH)
+        super().__init__("contexts", interp, FORTHIC)
+        self.add_module_word("JIRA-PROD", self.word_JIRA_PROD)
+        self.add_module_word("JIRA-STG", self.word_JIRA_STG)
+        self.add_module_word("CONFLUENCE", self.word_CONFLUENCE)
+        self.add_module_word("GOOGLE", self.word_GOOGLE)
+        self.add_module_word("MSGRAPH", self.word_MSGRAPH)
 
     # ( -- JiraContext )
     def word_JIRA_PROD(self, interp):
         """Returns JiraContext based on JIRA creds in the .secrets file"""
-        result = self.get_jira_context('JIRA')
+        result = self.get_jira_context("JIRA")
         interp.stack_push(result)
 
     # ( -- JiraContext )
     def word_JIRA_STG(self, interp):
         """Returns JiraContext based on JIRA_STG creds in the .secrets file"""
-        result = self.get_jira_context('JIRA_STG')
+        result = self.get_jira_context("JIRA_STG")
         interp.stack_push(result)
 
     # ( -- ConfluenceContext )
     def word_CONFLUENCE(self, interp):
         """Returns ConfluenceContext based on CONFLUENCE creds in the .secrets file"""
-        result = ConfluenceContext('CONFLUENCE')
+        result = ConfluenceContext("CONFLUENCE")
         interp.stack_push(result)
 
     def word_GOOGLE(self, interp):
         creds = Creds(SECRETS_DIR)
-        app_creds = creds.get_app_creds('GOOGLE_APP')
-        auth_token = creds.get_oauth_token('GOOGLE_TOKEN')
+        app_creds = creds.get_app_creds("GOOGLE_APP")
+        auth_token = creds.get_oauth_token("GOOGLE_TOKEN")
 
         class GoogleCredsContext(gsheet_module.CredsContext):
             def get_app_creds(self):
@@ -57,8 +58,8 @@ class ContextsModule(Module):
 
     def word_MSGRAPH(self, interp):
         creds = Creds(SECRETS_DIR)
-        app_creds = creds.get_app_creds('MSGRAPH_APP')
-        auth_token = creds.get_oauth_token('MSGRAPH_TOKEN')
+        app_creds = creds.get_app_creds("MSGRAPH_APP")
+        auth_token = creds.get_oauth_token("MSGRAPH_TOKEN")
 
         class MSGraphCredsContext(excel_module.CredsContext):
             def get_app_creds(self):
@@ -91,13 +92,13 @@ class JiraContext(jira_module.JiraContext):
         return self.field
 
     def get_host(self):
-        return self.app_creds['host']
+        return self.app_creds["host"]
 
     def get_username(self):
-        return self.app_creds['username']
+        return self.app_creds["username"]
 
     def get_password(self):
-        return self.app_creds['password']
+        return self.app_creds["password"]
 
     # Uncomment to verify ssl certs in REST calls
     # def get_cert_verify(self):
@@ -115,17 +116,17 @@ class ConfluenceContext(confluence_module.ConfluenceContext):
         return self.field
 
     def get_host(self):
-        return self.app_creds['host']
+        return self.app_creds["host"]
 
     def get_username(self):
-        return self.app_creds['username']
+        return self.app_creds["username"]
 
     def get_password(self):
-        return self.app_creds['password']
+        return self.app_creds["password"]
 
     # Uncomment to verify ssl certs in REST calls
     # def get_cert_verify(self):
     #     return "/export/apps/openssl/ssl/cert.pem"
 
 
-FORTHIC = ''
+FORTHIC = ""

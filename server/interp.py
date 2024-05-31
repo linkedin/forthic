@@ -1,13 +1,13 @@
-from forthic.v3.interpreter import Interpreter
-from forthic.v3.modules.jira_module import JiraModule
-from forthic.v3.modules.cache_module import CacheModule
-from forthic.v3.modules.stats_module import StatsModule
-from forthic.v3.modules.org_module import OrgModule
-from forthic.v3.modules.ui_module import UIModule
-from forthic.v3.modules.gsheet_module import GsheetModule
-from forthic.v3.modules.jinja_module import JinjaModule
-from forthic.v3.modules.intake_module import IntakeModule
-from contexts_module_v3 import ContextsModule
+from forthic.interpreter import Interpreter
+from forthic.modules.jira_module import JiraModule
+from forthic.modules.cache_module import CacheModule
+from forthic.modules.stats_module import StatsModule
+from forthic.modules.org_module import OrgModule
+from forthic.modules.ui_module import UIModule
+from forthic.modules.gsheet_module import GsheetModule
+from forthic.modules.jinja_module import JinjaModule
+from forthic.modules.intake_module import IntakeModule
+from server.contexts_module import ContextsModule
 
 
 def get_interp(app_dir):

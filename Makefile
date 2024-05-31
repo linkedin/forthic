@@ -13,7 +13,7 @@ myenv:
 	python3 -m venv myenv
 
 install-forthic: myenv
-	source myenv/bin/activate && python -m pip install -U pip && pip install .
+	source myenv/bin/activate && python -m pip install -U pip && cd ./forthic-py && pip install . && pip install Flask
 
 test-py:
 	source myenv/bin/activate && python -m pytest tests/tests_py
