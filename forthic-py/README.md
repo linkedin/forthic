@@ -9,7 +9,7 @@ The [SYNTAX.md](https://github.com/linkedin/forthic/blob/main/docs/SYNTAX.md) fi
 The [IDIOMS.md](https://github.com/linkedin/forthic/blob/main/docs/IDIOMS.md) file gives pointers on how to use Forthic the way it was designed to be used.
 The [ARCHITECTURE.md](https://github.com/linkedin/forthic/blob/main/docs/ARCHITECTURE.md) file shows how Forthic interpreters can work within apps.
 
-Forthic modules are documented in the [modules](https://github.com/linkedin/forthic/tree/main/docs/modules) directory.
+Forthic modules are documented in the [modules](https://github.com/linkedin/forthic/tree/main/forthic-py/docs) directory.
 
 ### YouTube
 

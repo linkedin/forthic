@@ -15,7 +15,7 @@ The [SYNTAX.md](docs/SYNTAX.md) file shows what the language looks like, includi
 The [IDIOMS.md](docs/IDIOMS.md) file gives pointers on how to use Forthic the way it was designed to be used.
 The [ARCHITECTURE.md](docs/ARCHITECTURE.md) file shows how Forthic interpreters can work within apps.
 
-Forthic modules are documented in the [modules](./docs/modules/)
+Forthic modules are documented in the [modules](./forthic-py/docs/)
 
 ### YouTube
 
