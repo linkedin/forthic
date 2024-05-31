@@ -7,6 +7,12 @@ run:
 	HTTPS=true BROWSER=none npm run start
 
 test:
+	@echo
+	@echo "Forthic React tests"
+	@echo "============"
+	CI=1 npm run test
+
+run-test:
 	npm run test
 
 build:

@@ -1,11 +1,9 @@
 SHELL := /bin/bash
 TOX_INI = -c ./forthic-py/tox.ini
 
-.PHONY: install-forthic test test-js credentials-server examples docs
+.PHONY: install-forthic test credentials-server
 
-# ----- Deprecated targets -----------------------------------------------------
-## NOTE: These are deprecated targets that are only useful for LinkedIn internal apps and
-##       the older Coding Forthic videos.
+# ----- Example server --------------------------------------------------------
 example-server: install-forthic
 	source myenv/bin/activate && cd server && FLASK_APP=run.py FLASK_DEBUG=true flask run --port=8000
 
@@ -15,47 +13,35 @@ myenv:
 install-forthic: myenv
 	source myenv/bin/activate && python -m pip install -U pip && cd ./forthic-py && pip install . && pip install Flask
 
-test-py:
-	source myenv/bin/activate && python -m pytest tests/tests_py
-
 delete-secrets:
 	rm server/.key
 	rm server/.secrets
 
-build-forthic-react:
-	cd forthic-react/v1 && make build
-
-test-all: test-py test-react test-js
-
 credentials-server:
 	FLASK_APP=apps/setup/run.py flask run --port=8000
 
-
-# ----- Python package targets ------------------------------------------------
-## These targets are used to test and build the Forthic Python package
-test: myenv
-	source myenv/bin/activate && pip install tox && tox $(TOX_INI)
-
-qa: myenv
-	source myenv/bin/activate && pip install tox && tox $(TOX_INI) -eqa
+build-forthic-react:
+	cd forthic-react/v1 && make build
 
 
-# ----- Other test targets -----------------------------------------------------
-# NOTE: The Forthic JS code has been deprecated. Please use Forthic React for client side work
+# ----- Tests ------------------------------------------------------------------
+
+test-py:
+	cd forthic-py && make test
+
 test-js:
-	@echo
-	@echo "Forthic JS tests"
-	@echo "============"
-	node --experimental-modules ./forthic-js/tests/test_all.mjs
+	cd forthic-js && make test
 
 test-react:
-	@echo
-	@echo "Forthic React tests"
-	@echo "============"
-	cd forthic-react/v1 && npm install && CI=1 npm run test
+	cd forthic-react/v1 && make test
+
+test-all: test-py test-js test-react
+
 
 test-rs:
-	@echo
-	@echo "Forthic Rust tests"
-	@echo "============"
-	cargo test --manifest-path forthic-rs/tests/Cargo.toml
+	cd experimental/forthic-rs && make test
+
+test-zig:
+	cd experimental/forthic-zig && make test
+
+test-experimental: test-rs test-zig
