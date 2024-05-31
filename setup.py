@@ -27,7 +27,7 @@ setup(
     # readthedocs builds fail unless zip_safe is False.
     zip_safe=False,
     install_requires=[
-        "urllib3==1.26.10",
+        "urllib3",
         "pytz",
         "cryptography",
         "python-dateutil",
