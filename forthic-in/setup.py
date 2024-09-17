@@ -16,7 +16,6 @@ setup(
     long_description_content_type="text/markdown",
     license="BSD 2-CLAUSE LICENSE",
     keywords="forth language",
-    url="https://forthic.readthedocs.io",
     download_url="https://github.com/linkedin/forthic",
     packages=find_namespace_packages(
         where=".", exclude=["test*", "docs", "forthic-js", "apps"]
@@ -39,7 +38,6 @@ setup(
         "pandas",
     ],
     project_urls={
-        "Documentation": "https://forthic.readthedocs.io",
         "Source": "https://github.com/linkedin/forthic",
         "Tracker": "https://github.com/linkedin/forthic/issues",
     },
