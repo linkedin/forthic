@@ -8,6 +8,7 @@ from forthic.modules.gsheet_module import GsheetModule
 from forthic.modules.jinja_module import JinjaModule
 from forthic.modules.intake_module import IntakeModule
 from server.contexts_module import ContextsModule
+from server.simple_module import SimpleModule
 
 
 def get_interp(app_dir):
@@ -29,4 +30,5 @@ def get_interp(app_dir):
     interp.register_module(OrgModule)
     interp.register_module(UIModule)
     interp.register_module(IntakeModule)
+    interp.register_module(SimpleModule)
     return interp
