@@ -10,7 +10,7 @@ readme = "README.md"
 version = "4.0.0"
 description = "A stack-based language for concisely building tweakable apps"
 dependencies = [
-    "urllib3",
+    "urllib3 == 1.26.15",
     "pytz",
     "cryptography",
     "python-dateutil",

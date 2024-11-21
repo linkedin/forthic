@@ -86,23 +86,13 @@ class JiraContext(jira_module.JiraContext):
         self.field = field
         creds = Creds(SECRETS_DIR)
         self.app_creds = creds.get_password_creds(field)
-        super().__init__()
+        host = self.app_creds["host"]
+        username = self.app_creds["username"]
+        password = self.app_creds["password"]
+        super().__init__(host, username, password)
 
     def get_field(self):
         return self.field
-
-    def get_host(self):
-        return self.app_creds["host"]
-
-    def get_username(self):
-        return self.app_creds["username"]
-
-    def get_password(self):
-        return self.app_creds["password"]
-
-    # Uncomment to verify ssl certs in REST calls
-    # def get_cert_verify(self):
-    #     return "/export/apps/openssl/ssl/cert.pem"
 
 
 class ConfluenceContext(confluence_module.ConfluenceContext):

@@ -1,4 +1,4 @@
 ["simple"] USE-MODULES
 
-: RUN         2 3 + 4 *;
+: RUN         2 5 + 4 *;
 : MAIN-PAGE   ["<code>"  RUN >JSON  "</code>"] CONCAT;

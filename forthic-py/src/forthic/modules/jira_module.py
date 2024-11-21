@@ -9,6 +9,7 @@ from ..module import Module
 from ..global_module import drill_for_value
 from collections import defaultdict
 from ..utils.errors import JiraError, UnauthorizedError
+import certifi
 from ..interfaces import IInterpreter
 from typing import List, Any, Dict, Optional
 
@@ -954,7 +955,10 @@ class JiraModule(Module):
 class JiraContext:
     """Override this and pass to PUSH-CONTEXT! in order to make Jira calls"""
 
-    def __init__(self):
+    def __init__(self, host, username, password):
+        self.host = host
+        self.username = username
+        self.password = password
         self.field_map = self.get_field_map()
         self.field_name_to_id = self.make_field_name_to_id()
         self.field_to_schema = self.make_field_schema()
@@ -1050,21 +1054,21 @@ class JiraContext:
             )
         return result
 
-    def get_field(self):
-        return None
-
-    def get_host(self):
-        return None
-
     # Override this to supply the path to the cert file to use. Use False to skip verification
     def get_cert_verify(self):
-        return False
+        return certifi.where()
+
+    def get_field(self):
+        return "JIRA"
+
+    def get_host(self):
+        return self.host
 
     def get_username(self):
-        return None
+        return self.username
 
     def get_password(self):
-        return None
+        return self.password
 
 
 JIRA_FORTHIC = """

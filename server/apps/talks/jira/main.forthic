@@ -1,0 +1,11 @@
+["jira" "contexts" "cache"] USE-MODULES
+
+contexts.JIRA-PROD jira.PUSH-CONTEXT!
+
+: JQL       "resolution = null and updated > -60d";
+: FIELDS    ["Summary"  "Assignee" "Status"];
+: TICKETS   JQL FIELDS jira.SEARCH;
+
+TICKETS
+# TICKETS "Assignee" GROUP-BY-FIELD "LENGTH" MAP  "tickets" cache.CACHE!
+

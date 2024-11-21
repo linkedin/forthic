@@ -55,6 +55,64 @@ def home():
     }
     return render_template("home.html", apps=apps)
 
+@app.route("/talks/<app>/")
+def forthic_talks_app(app):
+    """
+    Renders a Forthic app for a talk
+    """
+    group = "talks"
+    app_directory = f"./apps/{group}/{app}"
+    interp = get_interp(app_directory)
+
+    try:
+        run_app_forthic(interp, app_directory)
+        if len(interp.stack) > 0:
+            content = interp.stack_pop()
+        else:
+            content = None
+
+        main_page = json.dumps(content)
+
+
+    # The secrets file is where we store all passwords/tokens/credentials (encrypted)
+    except MissingSecretsFile:
+        creds.ensure_secrets_file()
+        return redirect(url_for("forthic_app", group=group, app=app))
+
+    # Some credentials require a username and password
+    except (MissingPasswordCreds, UnauthorizedError) as e:
+        return redirect(
+            url_for(
+                "update_password_form", group=group, app=app, field=e.field
+            )
+        )
+
+    # For some services (like Google), we need to authenticate our Forthic app itself so we can access the APIs
+    except MissingAppCreds as e:
+        return redirect(
+            url_for(
+                "update_app_creds_form", group=group, app=app, field=e.field
+            )
+        )
+
+    # Some services require an OAuth/access token
+    except MissingOAuthToken as e:
+        session["group"] = group
+        session["app"] = app
+        if e.field == "GOOGLE_TOKEN":
+            return redirect(get_google_auth_url())
+        else:
+            raise RuntimeError(f"Unknown OAuth token type: {e.field}")
+
+    # At this point, we were able to run the app Forthic and "MAIN-PAGE"
+    if isinstance(main_page, str):
+        result = render_template("talks.html", main_page=main_page)
+    else:
+        raise RuntimeError(f"Unable to render main_page: {main_page}")
+
+    return result
+
+
 
 @app.route("/<group>/<app>/")
 @app.route("/<group>/<app>/<path:rest>")
