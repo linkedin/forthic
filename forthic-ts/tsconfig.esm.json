@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/esm",
+    "module": "NodeNext",
+    "target": "ES2021",
+    "declaration": true,
+    "sourceMap": true,
+    "moduleResolution": "nodenext"
+  },
+  "include": ["src"],
+  "exclude": ["src/**/__tests__", "src/**/__mocks__", "src/**/tests"]
+}
