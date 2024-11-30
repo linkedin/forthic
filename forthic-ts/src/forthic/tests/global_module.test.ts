@@ -395,6 +395,26 @@ test("Groups of", async () => {
   expect(groups[2]).toEqual([7, 8]);
 });
 
+test("Groups of record", async () => {
+  await interp.run(`
+    [
+      ['a' 1]
+      ['b' 2]
+      ['c' 3]
+      ['d' 4]
+      ['e' 5]
+      ['f' 6]
+      ['g' 7]
+      ['h' 8]
+    ] REC 3 GROUPS-OF
+  `);
+  const groups = interp.stack_pop();
+  expect(groups[0]).toEqual({ a: 1, b: 2, c: 3 });
+  expect(groups[1]).toEqual({ d: 4, e: 5, f: 6 });
+  expect(groups[2]).toEqual({ g: 7, h: 8 });
+});
+
+
 test("Groups of using record", async () => {
   // Test grouping a record
   interp = new Interpreter();
@@ -1666,6 +1686,18 @@ test("Parallel map", async () => {
   expect(interp.stack_pop()).toEqual([1, 4, 9, 16, 25]);
 });
 
+test("Parallel map over record", async () => {
+  await interp.run(`
+    [
+      ['a' 1]
+      ['b' 2]
+      ['c' 3]
+      ['d' 4]
+    ] REC "3 *" 2 !INTERPS MAP
+    `);
+  expect(interp.stack_pop()).toEqual({ a: 3, b: 6, c: 9, d: 12 });
+});
+
 test("|REC@|", async () => {
   interp.stack_push([{ a: 1 }, { a: 2 }, { a: 3 }]);
   await interp.run(`'a' |REC@`);
@@ -1828,3 +1860,9 @@ test("ADD-DAYS", async () => {
   const res1 = interp.stack_pop();
   console.log("ADD-DAYS", res1);
 });
+
+test(".s", async () => {
+  await interp.run("1 2 .s 3 4");
+  const res1 = interp.stack_pop();
+  expect(res1).toEqual(2);
+})

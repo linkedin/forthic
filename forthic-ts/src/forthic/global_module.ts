@@ -2638,7 +2638,13 @@ export class GlobalModule extends Module {
   // ( -- )
   word_dot_s(interp: Interpreter) {
     const stack = (interp as any).stack;
-    console.log(stack);
+    if (stack.length > 0) {
+      console.log(stack[stack.length - 1]);
+    }
+    else {
+      console.log("<STACK EMPTY>");
+    }
+    interp.halt()
   }
 
   // ( a b -- a - b )

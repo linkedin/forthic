@@ -19,7 +19,7 @@ export class MapWord {
   push_error?: boolean;
   with_key?: boolean;
   cur_index: number;
-  result: any[];
+  result: any[] | { [key: string]: any };
   errors: any[];
   is_debugging: boolean;
   processing_item: boolean;
@@ -64,7 +64,10 @@ export class MapWord {
     this.result = [];
     this.errors = [];
     if (this.num_interps > 1) {
-      const group_size = Math.ceil(items.length / this.num_interps);
+      interp.stack_push(items)
+      await interp.run("LENGTH");
+      const num_items = interp.stack_pop();
+      const group_size = Math.ceil(num_items / this.num_interps);
       interp.stack_push(items);
       interp.stack_push(group_size);
       await interp.run("GROUPS-OF");
@@ -82,13 +85,21 @@ export class MapWord {
       const run_results = await Promise.all(interp_runs);
 
       // Gather results
-      let result = [];
+      const is_array = items instanceof Array;
+      let array_result = []
+      let object_result = {}
       let errors = [];
       for (const res of run_results) {
-        result = [...result, ...res[0]];
+        if (is_array) {
+          array_result = [...array_result, ...res[0]]
+        }
+        else {
+          object_result = { ...object_result, ...res[0] };
+        }
+
         errors = [...errors, ...res[1]];
       }
-      this.result = result;
+      this.result = is_array ? array_result : object_result;
       this.errors = errors;
     } else {
       await this.map(interp, items);

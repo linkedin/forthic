@@ -73,6 +73,7 @@ export class Interpreter {
   private module_stack: Module[];
   private registered_modules: { [key: string]: Module };
   private is_compiling: boolean;
+  private should_stop: boolean;
   private is_memo_definition: boolean;
   private cur_definition: any; // Assuming this can be of any type, update if you have a specific type
   private screens: { [key: string]: any }; // Assuming screens can be of any type, update if you have a specific type
@@ -96,6 +97,7 @@ export class Interpreter {
     this.module_stack = [this.app_module];
     this.registered_modules = {};
     this.is_compiling = false;
+    this.should_stop = false;
     this.is_memo_definition = false;
     this.cur_definition = null;
     this.screens = {};
@@ -112,6 +114,10 @@ export class Interpreter {
     this.is_profiling = false;
     this.start_profile_time = null;
     this.timestamps = [];
+  }
+
+  halt() {
+    this.should_stop = true;
   }
 
   get_app_module(): Module {
@@ -194,6 +200,10 @@ export class Interpreter {
       try {
         await this.handle_token(token);
         if (token.type === TokenType.EOS) {
+          break;
+        }
+        if (this.should_stop) {
+          this.should_stop = false;
           break;
         }
 
