@@ -81,6 +81,8 @@ These proto-implementations can also serve as starting points for complete Forth
 
 | Host Language                         | Comments                                                                                   |
 | ------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [TypeScript](./forthic-ts/)           | Essentially complete and available on NPM at [@forthic/interp](https://www.npmjs.com/package/@forthic/interp) |
+| [Ruby](./forthic-rb/)                 | Essentially complete|
 | [C++](./experimental/forthic-cpp/)    | Proof of concept using C++ in .NET                                                         |
 | [Haskell](./experimental/forthic-hs)  | An experiment to see if a Forthic interpreter could be built in a pure functional language |
 | [Julia](./experimental/forthic-jl)    | Proof of concept in Julia                                                                  |
