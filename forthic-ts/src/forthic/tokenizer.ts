@@ -1,5 +1,3 @@
-import { ForthicError, ICodeLocation } from "./ForthicError";
-
 // -------------------------------------
 // Tokenizer
 export enum TokenType {
@@ -47,7 +45,7 @@ export class Tokenizer {
 
   constructor(string: string, reference_location: CodeLocation | null = null) {
     if (!reference_location) {
-      reference_location = new CodeLocation({ screen_name: "<ad-hoc>" });
+      reference_location = new CodeLocation({ screen_name: "<string>" });
     }
     this.reference_location = reference_location;
     this.line = reference_location.line;
@@ -129,13 +127,7 @@ export class Tokenizer {
       for (i = 0; i < -num_chars; i++) {
         this.input_pos -= 1;
         if (this.input_pos < 0 || this.column < 0) {
-          throw new ForthicError(
-            "tokenizer-107",
-            `Tried advancing position backwards by ${-num_chars} but position is now invalid (${
-              this.input_pos
-            })`,
-            "Check to see if you're trying to advance past the beginning of the input",
-          );
+          throw new InvalidInputPositionError(this.input_string, this.get_token_location());
         }
         if (this.input_string[this.input_pos] === "\n") {
           this.line -= 1;
@@ -226,22 +218,14 @@ export class Tokenizer {
 
       if (this.is_whitespace(char)) continue;
       else if (this.is_quote(char)) {
-        // throw new ForthixError(
-        //     TokenType.NO_QUOTES_IN_NAME,
-        //     120,
-        //     `Definition names can't have quotes in them: ${this.input_string.substr(start_pos, this.input_pos)}`,
-        // );
+        throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Definition names can't have quotes in them");
       } else {
         this.advance_position(-1);
         return this.transition_from_GATHER_DEFINITION_NAME();
       }
     }
 
-    throw new ForthicError(
-      "tokenizer-120",
-      "Got EOS in START_DEFINITION",
-      "Check to see if you're missing a closing character",
-    );
+    throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Got EOS in START_DEFINITION");
   }
 
   transition_from_START_MEMO(): Token {
@@ -251,22 +235,14 @@ export class Tokenizer {
 
       if (this.is_whitespace(char)) continue;
       else if (this.is_quote(char))
-        throw new ForthicError(
-          "tokenizer-130",
-          "Definitions shouldn't have quotes in them",
-          "Check to see if you're missing a closing character",
-        );
+        throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Memo names can't have quotes in them");
       else {
         this.advance_position(-1);
         return this.transition_from_GATHER_MEMO_NAME();
       }
     }
 
-    throw new ForthicError(
-      "tokenizer-130",
-      "Got EOS in START_MEMO",
-      "Check to see if you're missing a closing character",
-    );
+    throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Got EOS in START_MEMO");
   }
 
   gather_definition_name(): void {
@@ -275,18 +251,11 @@ export class Tokenizer {
       this.advance_position(1);
       if (this.is_whitespace(char)) break;
       if (this.is_quote(char)) {
-        // throw new ForthixError(
-        //     TokenType.NO_QUOTES_IN_NAME,
-        //     153,
-        //     `Definition names can't have quotes in them: ${this.input_string.substr(start_pos, this.input_pos)}`,
-        // );
+        throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Definition names can't have quotes in them");
       }
-      if (["[", "]", "{", "}"].indexOf(char) >= 0)
-        throw new ForthicError(
-          "tokenizer-153",
-          `Definitions can't have '${char}' in them`,
-          "Check to see if you're missing a closing character",
-        );
+      if (["[", "]", "{", "}"].indexOf(char) >= 0) {
+        throw new InvalidWordNameError(this.input_string, this.get_token_location(), `Definition names can't have '${char}' in them`);
+      }
       this.token_string += char;
     }
   }
@@ -350,11 +319,8 @@ export class Tokenizer {
         this.token_string += char;
       }
     }
-    throw new ForthicError(
-      "tokenizer-295",
-      `Unterminated string: ${delim}${delim}${delim}${this.token_string}`,
-      "Check to see if you're missing a closing quote",
-    );
+
+    throw new UnterminatedStringError(this.input_string, this.get_token_location());
   }
 
   transition_from_GATHER_STRING(delim: string): Token {
@@ -372,11 +338,7 @@ export class Tokenizer {
         );
       else this.token_string += char;
     }
-    throw new ForthicError(
-      "tokenizer-295",
-      `Unterminated string: ${delim}${this.token_string}`,
-      "Check to see if you're missing a closing quote",
-    );
+    throw new UnterminatedStringError(this.input_string, this.get_token_location());
   }
 
   transition_from_GATHER_WORD(): Token {
@@ -398,7 +360,7 @@ export class Tokenizer {
   }
 }
 
-export class CodeLocation implements ICodeLocation {
+export class CodeLocation {
   screen_name: string;
   line: number;
   column: number;
@@ -431,5 +393,54 @@ export class PositionedString {
 
   valueOf(): string {
     return this.string;
+  }
+}
+
+
+class TokenizerError extends Error {
+  constructor(private note: string, private input: string, private location: CodeLocation) {
+
+    const message = `${note} from ${location.start_pos} to ${location.end_pos} in '${input}'`;
+    super(message);
+    this.name = "TokenizerError";
+  }
+
+  getNote(): string {
+    return this.note;
+  }
+
+  getInput(): string {
+    return this.input;
+  }
+
+  getLocation(): CodeLocation {
+    return this.location;
+  }
+
+  getMessage(): string {
+    return this.message;
+  }
+
+}
+
+export class InvalidInputPositionError extends TokenizerError {
+  constructor(input: string, location: CodeLocation) {
+    super("Invalid input position", input, location);
+    this.name = "InvalidInputPositionError";
+  }
+}
+
+export class InvalidWordNameError extends TokenizerError {
+  constructor(input: string, location: CodeLocation, note: string) {
+    const message = `Invalid word name: ${note}`;
+    super(message, input, location);
+    this.name = "InvalidWordNameError";
+  }
+}
+
+export class UnterminatedStringError extends TokenizerError {
+  constructor(input: string, location: CodeLocation) {
+    super("Unterminated string", input, location);
+    this.name = "UnterminatedStringError";
   }
 }

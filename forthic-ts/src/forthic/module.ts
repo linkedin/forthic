@@ -1,4 +1,4 @@
-import { ForthicError } from "./ForthicError";
+import { WordExecutionError } from "./errors";
 import { Interpreter } from "./interpreter";
 import { CodeLocation } from "./tokenizer";
 
@@ -98,14 +98,7 @@ export class DefinitionWord extends Word {
       try {
         await word.execute(interp);
       } catch (e) {
-        const error = new ForthicError(
-          "module-65",
-          `Error executing word ${word.name}`,
-          `Error in ${this.name} definition`,
-          interp.get_string_location(),
-        );
-        error.set_caught_error(e);
-        throw error;
+        throw new WordExecutionError(word.name, e, interp.get_string_location());
       }
     }
   }

@@ -1,4 +1,4 @@
-import { Tokenizer, CodeLocation } from "../tokenizer";
+import { Tokenizer, CodeLocation, InvalidWordNameError, UnterminatedStringError } from "../tokenizer";
 
 test("Knows token positions", () => {
   const main_forthic = `
@@ -195,3 +195,44 @@ test("Knows token location in ad hoc string given reference", () => {
     end_pos: 87,
   });
 });
+
+
+test("Invalid word name", () => {
+  const reference_location = new CodeLocation({
+    screen_name: "main",
+    line: 1,
+    column: 1,
+    start_pos: 0,
+  });
+
+  const main_forthic = ": John's-Word   1 23 +;";
+
+  try {
+    const tokenizer = new Tokenizer(main_forthic, reference_location);
+    tokenizer.next_token();
+  }
+  catch (e) {
+    expect(e).toBeInstanceOf(InvalidWordNameError);
+  }
+});
+
+
+test("Unterminated string", () => {
+  const reference_location = new CodeLocation({
+    screen_name: "main",
+    line: 1,
+    column: 1,
+    start_pos: 0,
+  });
+
+  const main_forthic = "'key";
+
+  try {
+    const tokenizer = new Tokenizer(main_forthic, reference_location);
+    tokenizer.next_token();
+  }
+  catch (e) {
+    expect(e).toBeInstanceOf(UnterminatedStringError);
+    console.log(e.message);
+  }
+})

@@ -1,8 +1,17 @@
 import { TokenType, Token, Tokenizer, CodeLocation } from "./tokenizer";
 import { Module, Word, PushValueWord, DefinitionWord } from "./module";
 import { GlobalModule } from "./global_module";
-import { ForthicError } from "./ForthicError";
 import { PositionedString } from "./tokenizer";
+import {
+  UnknownWordError,
+  UnknownScreenError,
+  UnknownModuleError,
+  StackUnderflowError,
+  UnknownTokenError,
+  MissingSemicolonError,
+  ExtraSemicolonError,
+  ModuleError
+ } from "./errors";
 
 type Timestamp = {
   label: string;
@@ -72,6 +81,7 @@ export class Interpreter {
   private app_module: Module;
   private module_stack: Module[];
   private registered_modules: { [key: string]: Module };
+  private tokenizer: Tokenizer;
   private is_compiling: boolean;
   private should_stop: boolean;
   private is_memo_definition: boolean;
@@ -114,6 +124,10 @@ export class Interpreter {
     this.is_profiling = false;
     this.start_profile_time = null;
     this.timestamps = [];
+  }
+
+  get_stack(): any[] {
+    return this.stack;
   }
 
   halt() {
@@ -173,15 +187,20 @@ export class Interpreter {
 
   get_screen_forthic(screen_name: string): string {
     const screen = this.screens[screen_name];
-    if (!screen)
-      throw new ForthicError(
-        "interpreter-199",
-        `Unable to find screen "${screen_name}"`,
-        "Hmmm...something went wrong. Please file a ticket if this continues to happen",
-      );
+    if (!screen) {
+      throw new UnknownScreenError(screen_name, this.string_location);
+    }
 
     const result = screen;
     return result;
+  }
+
+  prime(
+    string: string,
+    reference_location: CodeLocation | null = null,
+  ){
+    const tokenizer = new Tokenizer(string, reference_location);
+    this.tokenizer = tokenizer;
   }
 
 
@@ -193,11 +212,16 @@ export class Interpreter {
     return await this.run_with_tokenizer(tokenizer);
   }
 
+  async continue() {
+    await this.run_with_tokenizer(this.tokenizer);
+    return
+  }
+
   async run_with_tokenizer(tokenizer: Tokenizer): Promise<boolean> {
+    this.tokenizer = tokenizer;
     let token: Token;
     do {
       token = tokenizer.next_token();
-      try {
         await this.handle_token(token);
         if (token.type === TokenType.EOS) {
           break;
@@ -217,22 +241,6 @@ export class Interpreter {
           continue;
         }
 
-      } catch (e) {
-        console.error(
-          "run_with_tokenizer",
-          token,
-          this.string_location,
-          tokenizer.reference_location,
-        );
-        const error = new ForthicError(
-          "interpreter-213",
-          `Ran into an error executing this '${token.string}'`,
-          "If there is an unknown error in the stack details, please file a ticket so we can resolve it.",
-          token.location,
-        );
-        error.set_caught_error(e);
-        throw error;
-      }
       // eslint-disable-next-line no-constant-condition
     } while (true);
     return true; // Done executing
@@ -245,13 +253,7 @@ export class Interpreter {
 
   find_module(name: string): Module {
     const result = this.registered_modules[name];
-    if (result === undefined) {
-      throw new ForthicError(
-        "interpreter-236",
-        `Couldn't find '${name}' module`,
-        `This is most likely a typo in your Forthic code. Please check to see if '${name}' is properly spelled and that you have permission to access it`,
-      );
-    }
+    if (result === undefined)   throw new UnknownModuleError(name, this.string_location);
     return result;
   }
 
@@ -261,11 +263,7 @@ export class Interpreter {
 
   stack_pop(): any {
     if (this.stack.length == 0) {
-      throw new ForthicError(
-        "interpreter-251",
-        "Stack underflow",
-        "This happens when we expect something to be on the stack, but it's empty. This is caused by a logical error in the Forthic and can be resolved through debugging.",
-      );
+      throw new StackUnderflowError(this.string_location);
     }
     let result = this.stack.pop();
 
@@ -296,13 +294,7 @@ export class Interpreter {
     try {
       await this.run(module.forthic_code);
     } catch (e) {
-      const error = new ForthicError(
-        "interpreter-278",
-        `Something went wrong when running the module ${module.name}`,
-        "TODO: File a ticket",
-      );
-      error.set_caught_error(e);
-      throw error;
+      throw new ModuleError(module.name, e, this.string_location);
     }
 
     this.module_stack_pop();
@@ -389,12 +381,7 @@ export class Interpreter {
     else if (token.type == TokenType.EOS) {
       return;
     } else {
-      throw new ForthicError(
-        "interpreter-362",
-        `Hmmm...the interpreter doesn't know what to make of '${token.string}'`,
-        "This is most likely caused by a typo in the Forthic code and can be resolved by debugging.",
-        token.location,
-      );
+      throw new UnknownTokenError(token.string, this.string_location);
     }
   }
 
@@ -436,12 +423,7 @@ export class Interpreter {
 
   handle_start_definition_token(token: Token) {
     if (this.is_compiling) {
-      throw new ForthicError(
-        "interpreter-407",
-        "A definition was started while an existing definition was not ended",
-        "This is probably caused by a missing semicolon. To resolve, ensure that all word definitions end with semicolons.",
-        token.location,
-      );
+      throw new MissingSemicolonError(token.location);
     }
     this.cur_definition = new DefinitionWord(token.string);
     this.is_compiling = true;
@@ -450,12 +432,7 @@ export class Interpreter {
 
   handle_start_memo_token(token: Token) {
     if (this.is_compiling) {
-      throw new ForthicError(
-        "interpreter-420",
-        "A memo definition was started while an existing definition was not ended",
-        "This is probably caused by a missing semicolon. To resolve, ensure that all word definitions end with semicolons.",
-        token.location,
-      );
+      throw new MissingSemicolonError(token.location);
     }
     this.cur_definition = new DefinitionWord(token.string);
     this.is_compiling = true;
@@ -463,21 +440,8 @@ export class Interpreter {
   }
 
   handle_end_definition_token(token: Token) {
-    if (!this.is_compiling) {
-      throw new ForthicError(
-        "interpreter-433",
-        "A definition was ended when one hadn't been started yet",
-        "This is probably caused by an extra semicolon. To resolve, ensure that there are no spurious semicolons in the Forthic code.",
-        token.location,
-      );
-    }
-    if (!this.cur_definition) {
-      throw new ForthicError(
-        "interpreter-440",
-        "Cannot finish definition because there is no current definition",
-        "Please file a ticket",
-        token.location,
-      );
+    if (!this.is_compiling || !this.cur_definition) {
+      throw new ExtraSemicolonError(token.location);
     }
 
     if (this.is_memo_definition) {
@@ -490,14 +454,7 @@ export class Interpreter {
 
   async handle_word_token(token: Token) {
     const word = this.find_word(token.string);
-    if (!word) {
-      throw new ForthicError(
-        "interpreter-458",
-        `Could not find word: ${token.string}`,
-        "Check to see if you have a typo in your word or the definition of that word",
-        token.location,
-      );
-    }
+    if (!word) throw new UnknownWordError(token.string, token.location);
     await this.handle_word(word, token.location);
     return;
   }

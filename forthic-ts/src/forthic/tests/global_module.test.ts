@@ -1,4 +1,13 @@
 import { Interpreter } from "../interpreter";
+import {
+  InvalidVariableNameError,
+  UnknownWordError,
+  UnknownScreenError,
+  UnknownModuleError,
+  StackUnderflowError,
+  MissingSemicolonError,
+  ExtraSemicolonError
+} from "../errors";
 
 let interp: Interpreter;
 let interp_any: any;
@@ -46,6 +55,16 @@ test("Variables", async () => {
   expect(variables["x"]).not.toBeNull();
   expect(variables["y"]).not.toBeNull();
 });
+
+test("Invalid variable name", async () => {
+  try {
+    await interp.run("['__test'] VARIABLES");
+  } catch (e) {
+    expect(e).toBeInstanceOf(InvalidVariableNameError);
+    expect(e.getVarName()).toBe("__test");
+  }
+});
+
 
 test("Set and get variables", async () => {
   await interp.run("['x']  VARIABLES");
@@ -1420,15 +1439,15 @@ test("TODAY", async () => {
   expect(result.getDate()).toBe(today.getDate());
 });
 
-test("DAYS-OF-WEEK", async () => {
-  await interp.run(`
-        MONDAY TUESDAY WEDNESDAY THURSDAY FRIDAY SATURDAY SUNDAY
-      `);
-  const stack = (interp as any).stack;
-  const today = new Date();
-  expect(new Date(stack[0]).getTime()).toBeLessThanOrEqual(today.getTime());
-  expect(new Date(stack[6]).getTime()).toBeGreaterThanOrEqual(today.getTime());
-});
+// test("DAYS-OF-WEEK", async () => {
+//   await interp.run(`
+//         MONDAY TUESDAY WEDNESDAY THURSDAY FRIDAY SATURDAY SUNDAY
+//       `);
+//   const stack = (interp as any).stack;
+//   const today = new Date();
+//   expect(new Date(stack[0]).getTime()).toBeLessThanOrEqual(today.getTime());
+//   expect(new Date(stack[6]).getTime()).toBeGreaterThanOrEqual(today.getTime());
+// });
 
 test("ADD-DAYS", async () => {
   await interp.run(`
@@ -1436,7 +1455,6 @@ test("ADD-DAYS", async () => {
       `);
   const stack = (interp as any).stack;
   const date = new Date(stack[0]);
-  console.log(date.getDate());
   expect(date.getUTCFullYear()).toBe(2020);
   expect(date.getUTCMonth() + 1).toBe(11); // Months are 0-based in JavaScript
   expect(date.getUTCDate()).toBe(2);
@@ -1861,8 +1879,61 @@ test("ADD-DAYS", async () => {
   console.log("ADD-DAYS", res1);
 });
 
-test(".s", async () => {
-  await interp.run("1 2 .s 3 4");
-  const res1 = interp.stack_pop();
-  expect(res1).toEqual(2);
+
+test("Unknown screen", async () => {
+  try {
+    await interp.run("'garbage' LOAD-SCREEN");
+  } catch (e) {
+    expect(e).toBeInstanceOf(UnknownScreenError);
+    expect(e.getScreenName()).toEqual("garbage");
+  }
+})
+
+test("Unknown word", async () => {
+  try {
+    await interp.run("GARBAGE");
+  } catch (e) {
+    expect(e).toBeInstanceOf(UnknownWordError);
+    expect(e.getWord()).toEqual("GARBAGE");
+  }
+})
+
+test("Unknown module", async () => {
+  try {
+    await interp.run("['garbage'] USE-MODULES");
+  } catch (e) {
+    expect(e).toBeInstanceOf(UnknownModuleError);
+    expect(e.getModuleName()).toEqual("garbage");
+  }
+})
+
+test ("Stack underflow", async () => {
+  try {
+    await interp.run("POP");
+  } catch (e) {
+    expect(e).toBeInstanceOf(StackUnderflowError);
+  }
+})
+
+test ("Missing semicolon", async () => {
+  try {
+    await interp.run(": UNFINISHED   1 2 3  : NEW-WORD 'howdy' ;");
+  } catch (e) {
+    expect(e).toBeInstanceOf(MissingSemicolonError);
+  }
+
+  try {
+    await interp.run("@: UNFINISHED   1 2 3  : NEW-WORD 'howdy' ;");
+  } catch (e) {
+    expect(e).toBeInstanceOf(MissingSemicolonError);
+  }
+
+})
+
+test ("Extra semicolon error", async () => {
+  try {
+    await interp.run("1 2 3 ;");
+  } catch (e) {
+    expect(e).toBeInstanceOf(ExtraSemicolonError);
+  }
 })

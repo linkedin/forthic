@@ -1,5 +1,4 @@
 import { Module, Word, PushValueWord } from "./module";
-import { ForthicError } from "./ForthicError";
 import {
   is_array,
   is_record,
@@ -13,7 +12,9 @@ import {
 
 import { MapWord } from "./global_module/map_word";
 import { CodeLocation } from "./tokenizer";
-import type { Interpreter } from "./interpreter";
+import { type Interpreter } from "./interpreter";
+import { IntentionalStopError, InvalidVariableNameError } from "./errors";
+
 
 const DLE = String.fromCharCode(16); // ASCII char for "Data Link Escape" used as an untypeable quote
 
@@ -142,6 +143,7 @@ export class GlobalModule extends Module {
     this.add_module_word("JSON>", this.word_JSON_to);
     this.add_module_word("LOAD-SCREEN", this.word_LOAD_SCREEN);
     this.add_module_word(".s", this.word_dot_s);
+    this.add_module_word(".S", this.word_dot_S);
 
     // --------------------
     // Date/time words
@@ -324,13 +326,7 @@ export class GlobalModule extends Module {
     const module = interp.cur_module();
     varnames.forEach((v) => {
       if (v.match(/__.*/)) {
-        throw new ForthicError(
-          "global_module-696",
-          `word_VARIABLES: variable names cannot begin with '__': '${JSON.stringify(
-            v,
-          )}'`,
-          "This is a reserved variable naming convention",
-        );
+        throw new InvalidVariableNameError(v, "Variable names cannot begin with '__'", interp.get_string_location());
       }
       module.add_variable(v);
     });
@@ -2637,14 +2633,21 @@ export class GlobalModule extends Module {
 
   // ( -- )
   word_dot_s(interp: Interpreter) {
-    const stack = (interp as any).stack;
+    const stack = interp.get_stack();
     if (stack.length > 0) {
       console.log(stack[stack.length - 1]);
     }
     else {
       console.log("<STACK EMPTY>");
     }
-    interp.halt()
+    throw new IntentionalStopError(".s");
+  }
+
+  // ( -- )
+  word_dot_S(interp: Interpreter) {
+    const stack = interp.get_stack();
+    console.log(JSON.stringify(stack, null, 2));
+    throw new IntentionalStopError(".S");
   }
 
   // ( a b -- a - b )
