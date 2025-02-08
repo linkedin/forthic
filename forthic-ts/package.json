@@ -14,7 +14,6 @@
     "build": "npm run build:cjs && npm run build:esm",
     "test": "jest",
     "test:watch": "jest --watch"
-
   },
   "repository": {
     "type": "git",
@@ -26,8 +25,6 @@
     "url": "https://github.com/linkedin/forthic/issues"
   },
   "homepage": "https://github.com/linkedin/forthic#readme",
-  "dependencies": {
-  },
   "devDependencies": {
     "@babel/cli": "^7.25.9",
     "@babel/core": "^7.26.0",

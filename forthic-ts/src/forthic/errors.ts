@@ -81,6 +81,22 @@ export class UnknownModuleError extends ForthicError {
     }
 }
 
+export class TooManyAttemptsError extends ForthicError {
+  constructor(private num_attempts: number, private max_attempts: number, location?: CodeLocation) {
+    const note = `Too many recovery attempts: ${num_attempts} of ${max_attempts}`;
+    super(note, location);
+    this.name = "TooManyAttemptsError";
+  }
+
+  getNumAttempts(): number {
+    return this.num_attempts;
+  }
+
+  getMaxAttempts(): number {
+    return this.max_attempts;
+  }
+}
+
 
 export class WordExecutionError extends ForthicError {
     constructor(private word_name: string, private error: Error, location?: CodeLocation) {

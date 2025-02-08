@@ -10,13 +10,22 @@ import {
   UnknownTokenError,
   MissingSemicolonError,
   ExtraSemicolonError,
-  ModuleError
+  ModuleError,
+  TooManyAttemptsError
  } from "./errors";
 
 type Timestamp = {
   label: string;
   time_ms: number;
 };
+
+type HandleErrorFunction = (e: Error) => Promise<void>;
+
+type RunOptions = {
+  reference_location?: CodeLocation;
+  maxAttempts?: number;
+  handleError?: HandleErrorFunction;
+}
 
 class StartModuleWord extends Word {
   async execute(interp: Interpreter): Promise<void> {
@@ -195,22 +204,35 @@ export class Interpreter {
     return result;
   }
 
-  prime(
-    string: string,
-    reference_location: CodeLocation | null = null,
-  ){
-    const tokenizer = new Tokenizer(string, reference_location);
-    this.tokenizer = tokenizer;
-  }
-
-
   async run(
     string: string,
-    reference_location: CodeLocation | null = null,
-  ): Promise<boolean> {
-    const tokenizer = new Tokenizer(string, reference_location);
-    return await this.run_with_tokenizer(tokenizer);
+    options: RunOptions = {}
+  ): Promise<boolean|number> {
+    const tokenizer = new Tokenizer(string, options.reference_location);
+
+    if (options.handleError) {
+      this.tokenizer = tokenizer;
+      return await this.execute_with_recovery(options);
+    } else {
+      return await this.run_with_tokenizer(tokenizer);
+    }
   }
+
+  async execute_with_recovery(options: RunOptions, numAttempts: number = 0): Promise<number> {
+    const maxAttempts = options.maxAttempts || 3;
+    try {
+        numAttempts++;
+        if (numAttempts > maxAttempts) {
+          throw new TooManyAttemptsError(numAttempts, maxAttempts);
+        }
+        await this.continue();
+        return numAttempts;
+    }
+    catch (e) {
+        await options.handleError(e);
+        return await this.execute_with_recovery(options, numAttempts);
+    }
+}
 
   async continue() {
     await this.run_with_tokenizer(this.tokenizer);

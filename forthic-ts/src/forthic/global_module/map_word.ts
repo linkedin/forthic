@@ -130,7 +130,7 @@ export class MapWord {
         let error = null;
         try {
           // If this runs successfully, it would have pushed the result onto the stack
-          await interp.run(forthic, forthic_location);
+          await interp.run(forthic, { reference_location: forthic_location });
         } catch (e) {
           // Since this didn't run successfully, push null onto the stack
           interp.stack_push(null);
@@ -138,7 +138,7 @@ export class MapWord {
         }
         errors.push(error);
       } else {
-        await interp.run(forthic, forthic_location);
+        await interp.run(forthic, { reference_location: forthic_location });
       }
       return interp.stack_pop();
     }
