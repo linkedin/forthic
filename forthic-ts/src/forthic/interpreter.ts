@@ -21,11 +21,6 @@ type Timestamp = {
 
 type HandleErrorFunction = (e: Error) => Promise<void>;
 
-type RunOptions = {
-  reference_location?: CodeLocation;
-  maxAttempts?: number;
-  handleError?: HandleErrorFunction;
-}
 
 class StartModuleWord extends Word {
   async execute(interp: Interpreter): Promise<void> {
@@ -90,7 +85,9 @@ export class Interpreter {
   private app_module: Module;
   private module_stack: Module[];
   private registered_modules: { [key: string]: Module };
-  private tokenizer: Tokenizer;
+  private tokenizer_stack: Tokenizer[];
+  private handleError?: HandleErrorFunction;
+  private maxAttempts: number;
   private is_compiling: boolean;
   private should_stop: boolean;
   private is_memo_definition: boolean;
@@ -108,6 +105,10 @@ export class Interpreter {
     this.timestamp_id = Math.random();
 
     this.stack = [];
+
+    this.tokenizer_stack = [];
+    this.maxAttempts = 3;
+    this.handleError = undefined;
 
     // We've split the global module functionality into a "pure" global module and a React global module
     this.global_module = new GlobalModule(this);
@@ -150,6 +151,22 @@ export class Interpreter {
   // Getter method for string_location
   get_string_location(): CodeLocation | null {
     return this.string_location;
+  }
+
+  set_max_attempts(maxAttempts: number) {
+    this.maxAttempts = maxAttempts;
+  }
+
+  set_error_handler(handleError: HandleErrorFunction) {
+    this.handleError = handleError;
+  }
+
+  get_max_attempts(): number {
+    return this.maxAttempts;
+  }
+
+  get_error_handler(): HandleErrorFunction | undefined {
+    return this.handleError;
   }
 
   // Module flag support
@@ -204,43 +221,41 @@ export class Interpreter {
     return result;
   }
 
-  async run(
-    string: string,
-    options: RunOptions = {}
-  ): Promise<boolean|number> {
-    const tokenizer = new Tokenizer(string, options.reference_location);
+  async run(string: string, reference_location: CodeLocation | null = null): Promise<boolean|number> {
+    this.tokenizer_stack.push(new Tokenizer(string, reference_location));
 
-    if (options.handleError) {
-      this.tokenizer = tokenizer;
-      return await this.execute_with_recovery(options);
+    if (this.handleError) {
+      await this.execute_with_recovery();
     } else {
-      return await this.run_with_tokenizer(tokenizer);
+      await this.run_with_tokenizer(this.tokenizer_stack[this.tokenizer_stack.length - 1]);
     }
+
+    this.tokenizer_stack.pop();
+    return true;
   }
 
-  async execute_with_recovery(options: RunOptions, numAttempts: number = 0): Promise<number> {
-    const maxAttempts = options.maxAttempts || 3;
+  async execute_with_recovery(numAttempts:number=0): Promise<number> {
     try {
         numAttempts++;
-        if (numAttempts > maxAttempts) {
-          throw new TooManyAttemptsError(numAttempts, maxAttempts);
+        if (numAttempts > this.maxAttempts) {
+          throw new TooManyAttemptsError(numAttempts, this.maxAttempts);
         }
         await this.continue();
         return numAttempts;
     }
     catch (e) {
-        await options.handleError(e);
-        return await this.execute_with_recovery(options, numAttempts);
+      if (!this.handleError) throw e;
+      await this.handleError(e);
+      return await this.execute_with_recovery(numAttempts);
     }
 }
 
   async continue() {
-    await this.run_with_tokenizer(this.tokenizer);
+    await this.run_with_tokenizer(this.tokenizer_stack[this.tokenizer_stack.length - 1]);
     return
   }
 
   async run_with_tokenizer(tokenizer: Tokenizer): Promise<boolean> {
-    this.tokenizer = tokenizer;
     let token: Token;
     do {
       token = tokenizer.next_token();

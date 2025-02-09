@@ -357,7 +357,7 @@ export class GlobalModule extends Module {
   async word_INTERPRET(interp: Interpreter) {
     const string = interp.stack_pop();
     const string_location = interp.get_string_location();
-    if (string) await interp.run(string, { reference_location: string_location });
+    if (string) await interp.run(string, string_location);
   }
 
   // ( names -- )
@@ -640,7 +640,7 @@ export class GlobalModule extends Module {
       const value = values[i];
       if (flags.with_key) interp.stack_push(key);
       interp.stack_push(value);
-      await interp.run(forthic, { reference_location: string_location });
+      await interp.run(forthic, string_location);
       const group = interp.stack_pop();
       if (!result[group]) result[group] = [];
       result[group].push(value);
@@ -704,7 +704,7 @@ export class GlobalModule extends Module {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       interp.stack_push(item);
-      await interp.run(forthic, { reference_location: string_location });
+      await interp.run(forthic, string_location);
       const keys = interp.stack_pop();
       keys.forEach((k) => {
         const lowercased_key = k.toLowerCase();
@@ -746,7 +746,7 @@ export class GlobalModule extends Module {
           errors.push(
             await execute_returning_error(interp, forthic, string_location),
           );
-        else await interp.run(forthic, { reference_location: string_location });
+        else await interp.run(forthic, string_location );
       }
     } else {
       const keys = Object.keys(items);
@@ -759,7 +759,7 @@ export class GlobalModule extends Module {
           errors.push(
             await execute_returning_error(interp, forthic, string_location),
           );
-        else await interp.run(forthic, { reference_location: string_location });
+        else await interp.run(forthic, string_location );
       }
     }
 
@@ -829,7 +829,7 @@ export class GlobalModule extends Module {
         if (i < container2.length) value2 = container2[i];
         interp.stack_push(container1[i]);
         interp.stack_push(value2);
-        await interp.run(forthic, { reference_location: string_location });
+        await interp.run(forthic, string_location);
         const res = interp.stack_pop();
         result.push(res);
       }
@@ -840,7 +840,7 @@ export class GlobalModule extends Module {
         const k = keys[i];
         interp.stack_push(container1[k]);
         interp.stack_push(container2[k]);
-        await interp.run(forthic, { reference_location: string_location });
+        await interp.run(forthic, string_location );
         const res = interp.stack_pop();
         result[k] = res;
       }
@@ -925,7 +925,7 @@ export class GlobalModule extends Module {
 
       if (!start_found) {
         interp.stack_push(item);
-        await interp.run(fstart, { reference_location: fstart_string_location });
+        await interp.run(fstart, fstart_string_location);
         start_found = interp.stack_pop();
         if (start_found) {
           start_index = index;
@@ -934,7 +934,7 @@ export class GlobalModule extends Module {
 
       if (start_found && !end_found) {
         interp.stack_push(item);
-        await interp.run(fend, { reference_location: fend_string_location });
+        await interp.run(fend, fend_string_location);
         end_found = interp.stack_pop();
         if (end_found) {
           end_index = index;
@@ -1127,7 +1127,7 @@ export class GlobalModule extends Module {
         const item = container[i];
         if (flags.with_key) interp.stack_push(i);
         interp.stack_push(item);
-        await interp.run(forthic, { reference_location: string_location });
+        await interp.run(forthic, string_location);
         const should_select = interp.stack_pop();
         if (should_select) result.push(item);
       }
@@ -1139,7 +1139,7 @@ export class GlobalModule extends Module {
         const v = container[k];
         if (flags.with_key) interp.stack_push(k);
         interp.stack_push(v);
-        await interp.run(forthic, { reference_location: string_location });
+        await interp.run(forthic, string_location);
         const should_select = interp.stack_pop();
         if (should_select) result[k] = v;
       }
@@ -1309,7 +1309,7 @@ export class GlobalModule extends Module {
         for (let i = 0; i < vals.length; i++) {
           const val = vals[i];
           interp.stack_push(val);
-          await interp.run(forthic, { reference_location: flag_string_position });
+          await interp.run(forthic, flag_string_position );
           const aug_val = interp.stack_pop();
           res.push([val, aug_val]);
         }
@@ -1536,7 +1536,7 @@ export class GlobalModule extends Module {
       interp.stack_push(initial);
       container.forEach(async (item) => {
         interp.stack_push(item);
-        await interp.run(forthic, { reference_location: string_location });
+        await interp.run(forthic, string_location);
       });
       result = interp.stack_pop();
     } else {
@@ -1544,7 +1544,7 @@ export class GlobalModule extends Module {
       Object.keys(container).forEach(async (k) => {
         const v = container[k];
         interp.stack_push(v);
-        await interp.run(forthic, { reference_location: string_location });
+        await interp.run(forthic, string_location);
       });
       result = interp.stack_pop();
     }
@@ -2358,7 +2358,7 @@ export class GlobalModule extends Module {
 
     for (const item of items) {
       interp.stack_push(item);
-      await interp.run(fvalue, { reference_location: string_location });
+      await interp.run(fvalue, string_location);
       const value = interp.stack_pop();
       let bucket = "BEFORE";
       for (const range_start of start_ranges) {
@@ -2546,7 +2546,7 @@ export class GlobalModule extends Module {
     let value = interp.stack_pop();
 
     if (value === undefined || value === null || value === "") {
-      await interp.run(default_forthic, { reference_location: string_location });
+      await interp.run(default_forthic, string_location);
       value = interp.stack_pop();
     }
     interp.stack_push(value);
@@ -2578,7 +2578,7 @@ export class GlobalModule extends Module {
       const item = interp.stack_pop();
       interp.stack_push(item);
 
-      await interp.run(forthic, { reference_location: string_location });
+      await interp.run(forthic, string_location);
       const res = interp.stack_pop();
 
       // Push original item and result
@@ -2628,7 +2628,7 @@ export class GlobalModule extends Module {
     const screen_forthic = interp.get_screen_forthic(name);
     const location = new CodeLocation({ screen_name: name });
     // await interp.run(screen_forthic, location);
-    await interp.run(screen_forthic, { reference_location: location });
+    await interp.run(screen_forthic, location);
   }
 
   // ( -- )
@@ -2645,7 +2645,7 @@ export class GlobalModule extends Module {
 
   // ( -- )
   word_dot_S(interp: Interpreter) {
-    const stack = interp.get_stack();
+    const stack = interp.get_stack().reverse();
     console.log(JSON.stringify(stack, null, 2));
     throw new IntentionalStopError(".S");
   }
@@ -2677,7 +2677,7 @@ async function execute_returning_error(
 ): Promise<any> {
   let result = null;
   try {
-    await interp.run(forthic, { reference_location: string_location });
+    await interp.run(forthic, string_location);
   } catch (e) {
     result = e;
   }

@@ -22,7 +22,24 @@ test("Continue from `.s`", async () => {
     }
   }
 
-  await interp.run("1 .s 2 .s +", { handleError });
+  interp.set_error_handler(handleError);
+  await interp.run("1 .s 2 .s +");
+  expect(interp.get_stack()).toEqual([3]);
+});
+
+test("Continue from `.s` with intervening call", async () => {
+  async function handleError(e:Error) {
+    if (e instanceof IntentionalStopError) {
+      // Simulate recovery. In this case, we're just continuing from the `.s` word
+      await interp.run("");
+    }
+    else {
+      throw e
+    }
+  }
+
+  interp.set_error_handler(handleError);
+  await interp.run("1 .S 2 .S +");
   expect(interp.get_stack()).toEqual([3]);
 });
 
@@ -38,7 +55,9 @@ test("Simulate recovery", async () => {
     }
   }
 
-  await interp.run("1 garbage +", { handleError, maxAttempts: 3 });
+  interp.set_max_attempts(3);
+  interp.set_error_handler(handleError);
+  await interp.run("1 garbage +");
   expect(interp.get_stack()).toEqual([3]);
 });
 
@@ -56,9 +75,10 @@ test("Simulate multiple recoveries", async () => {
   }
 
   // Set up a case with multiple errors
-  const num_attempts = await interp.run("1 garbage + more_garbage +", { handleError, maxAttempts: 3 });
+  interp.set_max_attempts(3);
+  interp.set_error_handler(handleError);
+  await interp.run("1 garbage + more_garbage +");
   expect(interp.get_stack()).toEqual([5]);
-  expect(num_attempts).toEqual(3);
 });
 
 
@@ -78,7 +98,9 @@ test("Simulate correction", async () => {
     body: "We're gonna go real soon!"
   };
   interp.stack_push(invalid_email);
-  await interp.run("VALIDATE-EMAIL SEND-EMAIL", { handleError });
+
+  interp.set_error_handler(handleError)
+  await interp.run("VALIDATE-EMAIL SEND-EMAIL");
 });
 
 // Simulate a correction
@@ -89,7 +111,9 @@ function simulate_email_correction(email: any) {
   return email;
 }
 
+// ==========================
 // Sample module
+// ==========================
 class UnresolvedRecipientsError extends Error {
   constructor(private email: any) {
     super("Email recipients must be an array of resolved contacts");
