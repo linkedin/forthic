@@ -326,7 +326,7 @@ export class GlobalModule extends Module {
     const module = interp.cur_module();
     varnames.forEach((v) => {
       if (v.match(/__.*/)) {
-        throw new InvalidVariableNameError(v, "Variable names cannot begin with '__'", interp.get_string_location());
+        throw new InvalidVariableNameError(interp.get_top_input_string(), v, "Variable names cannot begin with '__'", interp.get_string_location());
       }
       module.add_variable(v);
     });

@@ -86,6 +86,7 @@ export class Interpreter {
   private module_stack: Module[];
   private registered_modules: { [key: string]: Module };
   private tokenizer_stack: Tokenizer[];
+  private previous_token: Token | null;
   private handleError?: HandleErrorFunction;
   private maxAttempts: number;
   private is_compiling: boolean;
@@ -146,6 +147,15 @@ export class Interpreter {
 
   get_app_module(): Module {
     return this.app_module;
+  }
+
+  get_top_input_string(): string {
+    if (this.tokenizer_stack.length == 0) return "";
+    return this.tokenizer_stack[0].get_input_string();
+  }
+
+  get_tokenizer(): Tokenizer {
+    return this.tokenizer_stack[this.tokenizer_stack.length - 1];
   }
 
   // Getter method for string_location
@@ -214,7 +224,7 @@ export class Interpreter {
   get_screen_forthic(screen_name: string): string {
     const screen = this.screens[screen_name];
     if (!screen) {
-      throw new UnknownScreenError(screen_name, this.string_location);
+      throw new UnknownScreenError(this.get_top_input_string(), screen_name, this.string_location);
     }
 
     const result = screen;
@@ -238,7 +248,7 @@ export class Interpreter {
     try {
         numAttempts++;
         if (numAttempts > this.maxAttempts) {
-          throw new TooManyAttemptsError(numAttempts, this.maxAttempts);
+          throw new TooManyAttemptsError(this.get_top_input_string(), numAttempts, this.maxAttempts);
         }
         await this.continue();
         return numAttempts;
@@ -258,6 +268,7 @@ export class Interpreter {
   async run_with_tokenizer(tokenizer: Tokenizer): Promise<boolean> {
     let token: Token;
     do {
+      this.previous_token = token;
       token = tokenizer.next_token();
         await this.handle_token(token);
         if (token.type === TokenType.EOS) {
@@ -290,7 +301,9 @@ export class Interpreter {
 
   find_module(name: string): Module {
     const result = this.registered_modules[name];
-    if (result === undefined)   throw new UnknownModuleError(name, this.string_location);
+    if (result === undefined)   {
+      throw new UnknownModuleError(this.get_top_input_string(), name, this.string_location);
+    }
     return result;
   }
 
@@ -300,7 +313,10 @@ export class Interpreter {
 
   stack_pop(): any {
     if (this.stack.length == 0) {
-      throw new StackUnderflowError(this.string_location);
+      const tokenizer = this.get_tokenizer();
+      // const tokenizer = this.tokenizer_stack[0];
+      // console.log({input_string: tokenizer.get_input_string()});
+      throw new StackUnderflowError(this.get_top_input_string(), tokenizer.get_token_location());
     }
     let result = this.stack.pop();
 
@@ -331,7 +347,7 @@ export class Interpreter {
     try {
       await this.run(module.forthic_code);
     } catch (e) {
-      throw new ModuleError(module.name, e, this.string_location);
+      throw new ModuleError(this.get_top_input_string(), module.name, e, this.string_location);
     }
 
     this.module_stack_pop();
@@ -418,7 +434,7 @@ export class Interpreter {
     else if (token.type == TokenType.EOS) {
       return;
     } else {
-      throw new UnknownTokenError(token.string, this.string_location);
+      throw new UnknownTokenError(this.get_top_input_string(), token.string, this.string_location);
     }
   }
 
@@ -460,7 +476,7 @@ export class Interpreter {
 
   handle_start_definition_token(token: Token) {
     if (this.is_compiling) {
-      throw new MissingSemicolonError(token.location);
+      throw new MissingSemicolonError(this.get_top_input_string(), this.previous_token?.location);
     }
     this.cur_definition = new DefinitionWord(token.string);
     this.is_compiling = true;
@@ -469,7 +485,7 @@ export class Interpreter {
 
   handle_start_memo_token(token: Token) {
     if (this.is_compiling) {
-      throw new MissingSemicolonError(token.location);
+      throw new MissingSemicolonError(this.get_top_input_string(), this.previous_token?.location);
     }
     this.cur_definition = new DefinitionWord(token.string);
     this.is_compiling = true;
@@ -478,7 +494,7 @@ export class Interpreter {
 
   handle_end_definition_token(token: Token) {
     if (!this.is_compiling || !this.cur_definition) {
-      throw new ExtraSemicolonError(token.location);
+      throw new ExtraSemicolonError(this.get_top_input_string(), token.location);
     }
 
     if (this.is_memo_definition) {
@@ -491,7 +507,9 @@ export class Interpreter {
 
   async handle_word_token(token: Token) {
     const word = this.find_word(token.string);
-    if (!word) throw new UnknownWordError(token.string, token.location);
+    if (!word) {
+      throw new UnknownWordError(this.get_top_input_string(), token.string, token.location);
+    }
     await this.handle_word(word, token.location);
     return;
   }

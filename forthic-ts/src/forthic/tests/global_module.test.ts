@@ -6,7 +6,8 @@ import {
   UnknownModuleError,
   StackUnderflowError,
   MissingSemicolonError,
-  ExtraSemicolonError
+  ExtraSemicolonError,
+  WordExecutionError
 } from "../errors";
 
 let interp: Interpreter;
@@ -60,8 +61,10 @@ test("Invalid variable name", async () => {
   try {
     await interp.run("['__test'] VARIABLES");
   } catch (e) {
-    expect(e).toBeInstanceOf(InvalidVariableNameError);
-    expect(e.getVarName()).toBe("__test");
+    expect(e).toBeInstanceOf(WordExecutionError);
+    const root_error = e.getError();
+    expect(root_error).toBeInstanceOf(InvalidVariableNameError);
+    expect(root_error.getVarName()).toBe("__test");
   }
 });
 
@@ -1884,8 +1887,10 @@ test("Unknown screen", async () => {
   try {
     await interp.run("'garbage' LOAD-SCREEN");
   } catch (e) {
-    expect(e).toBeInstanceOf(UnknownScreenError);
-    expect(e.getScreenName()).toEqual("garbage");
+    expect(e).toBeInstanceOf(WordExecutionError);
+    const root_error = e.getError();
+    expect(root_error).toBeInstanceOf(UnknownScreenError);
+    expect(root_error.getScreenName()).toEqual("garbage");
   }
 })
 
@@ -1902,8 +1907,10 @@ test("Unknown module", async () => {
   try {
     await interp.run("['garbage'] USE-MODULES");
   } catch (e) {
-    expect(e).toBeInstanceOf(UnknownModuleError);
-    expect(e.getModuleName()).toEqual("garbage");
+    expect(e).toBeInstanceOf(WordExecutionError);
+    const root_error = e.getError();
+    expect(root_error).toBeInstanceOf(UnknownModuleError);
+    expect(root_error.getModuleName()).toEqual("garbage");
   }
 })
 
@@ -1911,7 +1918,9 @@ test ("Stack underflow", async () => {
   try {
     await interp.run("POP");
   } catch (e) {
-    expect(e).toBeInstanceOf(StackUnderflowError);
+    expect(e).toBeInstanceOf(WordExecutionError);
+    const root_error = e.getError();
+    expect(root_error).toBeInstanceOf(StackUnderflowError);
   }
 })
 

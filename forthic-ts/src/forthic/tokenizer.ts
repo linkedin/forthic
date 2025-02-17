@@ -151,6 +151,10 @@ export class Tokenizer {
     });
   }
 
+  get_input_string(): string {
+    return this.input_string;
+  }
+
   transition_from_START(): Token {
     while (this.input_pos < this.input_string.length) {
       const char = this.input_string[this.input_pos];

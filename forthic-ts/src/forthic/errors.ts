@@ -1,15 +1,22 @@
 import { CodeLocation } from "./tokenizer";
 
-class ForthicError extends Error {
-    constructor(private note: string, private location?: CodeLocation) {
-        const location_note = location ? ` at ${location.screen_name}:${location.line}:${location.column}` : "";
-        const message = `${note}${location_note}`;
+export class ForthicError extends Error {
+    constructor(private forthic: string, private note: string, private location?: CodeLocation) {
+        const message = `${note}`;
 
         super(message);
     }
 
+    getDescription(): string {
+        return get_error_description(this.forthic, this);
+    }
+
     getLocation(): CodeLocation {
         return this.location;
+    }
+
+    getForthic(): string {
+        return this.forthic;
     }
 
     getNote(): string {
@@ -26,9 +33,9 @@ class ForthicError extends Error {
 
 // Interpreter couldn't find word in dictionaries
 export class UnknownWordError extends ForthicError {
-  constructor(private word: string, location?: CodeLocation) {
+  constructor(forthic: string, private word: string, location?: CodeLocation) {
     const note = `Unknown word: ${word}`;
-    super(note, location);
+    super(forthic, note, location);
     this.name = "UnknownWordError";
   }
 
@@ -39,9 +46,9 @@ export class UnknownWordError extends ForthicError {
 
 // Variable name is not allowed
 export class InvalidVariableNameError extends ForthicError {
-    constructor(private var_name: string, private addl_note: string, location?: CodeLocation) {
+    constructor(forthic: string, private var_name: string, private addl_note: string, location?: CodeLocation) {
         const note = `Invalid variable name: ${var_name}(${addl_note})`;
-        super(note, location);
+        super(forthic, note, location);
         this.name = "InvalidVariableNameError";
     }
 
@@ -57,9 +64,9 @@ export class InvalidVariableNameError extends ForthicError {
 
 // Interpreter couldn't find screen
 export class UnknownScreenError extends ForthicError {
-    constructor(private screen_name: string, location?: CodeLocation) {
+    constructor(forthic: string, private screen_name: string, location?: CodeLocation) {
         const note = `Unknown screen: ${screen_name}`;
-        super(note, location);
+        super(forthic, note, location);
         this.name = "UnknownScreenError";
     }
 
@@ -70,9 +77,9 @@ export class UnknownScreenError extends ForthicError {
 
 // Interpreter couldn't find module
 export class UnknownModuleError extends ForthicError {
-    constructor(private module_name: string, location?: CodeLocation) {
+    constructor(forthic: string, private module_name: string, location?: CodeLocation) {
         const note = `Unknown module: ${module_name}`;
-        super(note, location);
+        super(forthic, note, location);
         this.name = "UnknownModuleError";
     }
 
@@ -82,9 +89,9 @@ export class UnknownModuleError extends ForthicError {
 }
 
 export class TooManyAttemptsError extends ForthicError {
-  constructor(private num_attempts: number, private max_attempts: number, location?: CodeLocation) {
+  constructor(forthic: string, private num_attempts: number, private max_attempts: number, location?: CodeLocation) {
     const note = `Too many recovery attempts: ${num_attempts} of ${max_attempts}`;
-    super(note, location);
+    super(forthic, note, location);
     this.name = "TooManyAttemptsError";
   }
 
@@ -99,9 +106,9 @@ export class TooManyAttemptsError extends ForthicError {
 
 
 export class WordExecutionError extends ForthicError {
-    constructor(private word_name: string, private error: Error, location?: CodeLocation) {
-        const note = `Error executing word: ${word_name}`;
-        super(note, location);
+    constructor(forthic: string, private word_name: string, private error: Error, location?: CodeLocation) {
+        const note = `(${error.message}) when executing word ${word_name}`;
+        super(forthic, note, location);
         this.name = "WordExecutionError";
     }
 
@@ -116,9 +123,9 @@ export class WordExecutionError extends ForthicError {
 
 
 export class ModuleError extends ForthicError {
-    constructor(private module_name: string, private error: Error, location?: CodeLocation) {
+    constructor(forthic: string, private module_name: string, private error: Error, location?: CodeLocation) {
         const note = `Error in module ${module_name}`;
-        super(note, location);
+        super(forthic, note, location);
         this.name = "ModuleError";
     }
 
@@ -133,17 +140,17 @@ export class ModuleError extends ForthicError {
 
 
 export class StackUnderflowError extends ForthicError {
-    constructor(location?: CodeLocation) {
+    constructor(forthic: string, location?: CodeLocation) {
         const note = `Stack underflow`;
-        super(note, location);
+        super(forthic, note, location);
         this.name = "StackUnderflowError";
     }
 }
 
 export class UnknownTokenError extends ForthicError {
-    constructor(private token: string, location?: CodeLocation) {
+    constructor(forthic: string, private token: string, location?: CodeLocation) {
         const note = `(Should never happen) Unknown type of token: ${token}`;
-        super(note, location);
+        super(forthic, note, location);
         this.name = "UnknownTokenError";
     }
 
@@ -153,17 +160,17 @@ export class UnknownTokenError extends ForthicError {
 }
 
 export class MissingSemicolonError extends ForthicError {
-    constructor(location?: CodeLocation) {
-        const note = `Missing semicolon -- new definition started before previous one was complete`;
-        super(note, location);
+    constructor(forthic: string, location?: CodeLocation) {
+        const note = `Definition was missing its semicolon`;
+        super(forthic, note, location);
         this.name = "MissingSemicolonError";
     }
 }
 
 export class ExtraSemicolonError extends ForthicError {
-    constructor(location?: CodeLocation) {
-        const note = `Extra semicolon -- no definition in progress`;
-        super(note, location);
+    constructor(forthic: string, location?: CodeLocation) {
+        const note = `Unexpected semicolon -- no definition in progress`;
+        super(forthic, note, location);
         this.name = "ExtraSemicolonError";
     }
 }
@@ -179,3 +186,27 @@ export class IntentionalStopError extends Error {
   }
 }
 
+// ============================================================
+// Utility functions
+export function get_error_description(forthic: string, forthicError: ForthicError): string {
+    // If don't have any extra info, just return the note
+    if (!forthic || forthic === "" || forthicError.getLocation() === undefined) {
+        return forthicError.getNote();
+    }
+
+    // Otherwise, return the note and indicate where the error occurred
+    const location = forthicError.getLocation();
+
+    // Extract line where error occurred and highlight the error
+    const line_num = location.line;
+
+    // Get lines up to line_num
+    const lines = forthic.split("\n").slice(0, line_num);
+
+    // Error line is the line with the error, but with the error location highlighted and everything else a space
+    const error_line = " ".repeat(location.column-1) + "^".repeat(location.end_pos - location.start_pos);
+
+    // Print all forthic lines with numbers adding the error line
+    const error_message = `${forthicError.getNote()} at line ${line_num}:\n\`\`\`\n${lines.map((line) => `${line}`).join("\n")}\n${error_line}\n\`\`\``;
+    return error_message;
+}

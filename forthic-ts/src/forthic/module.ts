@@ -1,6 +1,7 @@
 import { WordExecutionError } from "./errors";
 import { Interpreter } from "./interpreter";
 import { CodeLocation } from "./tokenizer";
+import { IntentionalStopError } from "./errors";
 
 export type WordHandler =
   | ((interp: Interpreter) => Promise<void>)
@@ -98,7 +99,8 @@ export class DefinitionWord extends Word {
       try {
         await word.execute(interp);
       } catch (e) {
-        throw new WordExecutionError(word.name, e, interp.get_string_location());
+        const tokenizer = interp.get_tokenizer();
+        throw new WordExecutionError(interp.get_top_input_string(), this.name, e, tokenizer.get_token_location());
       }
     }
   }
@@ -113,7 +115,16 @@ export class ModuleWord extends Word {
   }
 
   async execute(interp: Interpreter): Promise<void> {
-    await this.handler(interp);
+    try {
+      await this.handler(interp);
+    }
+    catch (e) {
+      if (e instanceof IntentionalStopError) {
+        throw e;
+      }
+      const tokenizer = interp.get_tokenizer();
+      throw new WordExecutionError(interp.get_top_input_string(), this.name, e, tokenizer.get_token_location());
+    }
   }
 }
 

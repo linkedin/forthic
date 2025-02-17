@@ -1,6 +1,6 @@
 import { Interpreter } from "../interpreter";
 import { IntentionalStopError } from "../errors";
-import { UnknownWordError } from "../errors";
+import { UnknownWordError, WordExecutionError } from "../errors";
 import { Module } from "../module";
 
 let interp = null;
@@ -84,9 +84,12 @@ test("Simulate multiple recoveries", async () => {
 
 test("Simulate correction", async () => {
   async function handleError(e:Error) {
-    if (e instanceof UnresolvedRecipientsError) {
-      // Simulate correction
-      interp.stack_push(simulate_email_correction(e.get_email()));
+    if (e instanceof WordExecutionError) {
+      if (e.getError() instanceof UnresolvedRecipientsError) {
+        const unresolved_recipients_error = e.getError() as UnresolvedRecipientsError;
+        // Simulate correction
+        interp.stack_push(simulate_email_correction(unresolved_recipients_error.get_email()));
+      }
     }
     else {
       throw e
