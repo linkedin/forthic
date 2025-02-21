@@ -333,8 +333,6 @@ export class Interpreter {
   stack_pop(): any {
     if (this.stack.length == 0) {
       const tokenizer = this.get_tokenizer();
-      // const tokenizer = this.tokenizer_stack[0];
-      // console.log({input_string: tokenizer.get_input_string()});
       throw new StackUnderflowError(
         this.get_top_input_string(),
         tokenizer.get_token_location(),
