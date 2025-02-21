@@ -226,4 +226,39 @@ describe("Interpreter.streamingRun", () => {
 
     expect(interp.get_stack()).toEqual(["THE QUICK BROWN FOX JUMPS OVER"]);
   });
+
+  test("START_LOG/END_LOG with numbers", async () => {
+    const deltas: ({ stringDelta: string } | string)[] = [];
+
+    for await (const delta of interp.streamingRun(
+      `START_LOG 1 2 3 END_LOG`,
+      true,
+    )) {
+      deltas.push(delta);
+    }
+    expect(deltas).toEqual(["1", "2", "3"]);
+    const val = interp.stack_pop();
+    expect(val).toEqual(3);
+    expect(interp.get_stack()).toEqual([1, 2]);
+  });
+
+  test("START_LOG/END_LOG with objects", async () => {
+    const deltas: ({ stringDelta: string } | string)[] = [];
+
+    for await (const delta of interp.streamingRun(
+      `START_LOG [["key with space" 1] ["other key with space" 2] ] REC END_LOG`,
+      true,
+    )) {
+      deltas.push(delta);
+    }
+
+    expect(deltas).toEqual([
+      '[', '[', 'key with space',
+      '1', ']',   '[',
+      'other key with space', '2',   ']',
+      ']', 'REC'
+    ]);
+    const val = interp.stack_pop();
+    expect(val).toEqual({ "key with space": 1, "other key with space": 2 });
+  });
 });
