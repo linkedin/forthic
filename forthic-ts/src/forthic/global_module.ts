@@ -9,17 +9,14 @@ import {
   date_to_int,
 } from "./utils";
 
-
 import { MapWord } from "./global_module/map_word";
 import { CodeLocation } from "./tokenizer";
 import { type Interpreter } from "./interpreter";
 import { IntentionalStopError, InvalidVariableNameError } from "./errors";
 
-
 const DLE = String.fromCharCode(16); // ASCII char for "Data Link Escape" used as an untypeable quote
 
 export class GlobalModule extends Module {
-  module_id: string;
   literal_handlers: Array<(value: any) => any>;
 
   constructor(interp: Interpreter) {
@@ -144,6 +141,9 @@ export class GlobalModule extends Module {
     this.add_module_word("LOAD-SCREEN", this.word_LOAD_SCREEN);
     this.add_module_word(".s", this.word_dot_s);
     this.add_module_word(".S", this.word_dot_S);
+    this.add_module_word("START_LOG", this.word_START_LOG);
+    this.add_module_word("END_LOG", this.word_END_LOG);
+    this.add_module_word("NOP", this.word_NOP);
 
     // --------------------
     // Date/time words
@@ -207,7 +207,6 @@ export class GlobalModule extends Module {
     this.add_module_word("RANGE-INDEX", this.word_RANGE_INDEX);
     this.add_module_word("RANGE-BUCKETS", this.word_RANGE_BUCKETS);
     this.add_module_word("INFINITY", this.word_INFINITY);
-
 
     // ----------------
     // Flag words
@@ -326,7 +325,12 @@ export class GlobalModule extends Module {
     const module = interp.cur_module();
     varnames.forEach((v) => {
       if (v.match(/__.*/)) {
-        throw new InvalidVariableNameError(interp.get_top_input_string(), v, "Variable names cannot begin with '__'", interp.get_string_location());
+        throw new InvalidVariableNameError(
+          interp.get_top_input_string(),
+          v,
+          "Variable names cannot begin with '__'",
+          interp.get_string_location(),
+        );
       }
       module.add_variable(v);
     });
@@ -746,7 +750,7 @@ export class GlobalModule extends Module {
           errors.push(
             await execute_returning_error(interp, forthic, string_location),
           );
-        else await interp.run(forthic, string_location );
+        else await interp.run(forthic, string_location);
       }
     } else {
       const keys = Object.keys(items);
@@ -759,7 +763,7 @@ export class GlobalModule extends Module {
           errors.push(
             await execute_returning_error(interp, forthic, string_location),
           );
-        else await interp.run(forthic, string_location );
+        else await interp.run(forthic, string_location);
       }
     }
 
@@ -840,7 +844,7 @@ export class GlobalModule extends Module {
         const k = keys[i];
         interp.stack_push(container1[k]);
         interp.stack_push(container2[k]);
-        await interp.run(forthic, string_location );
+        await interp.run(forthic, string_location);
         const res = interp.stack_pop();
         result[k] = res;
       }
@@ -1309,7 +1313,7 @@ export class GlobalModule extends Module {
         for (let i = 0; i < vals.length; i++) {
           const val = vals[i];
           interp.stack_push(val);
-          await interp.run(forthic, flag_string_position );
+          await interp.run(forthic, flag_string_position);
           const aug_val = interp.stack_pop();
           res.push([val, aug_val]);
         }
@@ -2383,7 +2387,6 @@ export class GlobalModule extends Module {
     interp.stack_push(Infinity);
   }
 
-
   // ( -- )
   word_bang_PUSH_ERROR(interp: Interpreter) {
     interp.modify_flags(this.module_id, { push_error: true });
@@ -2529,6 +2532,19 @@ export class GlobalModule extends Module {
     interp.stack_push(null);
   }
 
+  // ( -- )
+  word_NOP(_interp: Interpreter) {}
+
+  // ( -- )
+  word_START_LOG(interp: Interpreter) {
+    interp.startStream();
+  }
+
+  // ( -- )
+  word_END_LOG(interp: Interpreter) {
+    interp.endStream();
+  }
+
   // ( value default_value -- value )
   word_DEFAULT(interp: Interpreter) {
     const default_value = interp.stack_pop();
@@ -2636,8 +2652,7 @@ export class GlobalModule extends Module {
     const stack = interp.get_stack();
     if (stack.length > 0) {
       console.log(stack[stack.length - 1]);
-    }
-    else {
+    } else {
       console.log("<STACK EMPTY>");
     }
     throw new IntentionalStopError(".s");

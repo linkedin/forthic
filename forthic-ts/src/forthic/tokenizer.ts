@@ -29,6 +29,11 @@ export class Token {
 // 'Data Link Escape'
 export const DLE = String.fromCharCode(16);
 
+interface StringDelta {
+  start: number;
+  end: number;
+}
+
 export class Tokenizer {
   reference_location: CodeLocation;
   line: number;
@@ -42,8 +47,14 @@ export class Tokenizer {
   token_line: number;
   token_column: number;
   token_string: string;
+  string_delta: StringDelta | undefined;
+  private streaming: boolean;
 
-  constructor(string: string, reference_location: CodeLocation | null = null) {
+  constructor(
+    string: string,
+    reference_location: CodeLocation | null = null,
+    streaming: boolean = false,
+  ) {
     if (!reference_location) {
       reference_location = new CodeLocation({ screen_name: "<string>" });
     }
@@ -61,6 +72,8 @@ export class Tokenizer {
     this.token_line = 0;
     this.token_column = 0;
     this.token_string = "";
+    this.string_delta = undefined;
+    this.streaming = streaming;
   }
 
   next_token(): Token {
@@ -127,7 +140,10 @@ export class Tokenizer {
       for (i = 0; i < -num_chars; i++) {
         this.input_pos -= 1;
         if (this.input_pos < 0 || this.column < 0) {
-          throw new InvalidInputPositionError(this.input_string, this.get_token_location());
+          throw new InvalidInputPositionError(
+            this.input_string,
+            this.get_token_location(),
+          );
         }
         if (this.input_string[this.input_pos] === "\n") {
           this.line -= 1;
@@ -153,6 +169,14 @@ export class Tokenizer {
 
   get_input_string(): string {
     return this.input_string;
+  }
+
+  get_string_delta(): string {
+    if (!this.string_delta) return "";
+    return this.input_string.slice(
+      this.string_delta.start,
+      this.string_delta.end,
+    );
   }
 
   transition_from_START(): Token {
@@ -222,14 +246,22 @@ export class Tokenizer {
 
       if (this.is_whitespace(char)) continue;
       else if (this.is_quote(char)) {
-        throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Definition names can't have quotes in them");
+        throw new InvalidWordNameError(
+          this.input_string,
+          this.get_token_location(),
+          "Definition names can't have quotes in them",
+        );
       } else {
         this.advance_position(-1);
         return this.transition_from_GATHER_DEFINITION_NAME();
       }
     }
 
-    throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Got EOS in START_DEFINITION");
+    throw new InvalidWordNameError(
+      this.input_string,
+      this.get_token_location(),
+      "Got EOS in START_DEFINITION",
+    );
   }
 
   transition_from_START_MEMO(): Token {
@@ -239,14 +271,22 @@ export class Tokenizer {
 
       if (this.is_whitespace(char)) continue;
       else if (this.is_quote(char))
-        throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Memo names can't have quotes in them");
+        throw new InvalidWordNameError(
+          this.input_string,
+          this.get_token_location(),
+          "Memo names can't have quotes in them",
+        );
       else {
         this.advance_position(-1);
         return this.transition_from_GATHER_MEMO_NAME();
       }
     }
 
-    throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Got EOS in START_MEMO");
+    throw new InvalidWordNameError(
+      this.input_string,
+      this.get_token_location(),
+      "Got EOS in START_MEMO",
+    );
   }
 
   gather_definition_name(): void {
@@ -255,10 +295,18 @@ export class Tokenizer {
       this.advance_position(1);
       if (this.is_whitespace(char)) break;
       if (this.is_quote(char)) {
-        throw new InvalidWordNameError(this.input_string, this.get_token_location(), "Definition names can't have quotes in them");
+        throw new InvalidWordNameError(
+          this.input_string,
+          this.get_token_location(),
+          "Definition names can't have quotes in them",
+        );
       }
       if (["[", "]", "{", "}"].indexOf(char) >= 0) {
-        throw new InvalidWordNameError(this.input_string, this.get_token_location(), `Definition names can't have '${char}' in them`);
+        throw new InvalidWordNameError(
+          this.input_string,
+          this.get_token_location(),
+          `Definition names can't have '${char}' in them`,
+        );
       }
       this.token_string += char;
     }
@@ -305,6 +353,10 @@ export class Tokenizer {
   transition_from_GATHER_TRIPLE_QUOTE_STRING(delim: string): Token {
     this.note_start_token();
     const string_delimiter = delim;
+    this.string_delta = {
+      start: this.input_pos,
+      end: this.input_pos,
+    };
 
     while (this.input_pos < this.input_string.length) {
       const char = this.input_string[this.input_pos];
@@ -313,36 +365,61 @@ export class Tokenizer {
         this.is_triple_quote(this.input_pos, char)
       ) {
         this.advance_position(3);
-        return new Token(
+        const token = new Token(
           TokenType.STRING,
           this.token_string,
           this.get_token_location(),
         );
+        this.string_delta = undefined;
+        return token;
       } else {
         this.advance_position(1);
         this.token_string += char;
+        this.string_delta.end = this.input_pos;
       }
     }
 
-    throw new UnterminatedStringError(this.input_string, this.get_token_location());
+    if (this.streaming) {
+      return null;
+    }
+    throw new UnterminatedStringError(
+      this.input_string,
+      this.get_token_location(),
+    );
   }
 
   transition_from_GATHER_STRING(delim: string): Token {
     this.note_start_token();
     const string_delimiter = delim;
+    this.string_delta = {
+      start: this.input_pos,
+      end: this.input_pos,
+    };
 
     while (this.input_pos < this.input_string.length) {
       const char = this.input_string[this.input_pos];
       this.advance_position(1);
-      if (char === string_delimiter)
-        return new Token(
+      if (char === string_delimiter) {
+        const token = new Token(
           TokenType.STRING,
           this.token_string,
           this.get_token_location(),
         );
-      else this.token_string += char;
+        this.string_delta = undefined;
+        return token;
+      } else {
+        this.token_string += char;
+        this.string_delta.end = this.input_pos;
+      }
     }
-    throw new UnterminatedStringError(this.input_string, this.get_token_location());
+
+    if (this.streaming) {
+      return null;
+    }
+    throw new UnterminatedStringError(
+      this.input_string,
+      this.get_token_location(),
+    );
   }
 
   transition_from_GATHER_WORD(): Token {
@@ -400,10 +477,12 @@ export class PositionedString {
   }
 }
 
-
 class TokenizerError extends Error {
-  constructor(private note: string, private input: string, private location: CodeLocation) {
-
+  constructor(
+    private note: string,
+    private input: string,
+    private location: CodeLocation,
+  ) {
     const message = `${note} from ${location.start_pos} to ${location.end_pos} in '${input}'`;
     super(message);
     this.name = "TokenizerError";
@@ -424,7 +503,6 @@ class TokenizerError extends Error {
   getMessage(): string {
     return this.message;
   }
-
 }
 
 export class InvalidInputPositionError extends TokenizerError {
