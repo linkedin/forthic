@@ -11,8 +11,8 @@ import {
   MissingSemicolonError,
   ExtraSemicolonError,
   ModuleError,
-  TooManyAttemptsError
- } from "./errors";
+  TooManyAttemptsError,
+} from "./errors";
 
 type Timestamp = {
   label: string;
@@ -20,7 +20,6 @@ type Timestamp = {
 };
 
 type HandleErrorFunction = (e: Error) => Promise<void>;
-
 
 class StartModuleWord extends Word {
   async execute(interp: Interpreter): Promise<void> {
@@ -101,6 +100,9 @@ export class Interpreter {
   private is_profiling: boolean;
   private start_profile_time: number | null;
   private timestamps: Timestamp[];
+  private streaming_token_index: number = 0;
+  private stream: boolean = false;
+  private previous_delta_length: number = 0;
 
   constructor() {
     this.timestamp_id = Math.random();
@@ -220,49 +222,62 @@ export class Interpreter {
     this.string_location = null;
   }
 
-
   get_screen_forthic(screen_name: string): string {
     const screen = this.screens[screen_name];
     if (!screen) {
-      throw new UnknownScreenError(this.get_top_input_string(), screen_name, this.string_location);
+      throw new UnknownScreenError(
+        this.get_top_input_string(),
+        screen_name,
+        this.string_location,
+      );
     }
 
     const result = screen;
     return result;
   }
 
-  async run(string: string, reference_location: CodeLocation | null = null): Promise<boolean|number> {
+  async run(
+    string: string,
+    reference_location: CodeLocation | null = null,
+  ): Promise<boolean | number> {
     this.tokenizer_stack.push(new Tokenizer(string, reference_location));
 
     if (this.handleError) {
       await this.execute_with_recovery();
     } else {
-      await this.run_with_tokenizer(this.tokenizer_stack[this.tokenizer_stack.length - 1]);
+      await this.run_with_tokenizer(
+        this.tokenizer_stack[this.tokenizer_stack.length - 1],
+      );
     }
 
     this.tokenizer_stack.pop();
     return true;
   }
 
-  async execute_with_recovery(numAttempts:number=0): Promise<number> {
+  async execute_with_recovery(numAttempts: number = 0): Promise<number> {
     try {
-        numAttempts++;
-        if (numAttempts > this.maxAttempts) {
-          throw new TooManyAttemptsError(this.get_top_input_string(), numAttempts, this.maxAttempts);
-        }
-        await this.continue();
-        return numAttempts;
-    }
-    catch (e) {
+      numAttempts++;
+      if (numAttempts > this.maxAttempts) {
+        throw new TooManyAttemptsError(
+          this.get_top_input_string(),
+          numAttempts,
+          this.maxAttempts,
+        );
+      }
+      await this.continue();
+      return numAttempts;
+    } catch (e) {
       if (!this.handleError) throw e;
       await this.handleError(e);
       return await this.execute_with_recovery(numAttempts);
     }
-}
+  }
 
   async continue() {
-    await this.run_with_tokenizer(this.tokenizer_stack[this.tokenizer_stack.length - 1]);
-    return
+    await this.run_with_tokenizer(
+      this.tokenizer_stack[this.tokenizer_stack.length - 1],
+    );
+    return;
   }
 
   async run_with_tokenizer(tokenizer: Tokenizer): Promise<boolean> {
@@ -270,24 +285,24 @@ export class Interpreter {
     do {
       this.previous_token = token;
       token = tokenizer.next_token();
-        await this.handle_token(token);
-        if (token.type === TokenType.EOS) {
-          break;
-        }
-        if (this.should_stop) {
-          this.should_stop = false;
-          break;
-        }
+      await this.handle_token(token);
+      if (token.type === TokenType.EOS) {
+        break;
+      }
+      if (this.should_stop) {
+        this.should_stop = false;
+        break;
+      }
 
-        // Regardless of debug mode, we don't want to stop when compiling definitions or going through comments
-        if (
-          token.type === TokenType.START_DEF ||
-          token.type === TokenType.END_DEF ||
-          token.type == TokenType.COMMENT ||
-          this.is_compiling
-        ) {
-          continue;
-        }
+      // Regardless of debug mode, we don't want to stop when compiling definitions or going through comments
+      if (
+        token.type === TokenType.START_DEF ||
+        token.type === TokenType.END_DEF ||
+        token.type == TokenType.COMMENT ||
+        this.is_compiling
+      ) {
+        continue;
+      }
 
       // eslint-disable-next-line no-constant-condition
     } while (true);
@@ -301,8 +316,12 @@ export class Interpreter {
 
   find_module(name: string): Module {
     const result = this.registered_modules[name];
-    if (result === undefined)   {
-      throw new UnknownModuleError(this.get_top_input_string(), name, this.string_location);
+    if (result === undefined) {
+      throw new UnknownModuleError(
+        this.get_top_input_string(),
+        name,
+        this.string_location,
+      );
     }
     return result;
   }
@@ -316,7 +335,10 @@ export class Interpreter {
       const tokenizer = this.get_tokenizer();
       // const tokenizer = this.tokenizer_stack[0];
       // console.log({input_string: tokenizer.get_input_string()});
-      throw new StackUnderflowError(this.get_top_input_string(), tokenizer.get_token_location());
+      throw new StackUnderflowError(
+        this.get_top_input_string(),
+        tokenizer.get_token_location(),
+      );
     }
     let result = this.stack.pop();
 
@@ -347,7 +369,12 @@ export class Interpreter {
     try {
       await this.run(module.forthic_code);
     } catch (e) {
-      throw new ModuleError(this.get_top_input_string(), module.name, e, this.string_location);
+      throw new ModuleError(
+        this.get_top_input_string(),
+        module.name,
+        e,
+        this.string_location,
+      );
     }
 
     this.module_stack_pop();
@@ -434,7 +461,11 @@ export class Interpreter {
     else if (token.type == TokenType.EOS) {
       return;
     } else {
-      throw new UnknownTokenError(this.get_top_input_string(), token.string, this.string_location);
+      throw new UnknownTokenError(
+        this.get_top_input_string(),
+        token.string,
+        this.string_location,
+      );
     }
   }
 
@@ -476,7 +507,10 @@ export class Interpreter {
 
   handle_start_definition_token(token: Token) {
     if (this.is_compiling) {
-      throw new MissingSemicolonError(this.get_top_input_string(), this.previous_token?.location);
+      throw new MissingSemicolonError(
+        this.get_top_input_string(),
+        this.previous_token?.location,
+      );
     }
     this.cur_definition = new DefinitionWord(token.string);
     this.is_compiling = true;
@@ -485,7 +519,10 @@ export class Interpreter {
 
   handle_start_memo_token(token: Token) {
     if (this.is_compiling) {
-      throw new MissingSemicolonError(this.get_top_input_string(), this.previous_token?.location);
+      throw new MissingSemicolonError(
+        this.get_top_input_string(),
+        this.previous_token?.location,
+      );
     }
     this.cur_definition = new DefinitionWord(token.string);
     this.is_compiling = true;
@@ -494,7 +531,10 @@ export class Interpreter {
 
   handle_end_definition_token(token: Token) {
     if (!this.is_compiling || !this.cur_definition) {
-      throw new ExtraSemicolonError(this.get_top_input_string(), token.location);
+      throw new ExtraSemicolonError(
+        this.get_top_input_string(),
+        token.location,
+      );
     }
 
     if (this.is_memo_definition) {
@@ -508,7 +548,11 @@ export class Interpreter {
   async handle_word_token(token: Token) {
     const word = this.find_word(token.string);
     if (!word) {
-      throw new UnknownWordError(this.get_top_input_string(), token.string, token.location);
+      throw new UnknownWordError(
+        this.get_top_input_string(),
+        token.string,
+        token.location,
+      );
     }
     await this.handle_word(word, token.location);
     return;
@@ -523,6 +567,110 @@ export class Interpreter {
       await word.execute(this);
     }
   }
+
+  /**
+   * Execute streaming Forthic code.
+   *
+   * @param fullCode - The complete Forthic code from the start up to the current point.
+   * @param done - When false, execute tokens up to (but not including) the last one (if more than one token exists).
+   *               When true, execute the final token as well.
+   */
+
+  async *streamingRun(
+    codeStream: string,
+    done: boolean = false,
+    reference_location: CodeLocation | null = null,
+  ) {
+    // Create a new Tokenizer for the full string.
+    const tokenizer = new Tokenizer(codeStream, reference_location, true);
+    const tokens: Token[] = [];
+    let eosFound = false;
+
+    this.tokenizer_stack.push(tokenizer);
+
+    // Gather tokens from the beginning.
+    while (true) {
+      const token = tokenizer.next_token();
+      if (!token) {
+        break;
+      }
+
+      // If we hit an EOS token then push it and break.
+      if (token.type === TokenType.EOS) {
+        tokens.push(token);
+        eosFound = true;
+        break;
+      }
+
+      tokens.push(token);
+    }
+
+    const delta = eosFound ? undefined : tokenizer.get_string_delta();
+    this.tokenizer_stack.pop();
+
+    let newStop = findLastWordOrEOS(tokens);
+
+    if (eosFound && !done) {
+      newStop--;
+    }
+    if (!eosFound && !done) {
+      newStop++;
+    }
+
+    // Execute only tokens we have not executed previously.
+    for (let i = this.streaming_token_index; i < newStop; i++) {
+      const token = tokens[i];
+      if (!token) {
+        continue;
+      }
+
+      await this.handle_token(token);
+
+      if (
+        this.stream &&
+        (token.type !== TokenType.WORD || token.string !== "START_LOG")
+      ) {
+        yield token.string;
+      }
+      this.previous_token = token;
+    }
+
+    if (this.stream && !eosFound) {
+      // Yield string delta if we're streaming and tokenizer has a delta
+      const newPortion = delta.substring(this.previous_delta_length);
+
+      if (newPortion) {
+        yield { stringDelta: newPortion };
+      }
+      this.previous_delta_length = delta.length;
+    }
+
+    if (done) {
+      this.endStream();
+      return;
+    }
+
+    // Update our pointer and reset if done
+    this.streaming_token_index = newStop;
+  }
+
+  startStream() {
+    this.stream = true;
+    this.previous_delta_length = 0;
+    this.streaming_token_index = 0;
+  }
+
+  endStream() {
+    this.stream = false;
+    this.previous_delta_length = 0;
+    this.streaming_token_index = 0;
+  }
+}
+
+function findLastWordOrEOS(tokens: Token[]): number {
+  return tokens.findLastIndex(
+    (token) => token.type === TokenType.WORD || token.type === TokenType.EOS,
+  );
 }
 
 export function dup_interpreter(interp: Interpreter) {
