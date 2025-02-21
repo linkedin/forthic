@@ -3,6 +3,7 @@
     "outDir": "./dist",
     "allowJs": true,
     "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
     "moduleResolution": "node",
     "esModuleInterop": true,
     "baseUrl": ".",
