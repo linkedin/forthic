@@ -362,6 +362,22 @@ export class Interpreter {
     this.registered_modules[module.name] = module;
   }
 
+  // If names is an array of strings, import each module using the module name as the prefix
+  // If names is an array of arrays, import each module using the first element as the
+  // module name and the second element as the prefix
+  use_modules(names: any[]) {
+    for (const name of names) {
+      let module_name = name;
+      let prefix = name;
+      if (name instanceof Array) {
+        module_name = name[0];
+        prefix = name[1];
+      }
+      const module = this.find_module(module_name);
+      this.get_app_module().import_module(prefix, module, this);
+    }
+  }
+
   async run_module_code(module: Module): Promise<void> {
     this.module_stack_push(module);
     try {

@@ -373,19 +373,8 @@ export class GlobalModule extends Module {
   // ( names -- )
   async word_USE_MODULES(interp: Interpreter) {
     const names = interp.stack_pop();
-
-    for (let i = 0; i < names.length; i++) {
-      const name = names[i];
-      let module_name = name;
-      let prefix = name;
-      if (name instanceof Array) {
-        module_name = name[0];
-        prefix = name[1];
-      }
-
-      const module = interp.find_module(module_name);
-      interp.get_app_module().import_module(prefix, module, interp);
-    }
+    if (!names) return;
+    interp.use_modules(names);
   }
 
   // ( key_vals -- rec )

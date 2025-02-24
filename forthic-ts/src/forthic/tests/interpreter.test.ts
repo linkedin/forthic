@@ -1,4 +1,5 @@
 import { Interpreter } from "../interpreter";
+import { Module } from "../module";
 
 test("Initial state", () => {
   const interp = new Interpreter();
@@ -164,3 +165,35 @@ test("Search global module", async () => {
   await interp.run("POP");
   expect((interp as any).stack.length).toBe(0);
 });
+
+
+test("Use modules", async () => {
+  const interp = new Interpreter();
+  interp.register_module(new TestModule(interp));
+  interp.use_modules(["test"]);
+  await interp.run("test.TEST");
+  expect(interp.stack_pop()).toBe("TEST called");
+
+  // Test with prefix
+  const interp2 = new Interpreter();
+  interp2.register_module(new TestModule(interp2));
+  interp2.use_modules([["test", ""]]);
+  await interp2.run("TEST");
+  expect(interp2.stack_pop()).toBe("TEST called");
+});
+
+
+// ===== Sample modules =================================================================
+
+class TestModule extends Module {
+  constructor(interp: Interpreter) {
+    super("test", interp);
+
+    this.add_module_word("TEST", this.word_TEST.bind(this));
+  }
+
+  // ( -- message )
+  async word_TEST(_interp: Interpreter) {
+    _interp.stack_push("TEST called");
+  }
+}
