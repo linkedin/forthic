@@ -56,7 +56,7 @@ describe("Interpreter.streamingRun", () => {
       "The quick brown fox jumps over",
     ]);
 
-    expect(interp.get_stack()).toEqual(["THE QUICK BROWN FOX JUMPS OVER"]);
+    expect(interp.get_stack().get_items()).toEqual(["THE QUICK BROWN FOX JUMPS OVER"]);
   });
 
   test("executes complete tokens and skips the last incomplete token (done=false)", async () => {
@@ -67,21 +67,21 @@ describe("Interpreter.streamingRun", () => {
 
     // The literal handlers should push numeric values.
     // In this case only tokens for "1" and "2" were executed.
-    expect(interp.get_stack()).toEqual([3]);
+    expect(interp.get_stack().get_items()).toEqual([3]);
   });
 
   test("executes the final token when done flag is true", async () => {
     // First call: pass the incomplete code. Only tokens "1" and "2" will execute.
     const gen1 = interp.streamingRun("1 2 +", false);
     await gen1.next();
-    expect(interp.get_stack()).toEqual([1, 2]);
+    expect(interp.get_stack().get_items()).toEqual([1, 2]);
 
     // Second call: pass the full code, and now indicate that the stream is done.
     // The final plus token is now executed – which pops 1 and 2 and pushes 3.
     const gen2 = interp.streamingRun("1 2 +", true);
     await gen2.next();
 
-    expect(interp.get_stack()).toEqual([3]);
+    expect(interp.get_stack().get_items()).toEqual([3]);
   });
 
   test("executes only new tokens between calls", async () => {
@@ -89,32 +89,32 @@ describe("Interpreter.streamingRun", () => {
     // First, the interpreter sees only "1".
     const gen1 = interp.streamingRun("1", false);
     await gen1.next();
-    expect(interp.get_stack()).toEqual([]);
+    expect(interp.get_stack().get_items()).toEqual([]);
 
     // Then, the code grows to "1 2". The new token "2" is executed.
     const gen2 = interp.streamingRun("1 2", false);
     await gen2.next();
-    expect(interp.get_stack()).toEqual([1]);
+    expect(interp.get_stack().get_items()).toEqual([1]);
 
     // Finally, the full code "1 2 +" is provided, and done=true executes the final token (plus).
     const gen3 = interp.streamingRun("1 2 +", true);
     await gen3.next();
     // With the plus executed, 1 and 2 are replaced by 3.
-    expect(interp.get_stack()).toEqual([3]);
+    expect(interp.get_stack().get_items()).toEqual([3]);
   });
 
   test("streaming complex arithmetic", async () => {
     const gen1 = interp.streamingRun("1 2 + 3", false);
     await gen1.next();
-    expect(interp.get_stack()).toEqual([3]);
+    expect(interp.get_stack().get_items()).toEqual([3]);
 
     const gen2 = interp.streamingRun("1 2 + 3 +", false);
     await gen2.next();
-    expect(interp.get_stack()).toEqual([3, 3]);
+    expect(interp.get_stack().get_items()).toEqual([3, 3]);
 
     const gen3 = interp.streamingRun("1 2 + 3 + 4 + 5 + 2 * 4 -", true);
     await gen3.next();
-    expect(interp.get_stack()).toEqual([26]);
+    expect(interp.get_stack().get_items()).toEqual([26]);
   });
 
   test("yields string deltas between START_LOG and END_LOG", async () => {
@@ -224,7 +224,7 @@ describe("Interpreter.streamingRun", () => {
       "The quick brown fox jumps over",
     ]);
 
-    expect(interp.get_stack()).toEqual(["THE QUICK BROWN FOX JUMPS OVER"]);
+    expect(interp.get_stack().get_items()).toEqual(["THE QUICK BROWN FOX JUMPS OVER"]);
   });
 
   test("START_LOG/END_LOG with numbers", async () => {
@@ -239,7 +239,7 @@ describe("Interpreter.streamingRun", () => {
     expect(deltas).toEqual(["1", "2", "3"]);
     const val = interp.stack_pop();
     expect(val).toEqual(3);
-    expect(interp.get_stack()).toEqual([1, 2]);
+    expect(interp.get_stack().get_items()).toEqual([1, 2]);
   });
 
   test("START_LOG/END_LOG with objects", async () => {

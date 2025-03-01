@@ -2638,7 +2638,7 @@ export class GlobalModule extends Module {
 
   // ( -- )
   word_dot_s(interp: Interpreter) {
-    const stack = interp.get_stack();
+    const stack = interp.get_stack().get_items();
     if (stack.length > 0) {
       console.log(stack[stack.length - 1]);
     } else {
@@ -2649,7 +2649,7 @@ export class GlobalModule extends Module {
 
   // ( -- )
   word_dot_S(interp: Interpreter) {
-    const stack = interp.get_stack().reverse();
+    const stack = interp.get_stack().get_items().reverse();
     console.log(JSON.stringify(stack, null, 2));
     throw new IntentionalStopError(".S");
   }

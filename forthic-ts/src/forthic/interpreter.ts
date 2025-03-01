@@ -77,6 +77,27 @@ class EndArrayWord extends Word {
   }
 }
 
+// A wrapper to allow us to set/get the stack
+export class Stack {
+  private items: any[];
+
+  constructor(items: any[] = []) {
+    this.items = items;
+  }
+
+  get_items(): any[] {
+    return this.items;
+  }
+
+  set_items(items: any[]) {
+    this.items = items;
+  }
+
+  toJSON() {
+    return this.items;
+  }
+}
+
 export class Interpreter {
   private timestamp_id: number;
   private stack: any[];
@@ -139,8 +160,12 @@ export class Interpreter {
     this.timestamps = [];
   }
 
-  get_stack(): any[] {
-    return this.stack;
+  get_stack(): Stack {
+    return new Stack(this.stack);
+  }
+
+  set_stack(stack: Stack) {
+    this.stack = stack.get_items();
   }
 
   halt() {
@@ -376,6 +401,12 @@ export class Interpreter {
       const module = this.find_module(module_name);
       this.get_app_module().import_module(prefix, module, this);
     }
+  }
+
+  // A convenience method to register and use a module
+  import_module(module: Module, prefix = "") {
+    this.register_module(module);
+    this.use_modules([[module.name, prefix]]);
   }
 
   async run_module_code(module: Module): Promise<void> {

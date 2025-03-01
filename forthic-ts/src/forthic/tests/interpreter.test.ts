@@ -1,4 +1,4 @@
-import { Interpreter } from "../interpreter";
+import { Interpreter, Stack } from "../interpreter";
 import { Module } from "../module";
 
 test("Initial state", () => {
@@ -182,6 +182,37 @@ test("Use modules", async () => {
   expect(interp2.stack_pop()).toBe("TEST called");
 });
 
+test("Import module", async () => {
+  // Test without prefix
+  const interp = new Interpreter();
+  const test_module = new TestModule(interp);
+  interp.register_module(test_module);
+  interp.import_module(test_module);
+  await interp.run("TEST");
+  expect(interp.stack_pop()).toBe("TEST called");
+
+  // Test with prefix
+  const interp2 = new Interpreter();
+  const test_module2 = new TestModule(interp2);
+  interp2.register_module(test_module2);
+  interp2.import_module(test_module2, "t");
+  await interp2.run("t.TEST");
+  expect(interp2.stack_pop()).toBe("TEST called");
+
+  // Test with module name as prefix
+  const interp3 = new Interpreter();
+  const test_module3 = new TestModule(interp3);
+  interp3.register_module(test_module3);
+  interp3.import_module(test_module3, test_module3.get_name());
+  await interp3.run("test.TEST");
+  expect(interp3.stack_pop()).toBe("TEST called");
+});
+
+test("Stack", async () => {
+  const value = {a: 1, b: 2};
+  const stack = new Stack([value]);
+  expect(JSON.stringify(stack)).toBe(JSON.stringify([value]));
+});
 
 // ===== Sample modules =================================================================
 

@@ -228,6 +228,10 @@ export class Module {
     this.module_id = `${name}-${Math.floor(Math.random() * 1000000)}`;
   }
 
+  get_name(): string {
+    return this.name;
+  }
+
   dup(): Module {
     const self = this;
     const result = new Module(self.name);

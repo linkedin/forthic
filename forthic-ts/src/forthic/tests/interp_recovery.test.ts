@@ -24,7 +24,7 @@ test("Continue from `.s`", async () => {
 
   interp.set_error_handler(handleError);
   await interp.run("1 .s 2 .s +");
-  expect(interp.get_stack()).toEqual([3]);
+  expect(interp.get_stack().get_items()).toEqual([3]);
 });
 
 test("Continue from `.s` with intervening call", async () => {
@@ -40,7 +40,7 @@ test("Continue from `.s` with intervening call", async () => {
 
   interp.set_error_handler(handleError);
   await interp.run("1 .S 2 .S +");
-  expect(interp.get_stack()).toEqual([3]);
+  expect(interp.get_stack().get_items()).toEqual([3]);
 });
 
 
@@ -58,7 +58,7 @@ test("Simulate recovery", async () => {
   interp.set_max_attempts(3);
   interp.set_error_handler(handleError);
   await interp.run("1 garbage +");
-  expect(interp.get_stack()).toEqual([3]);
+  expect(interp.get_stack().get_items()).toEqual([3]);
 });
 
 
@@ -78,7 +78,7 @@ test("Simulate multiple recoveries", async () => {
   interp.set_max_attempts(3);
   interp.set_error_handler(handleError);
   await interp.run("1 garbage + more_garbage +");
-  expect(interp.get_stack()).toEqual([5]);
+  expect(interp.get_stack().get_items()).toEqual([5]);
 });
 
 
