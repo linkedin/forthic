@@ -211,6 +211,7 @@ test("Import module", async () => {
 test("Stack", async () => {
   const value = {a: 1, b: 2};
   const stack = new Stack([value]);
+  expect(stack.length).toBe(1);
   expect(JSON.stringify(stack)).toBe(JSON.stringify([value]));
 });
 

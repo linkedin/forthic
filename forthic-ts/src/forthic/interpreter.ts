@@ -96,6 +96,11 @@ export class Stack {
   toJSON() {
     return this.items;
   }
+
+  // Add length property
+  get length() {
+    return this.items.length;
+  }
 }
 
 export class Interpreter {
