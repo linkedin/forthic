@@ -215,8 +215,9 @@ export class Module {
   name: string;
   forthic_code: string;
   module_id: string;
+  interp: Interpreter | null;
 
-  constructor(name: string, interp?: any, forthic_code: string = "") {
+  constructor(name: string, interp?: Interpreter, forthic_code: string = "") {
     this.words = [];
     this.exportable = [];
     this.variables = {};
@@ -226,10 +227,22 @@ export class Module {
     this.name = name;
     this.forthic_code = forthic_code;
     this.module_id = `${name}-${Math.floor(Math.random() * 1000000)}`;
+    this.interp = interp;
   }
 
   get_name(): string {
     return this.name;
+  }
+
+  set_interp(interp: Interpreter): void {
+    this.interp = interp;
+  }
+
+  get_interp(): Interpreter {
+    if (!this.interp) {
+      throw new Error(`Module ${this.name} has no interpreter`);
+    }
+    return this.interp;
   }
 
   dup(): Module {

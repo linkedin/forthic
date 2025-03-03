@@ -138,7 +138,7 @@ export class Interpreter {
   private stream: boolean = false;
   private previous_delta_length: number = 0;
 
-  constructor() {
+  constructor(modules: Module[] = []) {
     this.timestamp_id = Math.random();
 
     this.stack = [];
@@ -171,6 +171,9 @@ export class Interpreter {
     this.is_profiling = false;
     this.start_profile_time = null;
     this.timestamps = [];
+
+    // If modules are provided, import them unprefixed as a convenience
+    this.import_modules(modules);
   }
 
   get_stack(): Stack {
@@ -398,6 +401,7 @@ export class Interpreter {
 
   register_module(module: Module) {
     this.registered_modules[module.name] = module;
+    module.set_interp(this);
   }
 
   // If names is an array of strings, import each module using the module name as the prefix
@@ -420,6 +424,12 @@ export class Interpreter {
   import_module(module: Module, prefix = "") {
     this.register_module(module);
     this.use_modules([[module.name, prefix]]);
+  }
+
+  import_modules(modules: Module[]) {
+    for (const module of modules) {
+      this.import_module(module);
+    }
   }
 
   async run_module_code(module: Module): Promise<void> {

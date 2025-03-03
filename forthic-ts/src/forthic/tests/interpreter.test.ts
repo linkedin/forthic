@@ -169,14 +169,14 @@ test("Search global module", async () => {
 
 test("Use modules", async () => {
   const interp = new Interpreter();
-  interp.register_module(new TestModule(interp));
+  interp.register_module(new TestModule());
   interp.use_modules(["test"]);
   await interp.run("test.TEST");
   expect(interp.stack_pop()).toBe("TEST called");
 
   // Test with prefix
   const interp2 = new Interpreter();
-  interp2.register_module(new TestModule(interp2));
+  interp2.register_module(new TestModule());
   interp2.use_modules([["test", ""]]);
   await interp2.run("TEST");
   expect(interp2.stack_pop()).toBe("TEST called");
@@ -185,24 +185,21 @@ test("Use modules", async () => {
 test("Import module", async () => {
   // Test without prefix
   const interp = new Interpreter();
-  const test_module = new TestModule(interp);
-  interp.register_module(test_module);
+  const test_module = new TestModule();
   interp.import_module(test_module);
   await interp.run("TEST");
   expect(interp.stack_pop()).toBe("TEST called");
 
   // Test with prefix
   const interp2 = new Interpreter();
-  const test_module2 = new TestModule(interp2);
-  interp2.register_module(test_module2);
+  const test_module2 = new TestModule();
   interp2.import_module(test_module2, "t");
   await interp2.run("t.TEST");
   expect(interp2.stack_pop()).toBe("TEST called");
 
   // Test with module name as prefix
   const interp3 = new Interpreter();
-  const test_module3 = new TestModule(interp3);
-  interp3.register_module(test_module3);
+  const test_module3 = new TestModule();
   interp3.import_module(test_module3, test_module3.get_name());
   await interp3.run("test.TEST");
   expect(interp3.stack_pop()).toBe("TEST called");
@@ -220,11 +217,18 @@ test("Stack", async () => {
   expect(JSON.stringify(stack)).toBe(JSON.stringify([value]));
 });
 
+
+test("Construct interpreter with modules", async () => {
+  const interp = new Interpreter([new TestModule()]);
+  await interp.run("TEST");
+  expect(interp.stack_pop()).toBe("TEST called");
+});
+
 // ===== Sample modules =================================================================
 
 class TestModule extends Module {
-  constructor(interp: Interpreter) {
-    super("test", interp);
+  constructor() {
+    super("test");
 
     this.add_module_word("TEST", this.word_TEST.bind(this));
   }
@@ -232,5 +236,6 @@ class TestModule extends Module {
   // ( -- message )
   async word_TEST(_interp: Interpreter) {
     _interp.stack_push("TEST called");
+    // console.log("TEST called", _interp === this.get_interp());
   }
 }

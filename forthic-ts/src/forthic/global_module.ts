@@ -236,6 +236,10 @@ export class GlobalModule extends Module {
     this.add_module_word("PROFILE-DATA", this.word_PROFILE_DATA);
   }
 
+  set_interp(_interp: Interpreter): void {
+    throw new Error("Attempt to overwrite interpreter of global module");
+  }
+
   find_word(name: string): Word | null {
     let result = super.find_word(name);
     if (!result) result = this.find_literal_word(name);
