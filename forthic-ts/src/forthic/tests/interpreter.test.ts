@@ -213,6 +213,11 @@ test("Stack", async () => {
   const stack = new Stack([value]);
   expect(stack.length).toBe(1);
   expect(JSON.stringify(stack)).toBe(JSON.stringify([value]));
+  expect(stack.pop()).toBe(value);
+  expect(stack.length).toBe(0);
+  stack.push(value);
+  expect(stack.length).toBe(1);
+  expect(JSON.stringify(stack)).toBe(JSON.stringify([value]));
 });
 
 // ===== Sample modules =================================================================

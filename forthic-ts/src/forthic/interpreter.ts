@@ -97,6 +97,14 @@ export class Stack {
     return this.items;
   }
 
+  pop(): any {
+    return this.items.pop();
+  }
+
+  push(item: any) {
+    this.items.push(item);
+  }
+
   // Add length property
   get length() {
     return this.items.length;

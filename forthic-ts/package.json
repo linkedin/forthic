@@ -1,6 +1,6 @@
 {
   "name": "@forthic/interp",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Forthic interpreter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
