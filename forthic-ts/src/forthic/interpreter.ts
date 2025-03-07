@@ -646,7 +646,7 @@ export class Interpreter {
 
   async *streamingRun(
     codeStream: string,
-    done: boolean = false,
+    done: boolean,
     reference_location: CodeLocation | null = null,
   ) {
     // Create a new Tokenizer for the full string.

@@ -56,7 +56,44 @@ describe("Interpreter.streamingRun", () => {
       "The quick brown fox jumps over",
     ]);
 
-    expect(interp.get_stack().get_items()).toEqual(["THE QUICK BROWN FOX JUMPS OVER"]);
+    expect(interp.get_stack().get_items()).toEqual([
+      "THE QUICK BROWN FOX JUMPS OVER",
+    ]);
+  });
+
+  test("multi-line stream ending with word execution using incremental streaming", async () => {
+    const interp = new Interpreter();
+
+    // Define the EMAIL word
+    await interp.run(': EMAIL   "email called";');
+
+    // Create multi-line input ending with EMAIL
+    const input = `"""Create a new email to test@test.com with subject 'A Haiku About Life' and body:
+
+Morning sun rises
+Life flows like gentle river
+Night brings peaceful rest""" EMAIL`;
+
+    // Simulate streaming by calling streamingRun with increasing substrings
+    for (let i = 1; i <= input.length; i++) {
+      const substring = input.substring(0, i);
+      const isDone = i === input.length; // Only mark as done on the final iteration
+
+      const streamGenerator = interp.streamingRun(substring, isDone);
+
+      // Exhaust the generator for this chunk
+      for await (const _ of streamGenerator) {
+        // We don't need to do anything with the yield values in this test
+      }
+
+      // If we're done, verify the EMAIL word was executed
+      if (isDone) {
+        const stackItems = interp.get_stack().get_items();
+        expect(stackItems.length).toBe(2);
+        const top_item = interp.stack_pop();
+        expect(top_item).toEqual("email called");
+      }
+    }
   });
 
   test("executes complete tokens and skips the last incomplete token (done=false)", async () => {
@@ -129,6 +166,7 @@ describe("Interpreter.streamingRun", () => {
 
     for await (const delta of interp.streamingRun(
       `123 START_LOG "hello world`,
+      false,
     )) {
       items.push(delta);
     }
@@ -137,12 +175,14 @@ describe("Interpreter.streamingRun", () => {
 
     for await (const delta of interp.streamingRun(
       `123 START_LOG "hello world how`,
+      false,
     )) {
       items.push(delta);
     }
 
     for await (const delta of interp.streamingRun(
       `123 START_LOG "hello world how are you`,
+      false,
     )) {
       items.push(delta);
     }
@@ -224,14 +264,16 @@ describe("Interpreter.streamingRun", () => {
       "The quick brown fox jumps over",
     ]);
 
-    expect(interp.get_stack().get_items()).toEqual(["THE QUICK BROWN FOX JUMPS OVER"]);
+    expect(interp.get_stack().get_items()).toEqual([
+      "THE QUICK BROWN FOX JUMPS OVER",
+    ]);
   });
 
   test("START_LOG/END_LOG with numbers", async () => {
     const deltas: ({ stringDelta: string } | string)[] = [];
 
     for await (const delta of interp.streamingRun(
-      `START_LOG 1 2 3 END_LOG`,
+      "START_LOG 1 2 3 END_LOG",
       true,
     )) {
       deltas.push(delta);
@@ -253,10 +295,17 @@ describe("Interpreter.streamingRun", () => {
     }
 
     expect(deltas).toEqual([
-      '[', '[', 'key with space',
-      '1', ']',   '[',
-      'other key with space', '2',   ']',
-      ']', 'REC'
+      "[",
+      "[",
+      "key with space",
+      "1",
+      "]",
+      "[",
+      "other key with space",
+      "2",
+      "]",
+      "]",
+      "REC",
     ]);
     const val = interp.stack_pop();
     expect(val).toEqual({ "key with space": 1, "other key with space": 2 });
