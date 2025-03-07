@@ -1,6 +1,6 @@
 {
   "name": "@forthic/interp",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Forthic interpreter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -25,6 +25,9 @@
     "url": "https://github.com/linkedin/forthic/issues"
   },
   "homepage": "https://github.com/linkedin/forthic#readme",
+  "dependencies": {
+    "temporal-polyfill": "^0.2.5"
+  },
   "devDependencies": {
     "@babel/cli": "^7.25.9",
     "@babel/core": "^7.26.0",

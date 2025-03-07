@@ -13,6 +13,7 @@ import {
   ModuleError,
   TooManyAttemptsError,
 } from "./errors";
+import { Temporal } from "temporal-polyfill";
 
 type Timestamp = {
   label: string;
@@ -113,6 +114,7 @@ export class Stack {
 
 export class Interpreter {
   private timestamp_id: number;
+  private timezone: Temporal.TimeZoneLike;
   private stack: any[];
   private global_module: GlobalModule;
   private app_module: Module;
@@ -138,8 +140,9 @@ export class Interpreter {
   private stream: boolean = false;
   private previous_delta_length: number = 0;
 
-  constructor(modules: Module[] = []) {
+  constructor(modules: Module[] = [], timezone: Temporal.TimeZoneLike = "UTC") {
     this.timestamp_id = Math.random();
+    this.timezone = timezone;
 
     this.stack = [];
 
@@ -182,6 +185,14 @@ export class Interpreter {
 
   set_stack(stack: Stack) {
     this.stack = stack.get_items();
+  }
+
+  get_timezone(): Temporal.TimeZoneLike {
+    return this.timezone;
+  }
+
+  set_timezone(timezone: Temporal.TimeZoneLike) {
+    this.timezone = timezone;
   }
 
   halt() {

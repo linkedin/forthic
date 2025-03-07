@@ -8,6 +8,8 @@ import {
   date_to_string,
   date_to_int,
 } from "./utils";
+import { Temporal } from "temporal-polyfill";
+
 
 import { MapWord } from "./global_module/map_word";
 import { CodeLocation } from "./tokenizer";
@@ -277,20 +279,22 @@ export class GlobalModule extends Module {
     else return result;
   }
 
-  to_literal_date(str_val: string): Date | null {
+  to_literal_date(str_val: string): Temporal.PlainDate | null {
     const match = str_val.match(/(\d{4})-(\d{2})-(\d{2})/);
     if (!match) return null;
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
-    const result = new Date();
-    result.setUTCFullYear(year, month - 1, day);
-    result.setUTCHours(0, 0, 0, 0);
+    const result = Temporal.PlainDate.from({
+      year,
+      month,
+      day,
+    });
 
     return result;
   }
 
-  to_time(str_val: string): Date | null {
+  to_time(str_val: string): Temporal.PlainTime | null {
     const match = str_val.match(/(\d{1,2}):(\d{2})/);
     if (!match) return null;
 
@@ -300,8 +304,10 @@ export class GlobalModule extends Module {
     if (hours > 23) return null;
     if (minutes >= 60) return null;
 
-    const result = new Date();
-    result.setHours(hours, minutes, 0, 0);
+    const result = Temporal.PlainTime.from({
+      hour: hours,
+      minute: minutes,
+    });
     return result;
   }
 
@@ -1716,13 +1722,14 @@ export class GlobalModule extends Module {
   // ( time -- time )
   word_AM(interp: Interpreter) {
     const time = interp.stack_pop();
-    if (!(time instanceof Date)) throw "AM expecting a time";
+    if (!(time instanceof Temporal.PlainTime)) throw "AM expecting a time";
 
     let result = time;
-    if (time.getHours() >= 12) {
-      result = new Date();
-      result.setHours(time.getHours() - 12);
-      result.setMinutes(time.getMinutes());
+    if (time.hour >= 12) {
+      result = Temporal.PlainTime.from({
+        hour: time.hour - 12,
+        minute: time.minute,
+      });
     }
     interp.stack_push(result);
   }
@@ -1730,20 +1737,21 @@ export class GlobalModule extends Module {
   // ( time -- time )
   word_PM(interp: Interpreter) {
     const time = interp.stack_pop();
-    if (!(time instanceof Date)) throw "PM expecting a time";
+    if (!(time instanceof Temporal.PlainTime)) throw "PM expecting a time";
 
     let result = time;
-    if (time.getHours() < 12) {
-      result = new Date();
-      result.setHours(time.getHours() + 12);
-      result.setMinutes(time.getMinutes());
+    if (time.hour < 12) {
+      result = Temporal.PlainTime.from({
+        hour: time.hour + 12,
+        minute: time.minute,
+      });
     }
     interp.stack_push(result);
   }
 
   // ( -- time )
   word_NOW(interp: Interpreter) {
-    const result = new Date();
+    const result = Temporal.Now.plainDateTimeISO(interp.get_timezone());
     interp.stack_push(result);
   }
 
@@ -1751,12 +1759,20 @@ export class GlobalModule extends Module {
   word_to_TIME(interp: Interpreter) {
     const item = interp.stack_pop();
     let result;
-    if (item instanceof Date) {
+    if (item instanceof Temporal.PlainTime) {
       result = item;
-    } else {
+    }
+    else if (item instanceof Temporal.PlainDateTime) {
+      result = Temporal.PlainTime.from(item);
+    }
+    else {
       // NB: We need a date in order for Date.parse to succeed. Also assuming str is a time
       const date_string = "Jan 1, 2000 " + item;
-      result = new Date(Date.parse(date_string));
+      const date = new Date(Date.parse(date_string));
+      result = Temporal.PlainTime.from({
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+      });
     }
 
     interp.stack_push(result);
@@ -1778,78 +1794,68 @@ export class GlobalModule extends Module {
 
   // ( -- date )
   word_TODAY(interp: Interpreter) {
-    const result = new Date();
-    result.setHours(0, 0, 0, 0);
+    const result = Temporal.Now.plainDateISO(interp.get_timezone());
     interp.stack_push(result);
   }
 
   // ( -- date )
   word_MONDAY(interp: Interpreter) {
-    interp.stack_push(GlobalModule.get_day_this_week(0));
+    interp.stack_push(GlobalModule.get_day_this_week(0, interp.get_timezone()));
   }
 
   // ( -- date )
   word_TUESDAY(interp: Interpreter) {
-    interp.stack_push(GlobalModule.get_day_this_week(1));
+    interp.stack_push(GlobalModule.get_day_this_week(1, interp.get_timezone()));
   }
 
   // ( -- date )
   word_WEDNESDAY(interp: Interpreter) {
-    interp.stack_push(GlobalModule.get_day_this_week(2));
+    interp.stack_push(GlobalModule.get_day_this_week(2, interp.get_timezone()));
   }
 
   // ( -- date )
   word_THURSDAY(interp: Interpreter) {
-    interp.stack_push(GlobalModule.get_day_this_week(3));
+    interp.stack_push(GlobalModule.get_day_this_week(3, interp.get_timezone()));
   }
 
   // ( -- date )
   word_FRIDAY(interp: Interpreter) {
-    interp.stack_push(GlobalModule.get_day_this_week(4));
+    interp.stack_push(GlobalModule.get_day_this_week(4, interp.get_timezone()));
   }
 
   // ( -- date )
   word_SATURDAY(interp: Interpreter) {
-    interp.stack_push(GlobalModule.get_day_this_week(5));
+    interp.stack_push(GlobalModule.get_day_this_week(5, interp.get_timezone()));
   }
 
   // ( -- date )
   word_SUNDAY(interp: Interpreter) {
-    interp.stack_push(GlobalModule.get_day_this_week(6));
+    interp.stack_push(GlobalModule.get_day_this_week(6, interp.get_timezone()));
   }
 
-  static get_day_this_week(day_of_week) {
-    // NOTE: Monday is start of week
-    function normalize_day(day) {
-      return day;
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const delta_days = (day_of_week - normalize_day(today.getDay())) % 7;
-
-    const result = today;
-    result.setDate(result.getDate() + delta_days + 1);
+  static get_day_this_week(day_of_week: number, timezone: Temporal.TimeZoneLike) {
+    // Get plain date for day of week
+    const today = Temporal.Now.plainDateISO(timezone);
+    const delta_days = (day_of_week - today.dayOfWeek) % 7;
+    const result = today.add({ days: delta_days });
     return result;
   }
 
   // ( date num-days -- date )
   word_ADD_DAYS(interp: Interpreter) {
     const num_days = interp.stack_pop();
-    const date = interp.stack_pop();
+    const date: Temporal.PlainDate = interp.stack_pop();
 
-    const result = new Date(date);
-    result.setDate(result.getDate() + num_days);
+    const result = Temporal.PlainDate.from(date).add({ days: num_days });
     interp.stack_push(result);
   }
 
   // ( l_date r_date -- num_days )
   word_SUBTRACT_DATES(interp: Interpreter) {
-    const r_date = interp.stack_pop();
-    const l_date = interp.stack_pop();
-    const ms_per_day = 1000 * 60 * 60 * 24;
-    const result = Math.round(
-      (l_date.getTime() - r_date.getTime()) / ms_per_day,
-    );
+    const r_date = Temporal.PlainDate.from(interp.stack_pop());
+    const l_date = Temporal.PlainDate.from(interp.stack_pop());
+    // Subtract the dates and get the difference in days
+    const result = r_date.until(l_date).total({ unit: "days" });
     interp.stack_push(result);
   }
 
@@ -1870,33 +1876,40 @@ export class GlobalModule extends Module {
 
   // ( date time -- datetime )
   word_DATE_TIME_to_DATETIME(interp: Interpreter) {
-    const time = interp.stack_pop();
-    const date = interp.stack_pop();
-    const dt_string = `${date.getFullYear()}-${
-      date.getMonth() + 1
-    }-${date.getDate()} ${time.getHours()}:${time.getMinutes()}`;
-    const result = new Date(dt_string);
+    const time = Temporal.PlainTime.from(interp.stack_pop());
+    const date = Temporal.PlainDate.from(interp.stack_pop());
+    const result = Temporal.PlainDateTime.from({
+      year: date.year,
+      month: date.month,
+      day: date.day,
+      hour: time.hour,
+      minute: time.minute,
+    });
     interp.stack_push(result);
   }
 
   // ( datetime -- timestamp )
   word_DATETIME_to_TIMESTAMP(interp: Interpreter) {
-    const datetime = interp.stack_pop();
-    const result = Math.round(datetime.getTime() / 1000);
+    const datetime: Temporal.PlainDateTime = interp.stack_pop();
+
+    // Convert to ZonedDateTime
+    const zonedDateTime = datetime.toZonedDateTime(interp.get_timezone());
+    const result = zonedDateTime.toInstant().epochSeconds;
     interp.stack_push(result);
   }
 
   // ( timestamp -- datetime )
   word_TIMESTAMP_to_DATETIME(interp: Interpreter) {
     const timestamp = interp.stack_pop();
-    const result = new Date(timestamp * 1000);
+    const result = Temporal.Instant.fromEpochSeconds(timestamp).toZonedDateTime({ timeZone: interp.get_timezone(), calendar: "iso8601" });
     interp.stack_push(result);
   }
 
   // ( str -- datetime )
   word_STR_to_DATETIME(interp: Interpreter) {
     const s = interp.stack_pop();
-    const result = new Date(s);
+    const date = new Date(s);
+    const result = Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTime({ timeZone: interp.get_timezone(), calendar: "iso8601" });
     interp.stack_push(result);
   }
 

@@ -1,3 +1,5 @@
+import { Temporal } from "temporal-polyfill";
+
 export function is_string(value: any): boolean {
     return typeof value === "string" || value instanceof String;
   }
@@ -30,35 +32,29 @@ export function is_string(value: any): boolean {
     return pretty_print(obj);
   }
 
-  export function is_valid_date(date: any): boolean {
-    if (date instanceof Date) {
-      return !isNaN(date.getTime());
-    } else if (typeof date === "string" || typeof date === "number") {
-      const parsedDate = new Date(date);
-      return !isNaN(parsedDate.getTime());
-    }
-    return false;
-  }
 
-  export function to_date(obj: any): Date | null {
-    let result: Date;
-    if (obj instanceof Date) {
+  export function to_date(obj: any): Temporal.PlainDate | null {
+    let result: Temporal.PlainDate;
+    if (obj instanceof Temporal.PlainDate) {
       result = obj;
-    } else if (is_valid_date(obj)) {
-      result = new Date(obj);
+    } else if (obj instanceof Temporal.PlainDateTime) {
+      result = Temporal.PlainDate.from(obj);
+    } else if (typeof obj === "number" || typeof obj === "string") {
+      // Assume number is seconds since epoch
+      const date = new Date(obj);
+      result = Temporal.PlainDate.from({ year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() });
     } else {
       return null;
     }
-    result.setHours(0, 0, 0, 0);
     return result;
   }
 
-  export function date_to_string(date: any): string {
+  export function date_to_string(date: Temporal.PlainDate): string {
     let result = "";
-    if (date instanceof Date) {
-      const m = date.getUTCMonth() + 1;
-      const d = date.getUTCDate();
-      const y = date.getUTCFullYear();
+    if (date instanceof Temporal.PlainDate) {
+      const m = date.month;
+      const d = date.day;
+      const y = date.year;
 
       let m_str = `${m}`;
       let d_str = `${d}`;
@@ -69,7 +65,7 @@ export function is_string(value: any): boolean {
     return result;
   }
 
-  export function date_to_int(date: any): number {
+  export function date_to_int(date: Temporal.PlainDate): number {
     const str = date_to_string(date);
     const digits = str.replaceAll("-", "");
     const result = parseInt(digits);

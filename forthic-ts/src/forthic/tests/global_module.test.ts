@@ -9,12 +9,13 @@ import {
   ExtraSemicolonError,
   WordExecutionError
 } from "../errors";
+import { Temporal } from "temporal-polyfill";
 
 let interp: Interpreter;
 let interp_any: any;
 
 beforeEach(async () => {
-  interp = new Interpreter();
+  interp = new Interpreter([], "America/Los_Angeles");
   interp_any = interp as any;
 });
 
@@ -24,30 +25,35 @@ test("Literal values", async () => {
   expect(interp_any.stack[1]).toBe(false);
   expect(interp_any.stack[2]).toBe(2);
   expect(interp_any.stack[3]).toBe(3.14);
-  expect(interp_any.stack[4]).toEqual(new Date("2020-06-05"));
+  expect(interp_any.stack[4]).toEqual(Temporal.PlainDate.from({
+      year: 2020,
+      month: 6,
+      day: 5,
+    }),
+  );
 });
 
 test("Literal time values", async () => {
   await interp.run("9:00");
   const date = interp.stack_pop();
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  expect(hours).toBe(9);
-  expect(minutes).toBe(0);
+  expect(date).toEqual(Temporal.PlainTime.from({
+    hour: 9,
+    minute: 0,
+  }));
 
   await interp.run("11:30 PM");
   const date2 = interp.stack_pop();
-  const hours2 = date2.getHours();
-  const minutes2 = date2.getMinutes();
-  expect(hours2).toBe(23);
-  expect(minutes2).toBe(30);
+  expect(date2).toEqual(Temporal.PlainTime.from({
+    hour: 23,
+    minute: 30,
+  }));
 
   await interp.run("22:15 AM");
   const date3 = interp.stack_pop();
-  const hours3 = date3.getHours();
-  const minutes3 = date3.getMinutes();
-  expect(hours3).toBe(10);
-  expect(minutes3).toBe(15);
+  expect(date3).toEqual(Temporal.PlainTime.from({
+    hour: 10,
+    minute: 15,
+  }));
 });
 
 test("Variables", async () => {
@@ -1405,20 +1411,20 @@ test("JSON-TO", async () => {
 });
 
 test("NOW", async () => {
-  const now = new Date();
   await interp.run("NOW");
   const stack = (interp as any).stack;
-  const result = new Date(stack[0]);
-  expect(result.getHours()).toBe(now.getHours());
-  expect(result.getMinutes()).toBe(now.getMinutes());
+  const result = Temporal.PlainDateTime.from(stack[0]);
+  const now = Temporal.Now.plainDateTimeISO(interp.get_timezone());
+  expect(result.hour).toBe(now.hour);
+  expect(result.minute).toBe(now.minute);
 });
 
 test("TO-TIME", async () => {
   await interp.run("'10:52 PM' >TIME");
   const stack = (interp as any).stack;
-  const result = new Date(stack[0]);
-  expect(result.getHours()).toBe(22);
-  expect(result.getMinutes()).toBe(52);
+  const result = Temporal.PlainTime.from(stack[0]);
+  expect(result.hour).toBe(22);
+  expect(result.minute).toBe(52);
 });
 
 test("TO-DATE", async () => {
@@ -1426,20 +1432,21 @@ test("TO-DATE", async () => {
         "Oct 21, 2020" >DATE
       `);
   const stack = (interp as any).stack;
-  const date = new Date(stack[0]);
-  expect(date.getFullYear()).toBe(2020);
-  expect(date.getMonth() + 1).toBe(10); // Months are 0-based in JavaScript
-  expect(date.getDate()).toBe(21);
+  const date = Temporal.PlainDate.from(stack[0]);
+  expect(date.year).toBe(2020);
+  expect(date.month).toBe(10);
+  expect(date.day).toBe(21);
 });
 
 test("TODAY", async () => {
   await interp.run("TODAY");
   const stack = (interp as any).stack;
-  const today = new Date();
-  const result = new Date(stack[0]);
-  expect(result.getFullYear()).toBe(today.getFullYear());
-  expect(result.getMonth()).toBe(today.getMonth());
-  expect(result.getDate()).toBe(today.getDate());
+  const result = Temporal.PlainDate.from(stack[0]);
+  const today = Temporal.Now.plainDateISO(interp.get_timezone());
+  console.log("today: ", JSON.stringify(today, undefined, 4));
+  expect(result.year).toBe(today.year);
+  expect(result.month).toBe(today.month);
+  expect(result.day).toBe(today.day);
 });
 
 // test("DAYS-OF-WEEK", async () => {
@@ -1452,15 +1459,15 @@ test("TODAY", async () => {
 //   expect(new Date(stack[6]).getTime()).toBeGreaterThanOrEqual(today.getTime());
 // });
 
-test("ADD-DAYS", async () => {
+test("ADD-DAYS to date", async () => {
   await interp.run(`
         2020-10-21 12 ADD-DAYS
       `);
   const stack = (interp as any).stack;
-  const date = new Date(stack[0]);
-  expect(date.getUTCFullYear()).toBe(2020);
-  expect(date.getUTCMonth() + 1).toBe(11); // Months are 0-based in JavaScript
-  expect(date.getUTCDate()).toBe(2);
+  const date = Temporal.PlainDate.from(stack[0]);
+  expect(date.year).toBe(2020);
+  expect(date.month).toBe(11); // Months are 0-based in JavaScript
+  expect(date.day).toBe(2);
 });
 
 test("SUBTRACT-DATES", async () => {
@@ -1486,21 +1493,21 @@ test("DATE-TIME-TO-DATETIME", async () => {
         2020-11-02 10:25 PM DATE-TIME>DATETIME >TIME
       `);
   const stack = (interp as any).stack;
-  const datetime = new Date(stack[0]);
-  expect(datetime.getUTCFullYear()).toBe(2020);
-  expect(datetime.getUTCMonth() + 1).toBe(11); // Months are 0-based in JavaScript
-  expect(datetime.getUTCDate()).toBe(2);
-  expect(datetime.getHours()).toBe(22);
-  expect(datetime.getMinutes()).toBe(25);
+  const datetime = Temporal.PlainDateTime.from(stack[0]);
+  expect(datetime.year).toBe(2020);
+  expect(datetime.month).toBe(11); // Months are 0-based in JavaScript
+  expect(datetime.day).toBe(2);
+  expect(datetime.hour).toBe(22);
+  expect(datetime.minute).toBe(25);
 
-  const date = new Date(stack[1]);
-  expect(date.getUTCFullYear()).toBe(2020);
-  expect(date.getUTCMonth() + 1).toBe(11); // Months are 0-based in JavaScript
-  expect(date.getUTCDate()).toBe(1);
+  const date = Temporal.PlainDateTime.from(stack[1]);
+  expect(date.year).toBe(2020);
+  expect(date.month).toBe(11);
+  expect(date.day).toBe(2);
 
-  const time = new Date(stack[2]);
-  expect(time.getHours()).toBe(22);
-  expect(time.getMinutes()).toBe(25);
+  const time = Temporal.PlainTime.from(stack[2]);
+  expect(time.hour).toBe(22);
+  expect(time.minute).toBe(25);
 });
 
 test("DATETIME-TO-TIMESTAMP", async () => {
@@ -1508,7 +1515,7 @@ test("DATETIME-TO-TIMESTAMP", async () => {
         2020-07-01 15:20 DATE-TIME>DATETIME DATETIME>TIMESTAMP
       `);
   const stack = (interp as any).stack;
-  expect(stack[0]).toBe(1593555600);
+  expect(stack[0]).toBe(1593642000);
 });
 
 test("TIMESTAMP-TO-DATETIME", async () => {
@@ -1516,12 +1523,12 @@ test("TIMESTAMP-TO-DATETIME", async () => {
         1593895532 TIMESTAMP>DATETIME
       `);
   const stack = (interp as any).stack;
-  const datetime = new Date(stack[0]); // Convert from seconds to milliseconds
-  expect(datetime.getFullYear()).toBe(2020);
-  expect(datetime.getMonth() + 1).toBe(7); // Months are 0-based in JavaScript
-  expect(datetime.getDate()).toBe(4);
-  expect(datetime.getHours()).toBe(13);
-  expect(datetime.getMinutes()).toBe(45);
+  const datetime = Temporal.PlainDateTime.from(stack[0]);
+  expect(datetime.year).toBe(2020);
+  expect(datetime.month).toBe(7); // Months are 0-based in JavaScript
+  expect(datetime.day).toBe(4);
+  expect(datetime.hour).toBe(13);
+  expect(datetime.minute).toBe(45);
 });
 
 test("arithmetic", async () => {
