@@ -9,16 +9,15 @@ let interp = null;
 beforeEach(async () => {
   interp = new Interpreter();
   interp.register_module(new SampleModule(interp));
-  await interp.run(`[ ["sample" ""] ] USE-MODULES`)
+  await interp.run(`[ ["sample" ""] ] USE-MODULES`);
 });
 
 test("Continue from `.s`", async () => {
-  async function handleError(e:Error) {
+  async function handleError(e: Error) {
     if (e instanceof IntentionalStopError) {
       // Simulate recovery. In this case, we're just continuing from the `.s` word
-    }
-    else {
-      throw e
+    } else {
+      throw e;
     }
   }
 
@@ -28,13 +27,12 @@ test("Continue from `.s`", async () => {
 });
 
 test("Continue from `.s` with intervening call", async () => {
-  async function handleError(e:Error) {
+  async function handleError(e: Error) {
     if (e instanceof IntentionalStopError) {
       // Simulate recovery. In this case, we're just continuing from the `.s` word
       await interp.run("");
-    }
-    else {
-      throw e
+    } else {
+      throw e;
     }
   }
 
@@ -43,15 +41,13 @@ test("Continue from `.s` with intervening call", async () => {
   expect(interp.get_stack().get_items()).toEqual([3]);
 });
 
-
 test("Simulate recovery", async () => {
-  async function handleError(e:Error) {
+  async function handleError(e: Error) {
     if (e instanceof UnknownWordError) {
       // Simulate recovery
       interp.stack_push(2);
-    }
-    else {
-      throw e
+    } else {
+      throw e;
     }
   }
 
@@ -61,16 +57,14 @@ test("Simulate recovery", async () => {
   expect(interp.get_stack().get_items()).toEqual([3]);
 });
 
-
 test("Simulate multiple recoveries", async () => {
   // Define error handler
-  async function handleError(e:Error) {
+  async function handleError(e: Error) {
     if (e instanceof UnknownWordError) {
       // Simulate recovery
       interp.stack_push(2);
-    }
-    else {
-      throw e
+    } else {
+      throw e;
     }
   }
 
@@ -81,28 +75,29 @@ test("Simulate multiple recoveries", async () => {
   expect(interp.get_stack().get_items()).toEqual([5]);
 });
 
-
 test("Simulate correction", async () => {
-  async function handleError(e:Error) {
+  async function handleError(e: Error) {
     if (e instanceof WordExecutionError) {
       if (e.getError() instanceof UnresolvedRecipientsError) {
-        const unresolved_recipients_error = e.getError() as UnresolvedRecipientsError;
+        const unresolved_recipients_error =
+          e.getError() as UnresolvedRecipientsError;
         // Simulate correction
-        interp.stack_push(simulate_email_correction(unresolved_recipients_error.get_email()));
+        interp.stack_push(
+          simulate_email_correction(unresolved_recipients_error.get_email()),
+        );
       }
-    }
-    else {
-      throw e
+    } else {
+      throw e;
     }
   }
 
   const invalid_email = {
     recipients: [["John Parker", "John Whorfin", "John Bigboote"]],
-    body: "We're gonna go real soon!"
+    body: "We're gonna go real soon!",
   };
   interp.stack_push(invalid_email);
 
-  interp.set_error_handler(handleError)
+  interp.set_error_handler(handleError);
   await interp.run("VALIDATE-EMAIL SEND-EMAIL");
 });
 
@@ -140,9 +135,8 @@ class SampleModule extends Module {
     if (email.recipients.some((recipient: any[]) => recipient.length > 1)) {
       throw new UnresolvedRecipientsError(email);
     }
-    else {
-      interp.stack_push(email);
-    }
+
+    interp.stack_push(email);
   }
 
   // ( email -- )
