@@ -1,6 +1,6 @@
 import { Interpreter, Stack } from "../interpreter";
 import { Module } from "../module";
-
+import { PositionedString } from "../tokenizer";
 test("Initial state", () => {
   const interp = new Interpreter();
   expect((interp as any).stack).toEqual([]);
@@ -216,6 +216,14 @@ test("Stack", async () => {
   expect(stack.length).toBe(1);
   expect(JSON.stringify(stack)).toBe(JSON.stringify([value]));
 });
+
+test("Stack raw items", async () => {
+  const value = new PositionedString("Hello", {line: 1, column: 1, screen_name: "test", start_pos: 0, end_pos: 5});
+  const stack = new Stack([value]);
+  expect(stack.get_raw_items()).toEqual([value]);
+  expect(stack.get_items()).toEqual(["Hello"]);
+});
+
 
 
 test("Construct interpreter with modules", async () => {

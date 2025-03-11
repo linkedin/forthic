@@ -87,10 +87,19 @@ export class Stack {
   }
 
   get_items(): any[] {
+    return this.items.map((item) => {
+      if (item instanceof PositionedString) {
+        return item.valueOf();
+      }
+      return item;
+    });
+  }
+
+  get_raw_items(): any[] {
     return this.items;
   }
 
-  set_items(items: any[]) {
+  set_raw_items(items: any[]) {
     this.items = items;
   }
 
