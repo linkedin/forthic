@@ -1,5 +1,5 @@
 import { Interpreter } from "../interpreter";
-
+import { Module } from "../module";
 describe("Interpreter.streamingRun", () => {
   let interp: Interpreter;
 
@@ -152,6 +152,35 @@ Night brings peaceful rest""" EMAIL`;
     const gen3 = interp.streamingRun("1 2 + 3 + 4 + 5 + 2 * 4 -", true);
     await gen3.next();
     expect(interp.get_stack().get_items()).toEqual([26]);
+  });
+
+  test("streaming MAP", async () => {
+    const gen = interp.streamingRun(`[1 2 3] `, false);
+    await gen.next();
+    expect(interp.stack_peek()).toEqual(3);
+
+    const gen2 = interp.streamingRun(`[1 2 3] "2 *"`, false);
+    await gen2.next();
+    expect(interp.stack_peek()).toEqual([1, 2, 3]);
+
+    const gen3 = interp.streamingRun(`[1 2 3] "2 *" MAP`, false);
+    await gen3.next();
+    expect(interp.stack_peek()).toEqual("2 *");
+
+    const gen4 = interp.streamingRun(`[1 2 3] "2 *" MAP`, true);
+    await gen4.next();
+    expect(interp.stack_peek()).toEqual([2, 4, 6]);
+  });
+
+  test("streaming MAP with module", async () => {
+    const myInterp = new Interpreter([new SampleModule()]);
+    const gen = myInterp.streamingRun(`[1 2 3] "SEND-EMAIL"`, false);
+    await gen.next();
+    expect(myInterp.stack_peek()).toEqual([1, 2, 3]);
+
+    const gen2 = myInterp.streamingRun(`[1 2 3] "SEND-EMAIL" MAP`, true);
+    await gen2.next();
+    expect(myInterp.stack_peek()).toEqual(["sent 1", "sent 2", "sent 3"]);
   });
 
   test("yields string deltas between START_LOG and END_LOG", async () => {
@@ -311,3 +340,17 @@ Night brings peaceful rest""" EMAIL`;
     expect(val).toEqual({ "key with space": 1, "other key with space": 2 });
   });
 });
+
+
+class SampleModule extends Module {
+  constructor() {
+    super("sample");
+    this.add_module_word("SEND-EMAIL", this.word_SEND_EMAIL.bind(this));
+  }
+
+  // ( email -- )
+  async word_SEND_EMAIL(interp: Interpreter) {
+    const email = interp.stack_pop();
+    interp.stack_push(`sent ${email}`);
+  }
+}

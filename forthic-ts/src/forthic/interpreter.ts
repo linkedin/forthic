@@ -378,6 +378,15 @@ export class Interpreter {
     return result;
   }
 
+  stack_peek(): any {
+    const top = this.stack[this.stack.length - 1];
+    let result = top;
+    if (top instanceof PositionedString) {
+      result = top.valueOf();
+    }
+    return result;
+  }
+
   stack_push(val: any) {
     this.stack.push(val);
   }
@@ -712,6 +721,9 @@ export class Interpreter {
       }
       this.previous_token = token;
     }
+    this.tokenizer_stack.pop();
+
+    // Done with this tokenizer
     this.tokenizer_stack.pop();
 
     if (this.stream && !eosFound) {
