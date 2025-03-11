@@ -674,7 +674,6 @@ export class Interpreter {
     }
 
     const delta = eosFound ? undefined : tokenizer.get_string_delta();
-    this.tokenizer_stack.pop();
 
     let newStop = findLastWordOrEOS(tokens);
 
@@ -702,6 +701,7 @@ export class Interpreter {
       }
       this.previous_token = token;
     }
+    this.tokenizer_stack.pop();
 
     if (this.stream && !eosFound) {
       // Yield string delta if we're streaming and tokenizer has a delta
