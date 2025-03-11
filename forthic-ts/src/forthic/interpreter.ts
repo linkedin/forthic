@@ -721,7 +721,6 @@ export class Interpreter {
       }
       this.previous_token = token;
     }
-    this.tokenizer_stack.pop();
 
     // Done with this tokenizer
     this.tokenizer_stack.pop();
