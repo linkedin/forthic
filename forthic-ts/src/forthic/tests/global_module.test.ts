@@ -1449,6 +1449,66 @@ test("TODAY", async () => {
   expect(result.day).toBe(today.day);
 });
 
+test("Date literals", async () => {
+  const zonedDateTime = Temporal.Now.zonedDateTimeISO(interp?.get_timezone() ?? "UTC");
+
+  // Case 1: Wildcard year and month and day
+  await interp.run(`YYYY-MM-DD`);
+  let date = interp.stack_pop();
+  expect(zonedDateTime.year).toBe(date.year);
+  expect(zonedDateTime.month).toBe(date.month);
+  expect(zonedDateTime.day).toBe(date.day);
+
+  // Case 2: Wildcard year and month
+  await interp.run(`YYYY-MM-14`);
+  date = interp.stack_pop();
+  expect(zonedDateTime.year).toBe(date.year);
+  expect(zonedDateTime.month).toBe(date.month);
+  expect(14).toBe(date.day);
+
+  // Case 3: Wildcard year
+  await interp.run(`YYYY-02-03`);
+  date = interp.stack_pop();
+  expect(zonedDateTime.year).toBe(date.year);
+  expect(2).toBe(date.month);
+  expect(3).toBe(date.day);
+
+  // Case 4: Explicit date
+  await interp.run(`2025-02-03`);
+  date = interp.stack_pop();
+  expect(2025).toBe(date.year);
+  expect(2).toBe(date.month);
+  expect(3).toBe(date.day);
+
+  // Case 5: Wildcard month and day
+  await interp.run(`2025-MM-DD`);
+  date = interp.stack_pop();
+  expect(2025).toBe(date.year);
+  expect(zonedDateTime.month).toBe(date.month);
+  expect(zonedDateTime.day).toBe(date.day);
+
+  // Case 6: Wildcard day
+  await interp.run(`2025-02-DD`);
+  date = interp.stack_pop();
+  expect(2025).toBe(date.year);
+  expect(2).toBe(date.month);
+  expect(zonedDateTime.day).toBe(date.day);
+
+  // Case 7: Wildcard month
+  await interp.run(`2025-MM-03`);
+  date = interp.stack_pop();
+  expect(2025).toBe(date.year);
+  expect(zonedDateTime.month).toBe(date.month);
+  expect(3).toBe(date.day);
+
+  // Case 8: Wildcard year and day
+  await interp.run(`YYYY-10-DD`);
+  date = interp.stack_pop();
+  expect(zonedDateTime.year).toBe(date.year);
+  expect(10).toBe(date.month);
+  expect(zonedDateTime.day).toBe(date.day);
+});
+
 // test("DAYS-OF-WEEK", async () => {
 //   await interp.run(`
 //         MONDAY TUESDAY WEDNESDAY THURSDAY FRIDAY SATURDAY SUNDAY
