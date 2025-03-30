@@ -119,6 +119,13 @@ export class WordExecutionError extends ForthicError {
     getError(): Error {
         return this.error;
     }
+
+    getRootError(): Error {
+        if (this.error instanceof WordExecutionError) {
+            return this.error.getRootError();
+        }
+        return this.error;
+    }
 }
 
 

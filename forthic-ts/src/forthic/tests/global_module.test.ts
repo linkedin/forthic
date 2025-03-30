@@ -1488,10 +1488,10 @@ test("Date literals", async () => {
   expect(zonedDateTime.day).toBe(date.day);
 
   // Case 6: Wildcard day
-  await interp.run(`2025-02-DD`);
+  await interp.run(`2025-03-DD`);
   date = interp.stack_pop();
   expect(2025).toBe(date.year);
-  expect(2).toBe(date.month);
+  expect(3).toBe(date.month);
   expect(zonedDateTime.day).toBe(date.day);
 
   // Case 7: Wildcard month

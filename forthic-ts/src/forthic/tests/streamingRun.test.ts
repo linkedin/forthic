@@ -1,3 +1,4 @@
+import { UnterminatedStringError } from "../tokenizer";
 import { Interpreter } from "../interpreter";
 import { Module } from "../module";
 describe("Interpreter.streamingRun", () => {
@@ -339,6 +340,20 @@ Night brings peaceful rest""" EMAIL`;
     const val = interp.stack_pop();
     expect(val).toEqual({ "key with space": 1, "other key with space": 2 });
   });
+});
+
+test("Unterminated string", async () => {
+  const interp = new Interpreter();
+  const gen = interp.streamingRun(`''''`, false);
+  await gen.next();
+
+  const gen2 = interp.streamingRun(`''''`, true);
+
+  try {
+    await gen2.next();
+  } catch (e) {
+    expect(e).toBeInstanceOf(UnterminatedStringError);
+  }
 });
 
 

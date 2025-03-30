@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
     "outDir": "./dist/esm",
-    "module": "NodeNext",
+    "module": "ESNext",
     "target": "ES2023",
     "lib": ["ES2023", "DOM"],
     "declaration": true,
     "sourceMap": true,
-    "moduleResolution": "nodenext"
+    "moduleResolution": "bundler",
+    "emitDeclarationOnly": false,
+    "esModuleInterop": true
   },
   "include": ["src"],
   "exclude": ["src/**/__tests__", "src/**/__mocks__", "src/**/tests"]

@@ -13,7 +13,7 @@ beforeEach(async () => {
 });
 
 test("Continue from `.s`", async () => {
-  async function handleError(e: Error) {
+  async function handleError(e: Error, _interp: Interpreter) {
     if (e instanceof IntentionalStopError) {
       // Simulate recovery. In this case, we're just continuing from the `.s` word
     } else {
@@ -27,7 +27,7 @@ test("Continue from `.s`", async () => {
 });
 
 test("Continue from `.s` with intervening call", async () => {
-  async function handleError(e: Error) {
+  async function handleError(e: Error, _interp: Interpreter) {
     if (e instanceof IntentionalStopError) {
       // Simulate recovery. In this case, we're just continuing from the `.s` word
       await interp.run("");
@@ -42,7 +42,7 @@ test("Continue from `.s` with intervening call", async () => {
 });
 
 test("Simulate recovery", async () => {
-  async function handleError(e: Error) {
+  async function handleError(e: Error, interp: Interpreter) {
     if (e instanceof UnknownWordError) {
       // Simulate recovery
       interp.stack_push(2);
@@ -59,7 +59,7 @@ test("Simulate recovery", async () => {
 
 test("Simulate multiple recoveries", async () => {
   // Define error handler
-  async function handleError(e: Error) {
+  async function handleError(e: Error, interp: Interpreter) {
     if (e instanceof UnknownWordError) {
       // Simulate recovery
       interp.stack_push(2);
@@ -76,11 +76,11 @@ test("Simulate multiple recoveries", async () => {
 });
 
 test("Simulate correction", async () => {
-  async function handleError(e: Error) {
+  async function handleError(e: Error, interp: Interpreter) {
     if (e instanceof WordExecutionError) {
-      if (e.getError() instanceof UnresolvedRecipientsError) {
+      if (e.getRootError() instanceof UnresolvedRecipientsError) {
         const unresolved_recipients_error =
-          e.getError() as UnresolvedRecipientsError;
+          e.getRootError() as UnresolvedRecipientsError;
         // Simulate correction
         interp.stack_push(
           simulate_email_correction(unresolved_recipients_error.get_email()),

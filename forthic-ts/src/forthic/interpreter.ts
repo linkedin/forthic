@@ -20,7 +20,7 @@ type Timestamp = {
   time_ms: number;
 };
 
-type HandleErrorFunction = (e: Error) => Promise<void>;
+type HandleErrorFunction = (e: Error, interp: Interpreter) => Promise<void>;
 
 class StartModuleWord extends Word {
   async execute(interp: Interpreter): Promise<void> {
@@ -120,6 +120,7 @@ export class Stack {
     return this.items.length;
   }
 }
+
 
 export class Interpreter {
   private timestamp_id: number;
@@ -329,7 +330,7 @@ export class Interpreter {
       return numAttempts;
     } catch (e) {
       if (!this.handleError) throw e;
-      await this.handleError(e);
+      await this.handleError(e, this);
       return await this.execute_with_recovery(numAttempts);
     }
   }
@@ -775,10 +776,13 @@ function findLastWordOrEOS(tokens: Token[]): number {
 export function dup_interpreter(interp: Interpreter) {
   const interp_any = interp as any;
   const result = new Interpreter() as any;
+  result.timezone = interp_any.timezone;
   result.app_module = interp_any.app_module.dup();
   result.module_stack = [result.app_module];
   result.stack = interp_any.stack.slice();
   result.registered_modules = interp_any.registered_modules;
   result.screens = { ...interp_any.screens };
+  result.handleError = interp_any.handleError;
+  result.parent_interp = interp_any.parent_interp;
   return result;
 }
