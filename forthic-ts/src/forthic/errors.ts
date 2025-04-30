@@ -1,4 +1,4 @@
-import { CodeLocation } from "./tokenizer";
+import type { CodeLocation } from "./tokenizer";
 
 export class ForthicError extends Error {
     constructor(private forthic: string, private note: string, private location?: CodeLocation) {

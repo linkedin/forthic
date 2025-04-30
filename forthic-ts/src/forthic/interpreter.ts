@@ -149,6 +149,7 @@ export class Interpreter {
   private streaming_token_index: number = 0;
   private stream: boolean = false;
   private previous_delta_length: number = 0;
+  private validation_mode: boolean = false;
 
   constructor(modules: Module[] = [], timezone: Temporal.TimeZoneLike = "UTC") {
     this.timestamp_id = Math.random();
@@ -187,6 +188,14 @@ export class Interpreter {
 
     // If modules are provided, import them unprefixed as a convenience
     this.import_modules(modules);
+  }
+
+  set_validation_mode(validation_mode: boolean) {
+    this.validation_mode = validation_mode;
+  }
+
+  get_validation_mode(): boolean {
+    return this.validation_mode;
   }
 
   get_stack(): Stack {
@@ -661,6 +670,7 @@ export class Interpreter {
       word.set_location(location);
       this.cur_definition.add_word(word);
     } else {
+      if (this.validation_mode) return;
       this.count_word(word);
       await word.execute(this);
     }
