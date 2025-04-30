@@ -690,7 +690,7 @@ export class Interpreter {
     reference_location: CodeLocation | null = null,
   ) {
     // Create a new Tokenizer for the full string.
-    const tokenizer = new Tokenizer(codeStream, reference_location, true);
+    const tokenizer = new Tokenizer(codeStream, reference_location, done ? false : true);
     const tokens: Token[] = [];
     let eosFound = false;
 

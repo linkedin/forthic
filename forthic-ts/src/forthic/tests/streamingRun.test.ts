@@ -348,14 +348,21 @@ test("Unterminated string", async () => {
   await gen.next();
 
   const gen2 = interp.streamingRun(`''''`, true);
-
-  try {
-    await gen2.next();
-  } catch (e) {
-    expect(e).toBeInstanceOf(UnterminatedStringError);
-  }
+  await expect(gen2.next()).rejects.toThrow(UnterminatedStringError);
 });
 
+
+test("Nested string issue", async () => {
+  // Won't throw an error because we're not done yet
+  let interp = new Interpreter();
+  const gen = interp.streamingRun(`"""Reply saying "Thanks`, false);
+  await gen.next();
+
+  // Should throw an error because we're done
+  interp = new Interpreter();
+  const gen2 = interp.streamingRun(`"""Reply saying "Thanks""""`, true);
+  await expect(gen2.next()).rejects.toThrow(UnterminatedStringError);
+});
 
 class SampleModule extends Module {
   constructor() {
