@@ -481,6 +481,7 @@ export class Interpreter {
         module.name,
         e,
         this.string_location,
+        e,
       );
     }
 

@@ -100,7 +100,7 @@ export class DefinitionWord extends Word {
         await word.execute(interp);
       } catch (e) {
         const tokenizer = interp.get_tokenizer();
-        throw new WordExecutionError(interp.get_top_input_string(), this.name, e, tokenizer.get_token_location());
+        throw new WordExecutionError(interp.get_top_input_string(), this.name, e, tokenizer.get_token_location(), e);
       }
     }
   }
@@ -123,7 +123,7 @@ export class ModuleWord extends Word {
         throw e;
       }
       const tokenizer = interp.get_tokenizer();
-      throw new WordExecutionError(interp.get_top_input_string(), this.name, e, tokenizer.get_token_location());
+      throw new WordExecutionError(interp.get_top_input_string(), this.name, e, tokenizer.get_token_location(), e);
     }
   }
 }

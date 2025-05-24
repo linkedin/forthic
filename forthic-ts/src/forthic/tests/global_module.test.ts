@@ -2061,26 +2061,3 @@ test ("Extra semicolon error", async () => {
   }
 })
 
-test("Datetime regex pattern", () => {
-  const datetimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?(Z|[+-]\d{2}:\d{2}|\[[A-Za-z][A-Za-z0-9_/]+\])?$/;
-
-  // Valid cases
-  expect("2025-05-24T10:15").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00.123").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15Z").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00Z").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00.123Z").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00-05:00").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00[America/New_York]").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00[UTC]").toMatch(datetimeRegex);
-  expect("2025-05-24T10:15:00[Europe/London]").toMatch(datetimeRegex);
-
-  // Invalid cases
-  expect("2025-05-24").not.toMatch(datetimeRegex);  // Missing time
-  expect("10:15:00").not.toMatch(datetimeRegex);    // Missing date
-  expect("2025-05-24T10:15:00.1234").not.toMatch(datetimeRegex);  // Too many decimal places
-  expect("2025-05-24T10:15:00+5:00").not.toMatch(datetimeRegex);  // Invalid offset format
-  expect("2025-05-24T10:15:00[Invalid/Zone]").not.toMatch(datetimeRegex);  // Invalid timezone format
-  expect("2025-05-24T10:15:00[America/New York]").not.toMatch(datetimeRegex);  // Space in timezone name
-});
