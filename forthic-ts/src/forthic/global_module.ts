@@ -7,6 +7,7 @@ import {
   to_date,
   date_to_string,
   date_to_int,
+  to_literal_date,
 } from "./utils";
 import { Temporal } from "temporal-polyfill";
 
@@ -280,65 +281,7 @@ export class GlobalModule extends Module {
   }
 
   to_literal_date(str_val: string): Temporal.PlainDate | null {
-    // --------------------
-    // Handle date format strings like "YYYY-MM-DD" or "YYYY-MM-03" or "YYYY-02-03" or "2025-02-03"
-      let year: number;
-      let month: number;
-      let day: number;
-      const date_parts = str_val.split("-");
-      const zonedDateTime = Temporal.Now.zonedDateTimeISO(this.interp?.get_timezone() ?? "UTC");
-
-      // Case 1: If time is like "YYYY-MM-DD"
-      if (str_val.match(/^YYYY-MM-DD$/)) {
-        year = zonedDateTime.year;
-        month = zonedDateTime.month;
-        day = zonedDateTime.day;
-      } // Case 2: If time is like "YYYY-MM-03"
-      else if (str_val.match(/^YYYY-MM-\d{2}$/)) {
-        year = zonedDateTime.year;
-        month = zonedDateTime.month;
-        day = parseInt(date_parts[2]);
-      } // Case 3: If time is like "YYYY-02-03"
-      else if (str_val.match(/^YYYY-\d{2}-\d{2}$/)) {
-        year = zonedDateTime.year;
-        month = parseInt(date_parts[1]);
-        day = parseInt(date_parts[2]);
-      } // Case 4: If time is like "2025-02-03"
-      else if (str_val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        year = parseInt(date_parts[0]);
-        month = parseInt(date_parts[1]);
-        day = parseInt(date_parts[2]);
-      } // Case 5: If time is like "2025-MM-DD"
-      else if (str_val.match(/^\d{4}-MM-DD$/)) {
-        year = parseInt(date_parts[0]);
-        month = zonedDateTime.month;
-        day = zonedDateTime.day;
-      } // Case 6: If time is like "2025-02-DD"
-      else if (str_val.match(/^\d{4}-\d{2}-DD$/)) {
-        year = parseInt(date_parts[0]);
-        month = parseInt(date_parts[1]);
-        day = zonedDateTime.day;
-      } // Case 7: If time is like "2025-MM-03"
-      else if (str_val.match(/^\d{4}-MM-\d{2}$/)) {
-        year = parseInt(date_parts[0]);
-        month = zonedDateTime.month;
-        day = parseInt(date_parts[2]);
-      } // Case 8: If time is like "YYYY-03-DD"
-      else if (str_val.match(/^YYYY-\d{2}-DD$/)) {
-        year = zonedDateTime.year;
-        month = parseInt(date_parts[1]);
-        day = zonedDateTime.day;
-      } // Otherwise, return null
-      else {
-        return null;
-      }
-
-    const result = Temporal.PlainDate.from({
-      year: year,
-      month: month,
-      day: day,
-    });
-    return result;
+    return to_literal_date(str_val, this.interp?.get_timezone() ?? "UTC");
   }
 
   to_time(str_val: string): Temporal.PlainTime | null {
