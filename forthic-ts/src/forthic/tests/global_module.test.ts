@@ -56,6 +56,53 @@ test("Literal time values", async () => {
   }));
 });
 
+test("Literal datetime values", async () => {
+  // Check that Z is interpreted as UTC
+  await interp.run("2025-05-24T10:15:00Z");
+  const datetime = interp.stack_pop();
+  const expected1 = Temporal.ZonedDateTime.from({
+    year: 2025,
+    month: 5,
+    day: 24,
+    hour: 10,
+    minute: 15,
+    second: 0,
+    millisecond: 0,
+    timeZone: "UTC",
+  });
+  expect(datetime.toInstant().toString()).toEqual(expected1.toInstant().toString());
+
+  // Check that explicit offsets are interpreted as the given timezone
+  await interp.run("2025-05-24T10:15:00-05:00");
+  const datetime2 = interp.stack_pop();
+  const expected2 = Temporal.ZonedDateTime.from({
+    year: 2025,
+    month: 5,
+    day: 24,
+    hour: 15,
+    minute: 15,
+    second: 0,
+    millisecond: 0,
+    timeZone: "UTC",
+  });
+  expect(datetime2.toInstant().toString()).toEqual(expected2.toInstant().toString());
+
+  // Check that a datetime with no timezone is interpreted in the current timezone
+  await interp.run("2025-05-24T10:15:00");
+  const datetime3 = interp.stack_pop();
+  const expected3 = Temporal.ZonedDateTime.from({
+    year: 2025,
+    month: 5,
+    day: 24,
+    hour: 17,
+    minute: 15,
+    second: 0,
+    millisecond: 0,
+    timeZone: "UTC",
+  });
+  expect(datetime3.toInstant().toString()).toEqual(expected3.toInstant().toString());
+});
+
 test("Variables", async () => {
   await interp.run("['x' 'y']  VARIABLES");
   const variables = (interp as any).app_module.variables;
@@ -2013,3 +2060,27 @@ test ("Extra semicolon error", async () => {
     expect(e).toBeInstanceOf(ExtraSemicolonError);
   }
 })
+
+test("Datetime regex pattern", () => {
+  const datetimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?(Z|[+-]\d{2}:\d{2}|\[[A-Za-z][A-Za-z0-9_/]+\])?$/;
+
+  // Valid cases
+  expect("2025-05-24T10:15").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00.123").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15Z").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00Z").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00.123Z").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00-05:00").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00[America/New_York]").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00[UTC]").toMatch(datetimeRegex);
+  expect("2025-05-24T10:15:00[Europe/London]").toMatch(datetimeRegex);
+
+  // Invalid cases
+  expect("2025-05-24").not.toMatch(datetimeRegex);  // Missing time
+  expect("10:15:00").not.toMatch(datetimeRegex);    // Missing date
+  expect("2025-05-24T10:15:00.1234").not.toMatch(datetimeRegex);  // Too many decimal places
+  expect("2025-05-24T10:15:00+5:00").not.toMatch(datetimeRegex);  // Invalid offset format
+  expect("2025-05-24T10:15:00[Invalid/Zone]").not.toMatch(datetimeRegex);  // Invalid timezone format
+  expect("2025-05-24T10:15:00[America/New York]").not.toMatch(datetimeRegex);  // Space in timezone name
+});

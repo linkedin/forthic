@@ -134,3 +134,59 @@ export function to_literal_date(str_val: string, timezone: Temporal.TimeZoneLike
   });
   return result;
 }
+
+export function to_zoned_datetime(str_val: string, tz: Temporal.TimeZoneLike = "UTC"): Temporal.ZonedDateTime | null {
+  try {
+    // We're handling these cases:
+    // 2025-05-24T10:15                       # Hours and minutes only, current timezone
+    // 2025-05-24T10:15:00                    # Hours, minutes, seconds, current timezone
+    // 2025-05-24T10:15:00.123                # With milliseconds, current timezone
+    // 2025-05-24T10:15Z                      # Hours and minutes only, UTC
+    // 2025-05-24T10:15:00Z                   # Hours, minutes, seconds, UTC
+    // 2025-05-24T10:15:00.123Z               # With milliseconds, UTC
+    // 2025-05-24T10:15:00-05:00              # With timezone offset
+    // 2025-05-24T10:15:00[America/New_York]  # With timezone name (NOTE: This one doesn't work in raw Forthic because `[` and `]` are special characters)
+    const datetimeRegex = new RegExp(
+      [
+        '^',
+        '(?<datetime>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2})',     // Named group for date and time
+        '(?::(?<seconds>\\d{2}))?',                            // Named group for optional seconds
+        '(?:\\.(?<milliseconds>\\d{3}))?',                     // Named group for optional milliseconds
+        '(?<timezone>Z|[+-]\\d{2}:\\d{2})?',                   // Named group for simple timezone (Z or offset)
+        '(?<bracketedTimezone>\\[[A-Za-z][A-Za-z0-9_/]+\\])?', // Named group for bracketed timezone
+        '$'
+      ].join('')
+    );
+    const match = str_val.match(datetimeRegex);
+    if (!match) return null;
+
+    // Extract regex groups
+    const datetime = match.groups?.datetime;
+    const seconds = match.groups?.seconds || "00";
+    const milliseconds = match.groups?.milliseconds || "000";
+    const timezone = match.groups?.timezone;
+    const bracketedTimezone = match.groups?.bracketedTimezone;
+
+    const datetimeStr = `${datetime}${seconds ? `:${seconds}` : ''}${milliseconds ? `.${milliseconds}` : ''}`;
+
+    let result: Temporal.ZonedDateTime | null = null;
+
+    // If timezone is specified in brackets, use it
+    if (bracketedTimezone) {
+      result = Temporal.ZonedDateTime.from(`${datetimeStr}${bracketedTimezone}`);
+    }
+    // If we have a Z or a timezone offset, use that but convert to UTC
+    else if (timezone) {
+      const date = new Date(datetimeStr + timezone);
+      result = Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTime({ timeZone: "UTC", calendar: 'iso8601' });
+    }
+    // Otherwise, use the current timezone
+    else {
+      const date = new Date(datetimeStr);
+      result = Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTime({ timeZone: tz, calendar: 'iso8601' });
+    }
+    return result;
+  } catch {
+    return null;
+  }
+}

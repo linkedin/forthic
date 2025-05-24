@@ -8,6 +8,7 @@ import {
   date_to_string,
   date_to_int,
   to_literal_date,
+  to_zoned_datetime,
 } from "./utils";
 import { Temporal } from "temporal-polyfill";
 
@@ -43,6 +44,7 @@ export class GlobalModule extends Module {
     this.literal_handlers = [
       this.to_bool,
       this.to_float,
+      this.to_zoned_datetime,
       this.to_literal_date,
       this.to_time,
       this.to_int,
@@ -282,6 +284,10 @@ export class GlobalModule extends Module {
 
   to_literal_date(str_val: string): Temporal.PlainDate | null {
     return to_literal_date(str_val, this.interp?.get_timezone() ?? "UTC");
+  }
+
+  to_zoned_datetime(str_val: string): Temporal.ZonedDateTime | null {
+    return to_zoned_datetime(str_val);
   }
 
   to_time(str_val: string): Temporal.PlainTime | null {
@@ -1898,8 +1904,7 @@ export class GlobalModule extends Module {
   // ( str -- datetime )
   word_STR_to_DATETIME(interp: Interpreter) {
     const s = interp.stack_pop();
-    const date = new Date(s);
-    const result = Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTime({ timeZone: interp.get_timezone(), calendar: "iso8601" });
+    const result = to_zoned_datetime(s, interp.get_timezone());
     interp.stack_push(result);
   }
 
