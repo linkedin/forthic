@@ -190,3 +190,70 @@ export function to_zoned_datetime(str_val: string, tz: Temporal.TimeZoneLike = "
     return null;
   }
 }
+
+export function to_plaintime(str_val: string): Temporal.PlainTime | null {
+  try {
+    // We're handling these cases:
+    // 14:30                    # Hours and minutes only (24-hour)
+    // 2:30 PM                  # Hours and minutes with AM/PM
+    // 10:15AM                  # Hours and minutes with AM/PM (no space)
+    const timeRegex = new RegExp(
+      [
+        '^',
+        '(?<hours>\\d{1,2})',                     // Named group for hours (1-2 digits)
+        ':(?<minutes>\\d{2})',                    // Named group for minutes (2 digits)
+        '(?:\\s*(?<ampm>[AaPp][Mm]))?',           // Named group for optional AM/PM (with optional space)
+        '$'
+      ].join('')
+    );
+
+    const match = str_val.match(timeRegex);
+    if (!match) return null;
+
+    // Extract regex groups
+    let hours = parseInt(match.groups?.hours || "0");
+    const minutes = parseInt(match.groups?.minutes || "0");
+    const ampm = match.groups?.ampm?.toLowerCase();
+
+    // Handle AM/PM conversion
+    if (ampm) {
+      // Validate 12-hour format range
+      if (hours < 1 || hours > 12) {
+        return null;
+      }
+
+      if (ampm === 'am') {
+        // 12:xx AM becomes 0:xx (midnight hour)
+        if (hours === 12) {
+          hours = 0;
+        }
+        // 1:xx AM to 11:xx AM stay the same
+      } else if (ampm === 'pm') {
+        // 12:xx PM stays 12:xx (noon hour)
+        if (hours !== 12) {
+          // 1:xx PM to 11:xx PM become 13:xx to 23:xx
+          hours += 12;
+        }
+      }
+    } else {
+      // 24-hour format validation
+      if (hours > 23) {
+        return null;
+      }
+    }
+
+    // Validate minutes range
+    if (minutes > 59) {
+      return null;
+    }
+
+    const result = Temporal.PlainTime.from({
+      hour: hours,
+      minute: minutes,
+    });
+
+    return result;
+  } catch {
+    return null;
+  }
+}
