@@ -1,4 +1,4 @@
-# # frozen_string_literal: true
+# frozen_string_literal: true
 
 require "minitest/autorun"
 require "forthic"
@@ -51,8 +51,8 @@ class TestInterpreter < Minitest::Test
     assert_equal "module-A", interp.module_stack[1].name
     assert_equal "module-B", interp.module_stack[2].name
 
-    module_A = interp.app_module.modules["module-A"]
-    refute_nil module_A.modules["module-B"]
+    module_a = interp.app_module.modules["module-A"]
+    refute_nil module_a.modules["module-B"]
 
     interp.run("}}")
     assert_equal 1, interp.module_stack.length
@@ -72,8 +72,8 @@ class TestInterpreter < Minitest::Test
     word = interp.app_module.find_word("NOTHING")
     assert_nil word
 
-    module_A = interp.app_module.modules["module-A"]
-    word = module_A.find_word("NOTHING")
+    module_a = interp.app_module.modules["module-A"]
+    word = module_a.find_word("NOTHING")
     refute_nil word
   end
 

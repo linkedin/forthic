@@ -141,7 +141,6 @@ class TestTokenizer < Minitest::Test
     assert_equal 104, end_array_token.location.end_pos
   end
 
-
   def test_knows_token_location_in_ad_hoc_string_given_reference
     reference_location = Forthic::CodeLocation.new(
       screen_name: "main",

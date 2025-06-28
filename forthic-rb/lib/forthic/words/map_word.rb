@@ -157,10 +157,10 @@ module Forthic
 
       errors = []
       result = if items.is_a?(Array)
-                 descend_list.call(items, @depth, [], errors)
-               else
-                 descend_record.call(items, @depth, {}, errors)
-               end
+        descend_list.call(items, @depth, [], errors)
+      else
+        descend_record.call(items, @depth, {}, errors)
+      end
       @result = result
       @errors = errors
       [result, errors]

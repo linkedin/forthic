@@ -1,6 +1,6 @@
-# # frozen_string_literal: true
+# frozen_string_literal: true
 
-require_relative 'word'
+require_relative "word"
 
 module Forthic
   class PushValueWord < Word

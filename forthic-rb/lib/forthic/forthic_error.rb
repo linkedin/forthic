@@ -14,7 +14,6 @@ module Forthic
       @description = description
       @location = location
       @caught_error = nil
-      puts "ForthicError: #{error_key}, #{title}, #{description}, #{location}"
     end
 
     # @param [ForthicError] error

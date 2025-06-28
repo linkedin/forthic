@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'word'
-require_relative 'module_memo_word'
+require_relative "word"
+require_relative "module_memo_word"
 
 module Forthic
   class ModuleMemoBangWord < Word

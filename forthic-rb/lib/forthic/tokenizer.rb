@@ -3,8 +3,8 @@
 module Forthic
   class Tokenizer
     attr_accessor :reference_location, :line, :column, :input_string, :input_pos,
-                  :whitespace, :quote_chars, :token_start_pos, :token_end_pos,
-                  :token_line, :token_column, :token_string
+      :whitespace, :quote_chars, :token_start_pos, :token_end_pos,
+      :token_line, :token_column, :token_string
 
     # @param [String] string
     # @param [CodeLocation, nil] reference_location

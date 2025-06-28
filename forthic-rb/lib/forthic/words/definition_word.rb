@@ -1,7 +1,7 @@
-# # frozen_string_literal: true
+# frozen_string_literal: true
 
-require_relative 'word'
-require_relative '../forthic_error'
+require_relative "word"
+require_relative "../forthic_error"
 
 module Forthic
   class DefinitionWord < Word
@@ -9,7 +9,7 @@ module Forthic
 
     # @param [String] name
     def initialize(name)
-      super(name)
+      super
       @words = []
       @cur_index = 0
     end
@@ -22,18 +22,16 @@ module Forthic
     # @param [Interpreter] interp
     def execute(interp)
       @words.each do |word|
-        begin
-          word.execute(interp)
-        rescue => e
-          error = ForthicError.new(
-            "definition_word-29",
-            "Error executing word #{word.name}",
-            "Error in #{self.name} definition",
-            interp.get_string_location
-          )
-          error.set_caught_error(e)
-          raise error
-        end
+        word.execute(interp)
+      rescue => e
+        error = ForthicError.new(
+          "definition_word-29",
+          "Error executing word #{word.name}",
+          "Error in #{name} definition",
+          interp.get_string_location
+        )
+        error.set_caught_error(e)
+        raise error
       end
     end
   end

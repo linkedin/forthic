@@ -16,7 +16,6 @@ module Forthic
   end
 end
 
-
 module Forthic
   class Token
     attr_reader :type, :value, :location

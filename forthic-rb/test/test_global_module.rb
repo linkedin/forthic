@@ -5,13 +5,13 @@ require_relative "../lib/forthic/interpreter"
 
 def make_records
   [
-    { key: 100, assignee: "user1", status: "OPEN" },
-    { key: 101, assignee: "user1", status: "OPEN" },
-    { key: 102, assignee: "user1", status: "IN PROGRESS" },
-    { key: 103, assignee: "user1", status: "CLOSED" },
-    { key: 104, assignee: "user2", status: "IN PROGRESS" },
-    { key: 105, assignee: "user2", status: "OPEN" },
-    { key: 106, assignee: "user2", status: "CLOSED" },
+    {key: 100, assignee: "user1", status: "OPEN"},
+    {key: 101, assignee: "user1", status: "OPEN"},
+    {key: 102, assignee: "user1", status: "IN PROGRESS"},
+    {key: 103, assignee: "user1", status: "CLOSED"},
+    {key: 104, assignee: "user2", status: "IN PROGRESS"},
+    {key: 105, assignee: "user2", status: "OPEN"},
+    {key: 106, assignee: "user2", status: "CLOSED"}
   ]
 end
 
@@ -19,18 +19,17 @@ def makeStatusToManagerToIds
   {
     open: {
       manager1: [101, 102],
-      manager2: [103],
+      manager2: [103]
     },
     blocked: {
-      manager3: [104],
+      manager3: [104]
     },
     closed: {
       manager1: [10, 11],
-      manager2: [12, 13],
-    },
+      manager2: [12, 13]
+    }
   }
 end
-
 
 class TestGlobalModule < Minitest::Test
   def setup
@@ -108,7 +107,6 @@ class TestGlobalModule < Minitest::Test
   #   # @interp.run("SATURDAY")
   #   # puts @interp.stack_pop
   # end
-
 
   def test_rec
     @interp.run("[ ['alpha' 2] ['beta' 3] ['gamma' 4] ] REC")
@@ -274,8 +272,8 @@ class TestGlobalModule < Minitest::Test
 
     # Test grouping a list-valued field
     @interp.stack_push([
-      { "id" => 1, "attrs" => ["blue", "important"] },
-      { "id" => 2, "attrs" => ["red"] },
+      {"id" => 1, "attrs" => ["blue", "important"]},
+      {"id" => 2, "attrs" => ["red"]}
     ])
     @interp.run("'attrs' GROUP-BY-FIELD")
     grouped_rec = @interp.stack_pop
@@ -358,9 +356,9 @@ class TestGlobalModule < Minitest::Test
       ] REC 3 GROUPS-OF
     ))
     groups = @interp.stack_pop
-    assert_equal({ 'a' => 1, 'b' => 2, 'c' => 3 }, groups[0])
-    assert_equal({ 'd' => 4, 'e' => 5, 'f' => 6 }, groups[1])
-    assert_equal({ 'g' => 7, 'h' => 8 }, groups[2])
+    assert_equal({"a" => 1, "b" => 2, "c" => 3}, groups[0])
+    assert_equal({"d" => 4, "e" => 5, "f" => 6}, groups[1])
+    assert_equal({"g" => 7, "h" => 8}, groups[2])
   end
 
   def test_groups_of_using_record
@@ -457,8 +455,8 @@ class TestGlobalModule < Minitest::Test
     ))
     record = @interp.stack_pop
     expected = {
-      "k1" => { "l1" => { "m" => 4 }, "l2" => { "m" => 6 } },
-      "k2" => { "l1" => { "m" => 6 }, "l2" => { "m" => 8 } }
+      "k1" => {"l1" => {"m" => 4}, "l2" => {"m" => 6}},
+      "k2" => {"l1" => {"m" => 6}, "l2" => {"m" => 8}}
     }
     assert_equal expected, record
   end
@@ -471,8 +469,8 @@ class TestGlobalModule < Minitest::Test
     ))
     array = @interp.stack_pop
     expected = [
-      [[{ "m" => 4 }, { "m" => 6 }]],
-      [[{ "m" => 6 }, { "m" => 8 }]]
+      [[{"m" => 4}, {"m" => 6}]],
+      [[{"m" => 6}, {"m" => 8}]]
     ]
     assert_equal expected, array
   end
@@ -511,8 +509,8 @@ class TestGlobalModule < Minitest::Test
     record = @interp.stack_pop
 
     expected_record = {
-      "k1" => { "l1" => { "m" => 2 }, "l2" => { "m" => 3 } },
-      "k2" => { "l1" => { "m" => nil }, "l2" => { "m" => 4 } }
+      "k1" => {"l1" => {"m" => 2}, "l2" => {"m" => 3}},
+      "k2" => {"l1" => {"m" => nil}, "l2" => {"m" => 4}}
     }
     assert_equal expected_record, record
     assert_nil errors[0]
@@ -604,22 +602,22 @@ class TestGlobalModule < Minitest::Test
   end
 
   def test_invert_keys
-    status_to_manager_to_ids = makeStatusToManagerToIds()
+    status_to_manager_to_ids = makeStatusToManagerToIds
     @interp.stack_push(status_to_manager_to_ids)
     @interp.run("INVERT-KEYS")
     res = @interp.stack_pop
     expected = {
-      :manager1 => {
-        :open => [101, 102],
-        :closed => [10, 11],
+      manager1: {
+        open: [101, 102],
+        closed: [10, 11]
       },
-      :manager2 => {
-        :open => [103],
-        :closed => [12, 13],
+      manager2: {
+        open: [103],
+        closed: [12, 13]
       },
-      :manager3 => {
-        :blocked => [104],
-      },
+      manager3: {
+        blocked: [104]
+      }
     }
     assert_equal expected, res
   end
@@ -859,7 +857,6 @@ class TestGlobalModule < Minitest::Test
     assert_equal ["c"], stack[0].keys
     assert_equal [3], stack[0].values
   end
-
 
   def test_take
     @interp.run(%(
@@ -1323,7 +1320,7 @@ class TestGlobalModule < Minitest::Test
   end
 
   def test_add_days
-    @interp.run('2020-10-21 12 ADD-DAYS')
+    @interp.run("2020-10-21 12 ADD-DAYS")
     date = @interp.stack_pop
     assert_equal 2020, date.year
     assert_equal 11, date.month # Months are 1-based in Ruby
@@ -1331,9 +1328,9 @@ class TestGlobalModule < Minitest::Test
   end
 
   def test_subtract_dates
-    @interp.run('2020-10-21 2020-11-02 SUBTRACT-DATES')
+    @interp.run("2020-10-21 2020-11-02 SUBTRACT-DATES")
     stack = @interp.stack
-    assert_equal (-12), stack[0]
+    assert_equal(-12, stack[0])
   end
 
   def test_date_to_str
@@ -1410,7 +1407,7 @@ class TestGlobalModule < Minitest::Test
     ))
     stack = @interp.stack
     assert_equal 6, stack[0]
-    assert_equal (-2), stack[1]
+    assert_equal(-2, stack[1])
     assert_equal 8, stack[2]
     assert_equal 0.5, stack[3]
     assert_equal 2, stack[4]
@@ -1580,9 +1577,8 @@ class TestGlobalModule < Minitest::Test
       ] REC "3 *" 2 !INTERPS MAP
     ))
     result = @interp.stack_pop
-    assert_equal({ 'a' => 3, 'b' => 6, 'c' => 9, 'd' => 12 }, result)
+    assert_equal({"a" => 3, "b" => 6, "c" => 9, "d" => 12}, result)
   end
-
 
   def test_max_of_two_numbers
     @interp.stack_push(4)
@@ -1619,7 +1615,7 @@ class TestGlobalModule < Minitest::Test
   def test_mean_of_array_of_letters
     @interp.stack_push(["a", "a", "b", "c"])
     @interp.run("MEAN")
-    assert_equal({ "a" => 0.5, "b" => 0.25, "c" => 0.25 }, @interp.stack_pop)
+    assert_equal({"a" => 0.5, "b" => 0.25, "c" => 0.25}, @interp.stack_pop)
   end
 
   def test_mean_of_array_of_numbers_with_null_values
@@ -1631,31 +1627,31 @@ class TestGlobalModule < Minitest::Test
   def test_mean_of_array_of_letters_with_null_values
     @interp.stack_push(["a", "a", nil, "b", nil, "c"])
     @interp.run("MEAN")
-    assert_equal({ "a" => 0.5, "b" => 0.25, "c" => 0.25 }, @interp.stack_pop)
+    assert_equal({"a" => 0.5, "b" => 0.25, "c" => 0.25}, @interp.stack_pop)
   end
 
   def test_mean_of_array_of_objects
     @interp.stack_push([
-      { a: 1, b: 0 },
-      { a: 2, b: 0 },
-      { a: 3, b: 0 },
+      {a: 1, b: 0},
+      {a: 2, b: 0},
+      {a: 3, b: 0}
     ])
     @interp.run("MEAN")
-    assert_equal({ a: 2, b: 0 }, @interp.stack_pop)
+    assert_equal({a: 2, b: 0}, @interp.stack_pop)
   end
 
   def test_mean_of_array_of_objects_with_some_numbers_and_some_strings
     @interp.stack_push([
-      { a: 0 },
-      { a: 1, b: "To Do" },
-      { a: 2, b: "To Do" },
-      { a: 3, b: "In Progress" },
-      { a: 4, b: "Done" },
+      {a: 0},
+      {a: 1, b: "To Do"},
+      {a: 2, b: "To Do"},
+      {a: 3, b: "In Progress"},
+      {a: 4, b: "Done"}
     ])
     @interp.run("MEAN")
     assert_equal({
       a: 2,
-      b: { "To Do" => 0.5, "In Progress" => 0.25, "Done" => 0.25 },
+      b: {"To Do" => 0.5, "In Progress" => 0.25, "Done" => 0.25}
     }, @interp.stack_pop)
   end
 
@@ -1738,5 +1734,4 @@ class TestGlobalModule < Minitest::Test
     timestamp = @interp.stack_pop
     assert_equal 1604384700, timestamp
   end
-
 end

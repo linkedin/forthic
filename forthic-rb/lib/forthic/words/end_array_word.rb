@@ -1,7 +1,7 @@
 # # frozen_string_literal: true
 
-require_relative 'word'
-require_relative '../token'
+require_relative "word"
+require_relative "../token"
 
 module Forthic
   class EndArrayWord < Word

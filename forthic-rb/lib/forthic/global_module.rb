@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require 'time'
-require 'json'
+require "time"
+require "json"
 
-require_relative 'forthic_module'
-require_relative 'forthic_error'
-require_relative 'words/word'
-require_relative 'words/push_value_word'
-require_relative 'words/map_word'
-require_relative 'tokenizer'
-require_relative 'code_location'
+require_relative "forthic_module"
+require_relative "forthic_error"
+require_relative "words/word"
+require_relative "words/push_value_word"
+require_relative "words/map_word"
+require_relative "tokenizer"
+require_relative "code_location"
 
 module Forthic
   class GlobalModule < ForthicModule
@@ -26,7 +26,7 @@ module Forthic
         comparator: nil,
         push_rest: nil,
         depth: nil,
-        interps: 1,
+        interps: 1
       })
 
       @literal_handlers = [
@@ -34,7 +34,7 @@ module Forthic
         method(:to_float),
         method(:to_literal_date),
         method(:to_time),
-        method(:to_int),
+        method(:to_int)
       ]
 
       # --------------------------------------------------
@@ -203,11 +203,10 @@ module Forthic
       # --------------------------------------------------
       # Ruby-specific words
       add_module_word(">SYM", method(:word_to_SYM))
-
     end
 
     def find_word(name)
-      result = super(name)
+      result = super
       result ||= find_literal_word(name)
       result
     end
@@ -229,14 +228,18 @@ module Forthic
     end
 
     def to_int(str_val)
-      result = Integer(str_val) rescue nil
-      result
+      Integer(str_val)
+    rescue
+      nil
     end
 
     def to_float(str_val)
       return nil unless str_val.include?(".")
-      result = Float(str_val) rescue nil
-      result
+      begin
+        Float(str_val)
+      rescue
+        nil
+      end
     end
 
     def to_literal_date(str_val)
@@ -246,8 +249,7 @@ module Forthic
       year = match[1].to_i
       month = match[2].to_i
       day = match[3].to_i
-      result = Date.new(year, month, day)
-      result
+      Date.new(year, month, day)
     end
 
     def to_time(str_val)
@@ -259,8 +261,7 @@ module Forthic
       return nil if hours > 23 || minutes >= 60
 
       result = Time.now
-      result = Time.new(result.year, result.month, result.day, hours, minutes, 0)
-      result
+      Time.new(result.year, result.month, result.day, hours, minutes, 0)
     end
 
     # Convenience function to create element word handlers
@@ -282,7 +283,7 @@ module Forthic
       varnames = interp.stack_pop
       module_ = interp.cur_module
       varnames.each do |v|
-        if v.match(/__.*/)
+        if /__.*/.match?(v)
           raise ForthicError.new(
             "global_module-696",
             "word_VARIABLES: variable names cannot begin with '__': '#{v}'",
@@ -364,7 +365,6 @@ module Forthic
       result = drill_for_value(rec, fields)
       interp.stack_push(result)
     end
-
 
     # ( rec value field -- rec )
     def word_l_REC_bang(interp)
@@ -471,10 +471,10 @@ module Forthic
       end
 
       result = if container.is_a?(Array)
-                 new_to_old.keys.sort.map { |k| container[new_to_old[k]] }
-               else
-                 new_to_old.each_with_object({}) { |(new_key, old_key), res| res[new_key] = container[old_key] }
-               end
+        new_to_old.keys.sort.map { |k| container[new_to_old[k]] }
+      else
+        new_to_old.each_with_object({}) { |(new_key, old_key), res| res[new_key] = container[old_key] }
+      end
 
       interp.stack_push(result)
     end
@@ -488,10 +488,10 @@ module Forthic
       container ||= []
 
       values = if container.is_a?(Array)
-                 container
-               else
-                 container.values
-               end
+        container
+      else
+        container.values
+      end
 
       result = {}
       values.each do |v|
@@ -510,10 +510,10 @@ module Forthic
       container ||= []
 
       values = if container.is_a?(Array)
-                 container
-               else
-                 container.values
-               end
+        container
+      else
+        container.values
+      end
 
       result = {}
       values.each do |v|
@@ -540,15 +540,15 @@ module Forthic
 
       container = interp.stack_pop
 
-      flags = interp.get_flags(self.module_id)
+      flags = interp.get_flags(module_id)
 
       container ||= []
 
       keys, values = if container.is_a?(Array)
-                       [Array.new(container.size) { |i| i }, container]
-                     else
-                       [container.keys, container.values]
-                     end
+        [Array.new(container.size) { |i| i }, container]
+      else
+        [container.keys, container.values]
+      end
 
       result = {}
       values.each_with_index do |value, i|
@@ -573,12 +573,12 @@ module Forthic
 
       container ||= []
       result = if container.is_a?(Array)
-                 group_items(container, size)
-               else
-                 keys = container.keys
-                 key_groups = group_items(keys, size)
-                 key_groups.map { |ks| extract_rec(container, ks) }
-               end
+        group_items(container, size)
+      else
+        keys = container.keys
+        key_groups = group_items(keys, size)
+        key_groups.map { |ks| extract_rec(container, ks) }
+      end
 
       interp.stack_push(result)
     end
@@ -616,7 +616,7 @@ module Forthic
       forthic = interp.stack_pop
       string_location = interp.get_string_location
       items = interp.stack_pop
-      flags = interp.get_flags(self.module_id)
+      flags = interp.get_flags(module_id)
 
       map_word = MapWord.new(items, forthic, string_location, flags)
       map_word.execute(interp)
@@ -628,7 +628,7 @@ module Forthic
       string_location = interp.get_string_location
 
       items = interp.stack_pop
-      flags = interp.get_flags(self.module_id)
+      flags = interp.get_flags(module_id)
 
       if !items
         interp.stack_push(items)
@@ -690,10 +690,10 @@ module Forthic
       container2 ||= []
 
       result = if container2.is_a?(Array)
-                 container1.map.with_index { |v, i| [v, container2[i]] }
-               else
-                 container1.each_with_object({}) { |(k, v), res| res[k] = [v, container2[k]] }
-               end
+        container1.map.with_index { |v, i| [v, container2[i]] }
+      else
+        container1.each_with_object({}) { |(k, v), res| res[k] = [v, container2[k]] }
+      end
 
       interp.stack_push(result)
     end
@@ -711,20 +711,20 @@ module Forthic
       container2 ||= []
 
       result = if container2.is_a?(Array)
-                 container1.map.with_index do |v, i|
-                   interp.stack_push(v)
-                   interp.stack_push(container2[i])
-                   interp.run(forthic, string_location)
-                   interp.stack_pop
-                 end
-               else
-                 container1.each_with_object({}) do |(k, v), res|
-                   interp.stack_push(v)
-                   interp.stack_push(container2[k])
-                   interp.run(forthic, string_location)
-                   res[k] = interp.stack_pop
-                 end
-               end
+        container1.map.with_index do |v, i|
+          interp.stack_push(v)
+          interp.stack_push(container2[i])
+          interp.run(forthic, string_location)
+          interp.stack_pop
+        end
+      else
+        container1.each_with_object({}) do |(k, v), res|
+          interp.stack_push(v)
+          interp.stack_push(container2[k])
+          interp.run(forthic, string_location)
+          res[k] = interp.stack_pop
+        end
+      end
 
       interp.stack_push(result)
     end
@@ -737,10 +737,10 @@ module Forthic
       container ||= []
 
       result = if container.is_a?(Array)
-                 container.each_index.to_a
-               else
-                 container.keys
-               end
+        container.each_index.to_a
+      else
+        container.keys
+      end
 
       interp.stack_push(result)
     end
@@ -753,10 +753,10 @@ module Forthic
       container ||= []
 
       result = if container.is_a?(Array)
-                 container
-               else
-                 container.values
-               end
+        container
+      else
+        container.values
+      end
 
       interp.stack_push(result)
     end
@@ -844,16 +844,16 @@ module Forthic
       end
 
       result = if container.is_a?(Array)
-                 indexes.map { |i| i.nil? ? nil : container[i] }
-               else
-                 keys = container.keys.sort
-                 indexes.each_with_object({}) do |i, res|
-                   next if i.nil?
+        indexes.map { |i| i.nil? ? nil : container[i] }
+      else
+        keys = container.keys.sort
+        indexes.each_with_object({}) do |i, res|
+          next if i.nil?
 
-                   k = keys[i]
-                   res[k] = container[k]
-                 end
-               end
+          k = keys[i]
+          res[k] = container[k]
+        end
+      end
 
       interp.stack_push(result)
     end
@@ -868,11 +868,11 @@ module Forthic
       rcontainer ||= []
 
       result = if rcontainer.is_a?(Array)
-                 lcontainer - rcontainer
-               else
-                 diff = lcontainer.keys - rcontainer.keys
-                 diff.each_with_object({}) { |k, res| res[k] = lcontainer[k] }
-               end
+        lcontainer - rcontainer
+      else
+        diff = lcontainer.keys - rcontainer.keys
+        diff.each_with_object({}) { |k, res| res[k] = lcontainer[k] }
+      end
 
       interp.stack_push(result)
     end
@@ -887,14 +887,14 @@ module Forthic
       rcontainer ||= []
 
       result = if rcontainer.is_a?(Array)
-                 lcontainer & rcontainer
-               else
-                 lkeys = lcontainer.keys
-                 rkeys = rcontainer.keys
+        lcontainer & rcontainer
+      else
+        lkeys = lcontainer.keys
+        rkeys = rcontainer.keys
 
-                 intersect = lkeys & rkeys
-                 intersect.each_with_object({}) { |k, res| res[k] = lcontainer[k] }
-               end
+        intersect = lkeys & rkeys
+        intersect.each_with_object({}) { |k, res| res[k] = lcontainer[k] }
+      end
 
       interp.stack_push(result)
     end
@@ -909,18 +909,18 @@ module Forthic
       rcontainer ||= []
 
       result = if rcontainer.is_a?(Array)
-                 lcontainer | rcontainer
-               else
-                 lkeys = lcontainer.keys
-                 rkeys = rcontainer.keys
+        lcontainer | rcontainer
+      else
+        lkeys = lcontainer.keys
+        rkeys = rcontainer.keys
 
-                 keys = lkeys | rkeys
-                 keys.each_with_object({}) do |k, res|
-                   val = lcontainer[k]
-                   val = rcontainer[k] if val.nil?
-                   res[k] = val
-                 end
-               end
+        keys = lkeys | rkeys
+        keys.each_with_object({}) do |k, res|
+          val = lcontainer[k]
+          val = rcontainer[k] if val.nil?
+          res[k] = val
+        end
+      end
 
       interp.stack_push(result)
     end
@@ -932,7 +932,7 @@ module Forthic
       string_location = interp.get_string_location
 
       container = interp.stack_pop
-      flags = interp.get_flags(self.module_id)
+      flags = interp.get_flags(module_id)
 
       if !container
         interp.stack_push(container)
@@ -967,7 +967,7 @@ module Forthic
     def word_TAKE(interp)
       n = interp.stack_pop
       container = interp.stack_pop
-      flags = interp.get_flags(self.module_id)
+      flags = interp.get_flags(module_id)
 
       container ||= []
 
@@ -976,11 +976,11 @@ module Forthic
 
       if container.is_a?(Array)
         taken = container[0...n]
-        rest = container[n..-1]
+        rest = container[n..]
       else
         keys = container.keys.sort
         taken_keys = keys[0...n]
-        rest_keys = keys[n..-1]
+        rest_keys = keys[n..]
         taken = taken_keys.each_with_object({}) { |k, res| res[k] = container[k] }
         rest = rest_keys.each_with_object({}) { |k, res| res[k] = container[k] }
       end
@@ -1002,10 +1002,10 @@ module Forthic
 
       result = nil
       if container.is_a?(Array)
-        result = container[n..-1]
+        result = container[n..]
       else
         keys = container.keys.sort
-        rest_keys = keys[n..-1]
+        rest_keys = keys[n..]
         result = rest_keys.each_with_object({}) { |k, res| res[k] = container[k] }
       end
 
@@ -1049,12 +1049,10 @@ module Forthic
         interp.stack_push(container)
         return
       end
-
-      result = container
-      if container.is_a?(Array)
-        result = container.shuffle
+      result = if container.is_a?(Array)
+        container.shuffle
       else
-        result = container
+        container
       end
 
       interp.stack_push(result)
@@ -1066,7 +1064,7 @@ module Forthic
       flag_string_position = interp.get_string_location
       container = interp.stack_pop
 
-      flags = interp.get_flags(self.module_id)
+      flags = interp.get_flags(module_id)
       comparator = flags[:comparator]
 
       container ||= []
@@ -1075,15 +1073,14 @@ module Forthic
         return
       end
 
-
       # Figure out what to do
       result = if comparator.is_a?(String)
-                 sort_with_forthic(interp, comparator, flag_string_position, container)
-               elsif comparator.nil?
-                 sort_without_comparator(container)
-               else
-                 sort_with_key_func(container, comparator)
-               end
+        sort_with_forthic(interp, comparator, flag_string_position, container)
+      elsif comparator.nil?
+        sort_without_comparator(container)
+      else
+        sort_with_key_func(container, comparator)
+      end
 
       interp.stack_push(result)
     end
@@ -1142,17 +1139,17 @@ module Forthic
 
       result = nil
       if container.is_a?(Array)
-        if container.length == 0
-          result = nil
+        result = if container.length == 0
+          nil
         else
-          result = container[container.length - 1]
+          container[container.length - 1]
         end
       else
         keys = container.keys.sort
-        if keys.length == 0
-          result = nil
+        result = if keys.length == 0
+          nil
         else
-          result = container[keys[keys.length - 1]]
+          container[keys[keys.length - 1]]
         end
       end
 
@@ -1164,7 +1161,7 @@ module Forthic
     def word_UNPACK(interp)
       container = interp.stack_pop
 
-      container = [] unless container
+      container ||= []
 
       if container.is_a?(Array)
         container.each do |item|
@@ -1182,16 +1179,16 @@ module Forthic
     # ( record -- record )
     def word_FLATTEN(interp)
       nested = interp.stack_pop
-      flags = interp.get_flags(self.module_id)
+      flags = interp.get_flags(module_id)
 
       nested ||= []
       depth = flags[:depth]
 
       result = if nested.is_a?(Array)
-                 flatten_array(nested, depth)
-               else
-                 flatten_record(nested, depth, {}, [])
-               end
+        flatten_array(nested, depth)
+      else
+        flatten_record(nested, depth, {}, [])
+      end
 
       interp.stack_push(result)
     end
@@ -1208,7 +1205,7 @@ module Forthic
       if container.is_a?(Array)
         index = container.index(item)
         # If index is nil or < 0, return nil
-        result = index.nil? || index < 0 ? nil : index
+        result = (index.nil? || index < 0) ? nil : index
       else
         keys = container.keys
         keys.each do |k|
@@ -1223,37 +1220,35 @@ module Forthic
       interp.stack_push(result)
     end
 
-      # ( array init forthic -- value )
-      # ( record init forthic -- value )
-      def word_REDUCE(interp)
-        forthic = interp.stack_pop
-        string_location = interp.get_string_location
+    # ( array init forthic -- value )
+    # ( record init forthic -- value )
+    def word_REDUCE(interp)
+      forthic = interp.stack_pop
+      string_location = interp.get_string_location
 
-        initial = interp.stack_pop
-        container = interp.stack_pop
+      initial = interp.stack_pop
+      container = interp.stack_pop
 
-        container ||= []
+      container ||= []
 
-        result = nil
-        if container.is_a?(Array)
-          interp.stack_push(initial)
-          container.each do |item|
-            interp.stack_push(item)
-            interp.run(forthic, string_location)
-          end
-          result = interp.stack_pop
-        else
-          interp.stack_push(initial)
-          container.each do |k, v|
-            interp.stack_push(v)
-            interp.run(forthic, string_location)
-          end
-          result = interp.stack_pop
+      interp.stack_push(initial)
+
+      if container.is_a?(Array)
+        container.each do |item|
+          interp.stack_push(item)
+          interp.run(forthic, string_location)
         end
-
-        interp.stack_push(result)
+      else
+        container.each do |k, v|
+          interp.stack_push(v)
+          interp.run(forthic, string_location)
+        end
       end
 
+      result = interp.stack_pop
+
+      interp.stack_push(result)
+    end
 
     # ( a -- )
     def word_POP(interp)
@@ -1428,7 +1423,7 @@ module Forthic
     def word_DEFAULT(interp)
       default_value = interp.stack_pop
       value = interp.stack_pop
-      result = value.nil? || value == "" ? default_value : value
+      result = (value.nil? || value == "") ? default_value : value
       interp.stack_push(result)
     end
 
@@ -1466,14 +1461,13 @@ module Forthic
     def word_to_FIXED(interp)
       num_places = interp.stack_pop
       value = interp.stack_pop
-      result = value
-      if value.nil?
-        result = ""
+      result = if value.nil?
+        ""
       elsif !value.is_a?(Numeric)
-        result = value
+        value
       else
         # Round value to num_places
-        result = value.round(num_places)
+        value.round(num_places)
       end
       interp.stack_push(result.to_s)
     end
@@ -1515,7 +1509,6 @@ module Forthic
       end
     end
 
-
     # ( time -- time )
     def word_AM(interp)
       time = interp.stack_pop
@@ -1549,24 +1542,21 @@ module Forthic
     # ( obj -- time )
     def word_to_TIME(interp)
       obj = interp.stack_pop
-      result = nil
-      if obj.is_a?(Time)
-        result = obj
+      result = if obj.is_a?(Time)
+        obj
       else
-        result = Time.parse(obj.to_s)
+        Time.parse(obj.to_s)
       end
       interp.stack_push(result)
     end
 
-
     # ( obj -- date )
     def word_to_DATE(interp)
       obj = interp.stack_pop
-      result = nil
-      if obj.is_a?(Date)
-        result = obj
+      result = if obj.is_a?(Date)
+        obj
       else
-        result = Date.parse(obj.to_s)
+        Date.parse(obj.to_s)
       end
       interp.stack_push(result)
     end
@@ -1674,11 +1664,13 @@ module Forthic
         numbers = [a, b]
       end
 
+      nil_found = numbers.any?(&:nil?)
+      if nil_found
+        interp.stack_push(nil)
+        return
+      end
+
       numbers.each do |num|
-        if num.nil?
-          interp.stack_push(nil)
-          return
-        end
         result *= num
       end
 
@@ -1883,7 +1875,6 @@ module Forthic
       interp.stack_push(result)
     end
 
-
     # ( vals required_vals -- bool )
     def word_ALL(interp)
       required_vals = interp.stack_pop
@@ -1899,11 +1890,10 @@ module Forthic
     # ( item -- bool )
     def word_to_BOOL(interp)
       item = interp.stack_pop
-      result = false
-      if item.nil? || item == "" || item == 0
-        result = false
+      result = if item.nil? || item == "" || item == 0
+        false
       else
-        result = !!item
+        !!item
       end
       interp.stack_push(result)
     end
@@ -1921,7 +1911,6 @@ module Forthic
       result = str.to_f
       interp.stack_push(result)
     end
-
 
     # ( val start_ranges -- index )
     def word_RANGE_INDEX(interp)
@@ -1951,7 +1940,6 @@ module Forthic
 
       interp.stack_push(result)
     end
-
 
     # ( -- Infinity )
     def word_INFINITY(interp)
@@ -2026,23 +2014,23 @@ module Forthic
 
     # ( -- )
     def word_bang_PUSH_ERROR(interp)
-      interp.modify_flags(self.module_id, {push_error: true})
+      interp.modify_flags(module_id, {push_error: true})
     end
 
     # ( -- )
     def word_bang_WITH_KEY(interp)
-      interp.modify_flags(self.module_id, {with_key: true})
+      interp.modify_flags(module_id, {with_key: true})
     end
 
     # ( comparator -- )
     def word_bang_COMPARATOR(interp)
       comparator = interp.stack_pop
-      interp.modify_flags(self.module_id, {comparator: comparator})
+      interp.modify_flags(module_id, {comparator: comparator})
     end
 
     # ( -- )
     def word_bang_PUSH_REST(interp)
-      interp.modify_flags(self.module_id, {push_rest: true})
+      interp.modify_flags(module_id, {push_rest: true})
     end
 
     # ( depth -- )
@@ -2050,13 +2038,13 @@ module Forthic
     # NOTE: `depth` of 0 is the same not having set depth
     def word_bang_DEPTH(interp)
       depth = interp.stack_pop
-      interp.modify_flags(self.module_id, {depth: depth})
+      interp.modify_flags(module_id, {depth: depth})
     end
 
     # ( num_inteprs -- )
     def word_bang_INTERPS(interp)
       num_interps = interp.stack_pop
-      interp.modify_flags(self.module_id, { interps: num_interps })
+      interp.modify_flags(module_id, {interps: num_interps})
     end
 
     # ( -- )
@@ -2082,11 +2070,11 @@ module Forthic
 
       result = {
         word_counts: [],
-        timestamps: [],
+        timestamps: []
       }
 
       histogram.each do |val|
-        rec = { word: val[:word], count: val[:count] }
+        rec = {word: val[:word], count: val[:count]}
         result[:word_counts].push(rec)
       end
 
@@ -2095,7 +2083,7 @@ module Forthic
         rec = {
           label: t[:label],
           time_ms: t[:time_ms],
-          delta: t[:time_ms] - prev_time,
+          delta: t[:time_ms] - prev_time
         }
         prev_time = t[:time_ms]
         result[:timestamps].push(rec)
@@ -2103,7 +2091,6 @@ module Forthic
 
       interp.stack_push(result)
     end
-
 
     # ( string -- symbol )
     def word_to_SYM(interp)
@@ -2115,10 +2102,11 @@ module Forthic
     # --------------------------------------------------
     # Helpers
     private
+
     def drill_for_value(rec, fields)
       cur_rec = rec
       fields.each do |f|
-        if cur_rec.is_a?(Array) or cur_rec.is_a?(Hash)
+        if cur_rec.is_a?(Array) || cur_rec.is_a?(Hash)
           cur_rec = cur_rec[f]
         else
           return nil
@@ -2151,7 +2139,7 @@ module Forthic
       result = nil
       begin
         interp.run(forthic, string_location)
-      rescue StandardError => e
+      rescue => e
         result = e
       end
       result
@@ -2163,37 +2151,55 @@ module Forthic
       res
     end
 
-      # Default sort
-      def sort_without_comparator(container)
-        # Separate nil values from non-nil values
-        nils, non_nils = container.partition(&:nil?)
+    # Default sort
+    def sort_without_comparator(container)
+      # Separate nil values from non-nil values
+      nils, non_nils = container.partition(&:nil?)
 
-        # Sort non_nils and append nils
-        non_nils.sort + nils
+      # Sort non_nils and append nils
+      non_nils.sort + nils
+    end
+
+    # Sort using a forthic string
+    def sort_with_forthic(interp, forthic, flag_string_position, container)
+      aug_array = make_aug_array(interp, forthic, flag_string_position, container)
+      aug_array.sort! { |l, r| cmp_items(l, r) }
+      de_aug_array(aug_array)
+    end
+
+    def make_aug_array(interp, forthic, flag_string_position, vals)
+      res = []
+      vals.each do |val|
+        interp.stack_push(val)
+        interp.run(forthic, flag_string_position)
+        aug_val = interp.stack_pop
+        res.push([val, aug_val])
       end
+      res
+    end
 
-      # Sort using a forthic string
-      def sort_with_forthic(interp, forthic, flag_string_position, container)
-        aug_array = make_aug_array(interp, forthic, flag_string_position, container)
-        aug_array.sort! { |l, r| cmp_items(l, r) }
-        de_aug_array(aug_array)
+    def cmp_items(l, r)
+      l_val = l[1]
+      r_val = r[1]
+
+      if l_val < r_val
+        -1
+      elsif l_val > r_val
+        1
+      else
+        0
       end
+    end
 
-      def make_aug_array(interp, forthic, flag_string_position, vals)
-        res = []
-        vals.each do |val|
-          interp.stack_push(val)
-          interp.run(forthic, flag_string_position)
-          aug_val = interp.stack_pop
-          res.push([val, aug_val])
-        end
-        res
-      end
+    def de_aug_array(aug_vals)
+      aug_vals.map { |aug_val| aug_val[0] }
+    end
 
-      def cmp_items(l, r)
-        l_val = l[1]
-        r_val = r[1]
-
+    # Sort with key func
+    def sort_with_key_func(container, key_func)
+      container.sort do |l, r|
+        l_val = key_func.call(l)
+        r_val = key_func.call(r)
         if l_val < r_val
           -1
         elsif l_val > r_val
@@ -2202,140 +2208,121 @@ module Forthic
           0
         end
       end
+    end
 
-      def de_aug_array(aug_vals)
-        aug_vals.map { |aug_val| aug_val[0] }
+    def add_to_record_result(item, key, keys, result)
+      new_key = (keys + [key]).join("\t")
+      result[new_key] = item
+    end
+
+    def fully_flatten_record(record, res, keys)
+      record.each do |k, item|
+        if is_record(item)
+          fully_flatten_record(item, res, keys + [k])
+        else
+          add_to_record_result(item, k, keys, res)
+        end
+      end
+      res
+    end
+
+    def flatten_record(record, depth, res, keys)
+      return fully_flatten_record(record, res, keys) if depth.nil?
+
+      record.each do |k, item|
+        if depth > 0 && is_record(item)
+          flatten_record(item, depth - 1, res, keys + [k])
+        else
+          add_to_record_result(item, k, keys, res)
+        end
+      end
+      res
+    end
+
+    def flatten_array(array, depth)
+      return array.flatten(depth) if depth
+      array.flatten
+    end
+
+    def is_record(obj)
+      obj.is_a?(Hash) && !obj.empty?
+    end
+
+    def get_day_this_week(day_of_week)
+      # Assume the start of the week is Monday and a day_of_week of 0 means a Monday
+      # Get the current day of the week
+      today = Date.today
+      current_day_of_week = today.wday
+
+      # Return the date of the day_of_week
+      today - (current_day_of_week - day_of_week)
+    end
+
+    # NOTE: Monday is the start of the week
+    def normalize_day(day)
+      day
+    end
+
+    def compute_number_mean(numbers)
+      sum = numbers.reduce(0) { |acc, num| acc + num }
+      sum.to_f / numbers.length
+    end
+
+    def compute_non_number_mean(objects)
+      non_null_objects = objects.reject { |obj| obj.nil? }
+      res = Hash.new(0)
+
+      non_null_objects.each do |obj|
+        obj_str = obj.is_a?(String) ? obj : obj.to_json
+        res[obj_str] += 1
       end
 
-      # Sort with key func
-      def sort_with_key_func(container, key_func)
-        container.sort do |l, r|
-          l_val = key_func.call(l)
-          r_val = key_func.call(r)
-          if l_val < r_val
-            -1
-          elsif l_val > r_val
-            1
-          else
-            0
-          end
+      res.each do |key, value|
+        res[key] = value.to_f / non_null_objects.length
+      end
+      res
+    end
+
+    def compute_object_mean(records)
+      res = {}
+      records.each do |record|
+        record.each do |key, value|
+          res[key] ||= []
+          res[key] << value
         end
       end
 
-      def add_to_record_result(item, key, keys, result)
-        new_key = (keys + [key]).join("\t")
-        result[new_key] = item
+      res.each do |key, values|
+        res[key] = compute_mean(values)
       end
+      res
+    end
 
-      def fully_flatten_record(record, res, keys)
-        record.each do |k, item|
-          if is_record(item)
-            fully_flatten_record(item, res, keys + [k])
-          else
-            add_to_record_result(item, k, keys, res)
-          end
+    def is_all_numbers(values)
+      values.all? { |val| val.is_a?(Numeric) }
+    end
+
+    def is_all_records(values)
+      values.all? { |val| val.is_a?(Hash) }
+    end
+
+    def select_non_null_values(values)
+      values.reject { |val| val.nil? }
+    end
+
+    def compute_mean(values)
+      result = nil
+      if values.is_a?(Array)
+        non_null_values = select_non_null_values(values)
+        result = if is_all_numbers(non_null_values)
+          compute_number_mean(non_null_values)
+        elsif is_all_records(non_null_values)
+          compute_object_mean(non_null_values)
+        else
+          compute_non_number_mean(non_null_values)
         end
-        res
       end
-
-      def flatten_record(record, depth, res, keys)
-        return fully_flatten_record(record, res, keys) if depth.nil?
-
-        record.each do |k, item|
-          if depth > 0 && is_record(item)
-            flatten_record(item, depth - 1, res, keys + [k])
-          else
-            add_to_record_result(item, k, keys, res)
-          end
-        end
-        res
-      end
-
-      def flatten_array(array, depth)
-        return array.flatten(depth) if depth
-        array.flatten
-      end
-
-      def is_record(obj)
-        obj.is_a?(Hash) && !obj.empty?
-      end
-
-      def get_day_this_week(day_of_week)
-        # Assume the start of the week is Monday and a day_of_week of 0 means a Monday
-        # Get the current day of the week
-        today = Date.today
-        current_day_of_week = today.wday
-
-        # Return the date of the day_of_week
-        today - (current_day_of_week - day_of_week)
-      end
-
-      # NOTE: Monday is the start of the week
-      def normalize_day(day)
-        day
-      end
-
-      def compute_number_mean(numbers)
-        sum = numbers.reduce(0) { |acc, num| acc + num }
-        sum.to_f / numbers.length
-      end
-
-      def compute_non_number_mean(objects)
-        non_null_objects = objects.reject { |obj| obj.nil? }
-        res = Hash.new(0)
-
-        non_null_objects.each do |obj|
-          obj_str = obj.is_a?(String) ? obj : obj.to_json
-          res[obj_str] += 1
-        end
-
-        res.each do |key, value|
-          res[key] = value.to_f / non_null_objects.length
-        end
-        res
-      end
-
-      def compute_object_mean(records)
-        res = {}
-        records.each do |record|
-          record.each do |key, value|
-            res[key] ||= []
-            res[key] << value
-          end
-        end
-
-        res.each do |key, values|
-          res[key] = compute_mean(values)
-        end
-        res
-      end
-
-      def is_all_numbers(values)
-        values.all? { |val| val.is_a?(Numeric) }
-      end
-
-      def is_all_records(values)
-        values.all? { |val| val.is_a?(Hash) }
-      end
-
-      def select_non_null_values(values)
-        values.reject { |val| val.nil? }
-      end
-
-      def compute_mean(values)
-        result = nil
-        if values.is_a?(Array)
-          non_null_values = select_non_null_values(values)
-          if is_all_numbers(non_null_values)
-            result = compute_number_mean(non_null_values)
-          elsif is_all_records(non_null_values)
-            result = compute_object_mean(non_null_values)
-          else
-            result = compute_non_number_mean(non_null_values)
-          end
-        end
-        result
-      end
-
+      result
+    end
   end
 end

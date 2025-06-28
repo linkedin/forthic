@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require_relative 'words/word'
-require_relative 'words/module_word'
-require_relative 'words/module_memo_word'
-require_relative 'words/module_memo_bang_word'
-require_relative 'words/module_memo_bang_at_word'
-require_relative 'words/imported_word'
-require_relative 'variable'
+require "set"
+require_relative "words/word"
+require_relative "words/module_word"
+require_relative "words/module_memo_word"
+require_relative "words/module_memo_bang_word"
+require_relative "words/module_memo_bang_at_word"
+require_relative "words/imported_word"
+require_relative "variable"
 
 module Forthic
   class ForthicModule
@@ -42,7 +43,7 @@ module Forthic
     # @param [String] prefix
     # @param [ForthicModule] mod
     def require_module(prefix, mod)
-      @required_modules << { prefix: prefix, module: mod }
+      @required_modules << {prefix: prefix, module: mod}
     end
 
     # @param [String] name
