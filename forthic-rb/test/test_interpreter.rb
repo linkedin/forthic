@@ -162,4 +162,35 @@ class TestInterpreter < Minitest::Test
     interp.run("POP")
     assert_equal 0, interp.stack.length
   end
+
+  def test_import_module
+    interp = Forthic::Interpreter.new
+
+    # Create a test module with exportable words
+    test_module = Forthic::ForthicModule.new("test-module")
+    test_module.add_module_word("TEST-WORD", proc { |i| i.stack_push("test-result") })
+    test_module.add_exportable(["TEST-WORD"])
+
+    # Import the module with a prefix
+    interp.import_module(test_module, "test")
+
+    # Verify the module is registered
+    registered_module = interp.registered_modules["test-module"]
+    refute_nil registered_module
+    assert_equal "test-module", registered_module.name
+
+    # Verify we can call the imported word with prefix
+    interp.run("test.TEST-WORD")
+    assert_equal "test-result", interp.stack_pop
+
+    # Test importing without prefix
+    interp2 = Forthic::Interpreter.new
+    test_module2 = Forthic::ForthicModule.new("no-prefix-module")
+    test_module2.add_module_word("ANOTHER-WORD", proc { |i| i.stack_push("no-prefix-result") })
+    test_module2.add_exportable(["ANOTHER-WORD"])
+
+    interp2.import_module(test_module2)
+    interp2.run("ANOTHER-WORD")
+    assert_equal "no-prefix-result", interp2.stack_pop
+  end
 end

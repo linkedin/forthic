@@ -273,6 +273,14 @@ module Forthic
     end
 
     # @param [ForthicModule] mod
+    # @param [String] prefix
+    def import_module(mod, prefix = "")
+      raise ArgumentError, "Module cannot be nil" if mod.nil?
+      register_module(mod)
+      @app_module.import_module(prefix, mod, self)
+    end
+
+    # @param [ForthicModule] mod
     def run_module_code(mod)
       raise ArgumentError, "Module cannot be nil" if mod.nil?
       module_stack_push(mod)
