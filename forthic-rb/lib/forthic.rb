@@ -8,6 +8,10 @@ module Forthic
   autoload :Token, "forthic/token"
   autoload :PositionedString, "forthic/positioned_string"
   autoload :ForthicError, "forthic/forthic_error"
+
+  module Errors
+    autoload :UnknownWordError, "forthic/errors/unknown_word_error"
+  end
   autoload :Word, "forthic/words/word"
   autoload :PushValueWord, "forthic/words/push_value_word"
   autoload :DefinitionWord, "forthic/words/definition_word"

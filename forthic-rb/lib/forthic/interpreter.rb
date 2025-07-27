@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "forthic_error"
+require_relative "errors/unknown_word_error"
 require_relative "tokenizer"
 require_relative "token"
 require_relative "code_location"
@@ -220,7 +221,11 @@ module Forthic
         next if [TokenType::START_DEF, TokenType::END_DEF, TokenType::COMMENT].include?(token.type) || @execution_state.is_compiling
       end
       true
+    rescue ForthicError => e
+      # Re-raise ForthicError and its subclasses without wrapping
+      raise e
     rescue => e
+      # Wrap non-ForthicError exceptions
       error = ForthicError.new(ErrorCodes::EXECUTION_ERROR, "Error executing token '#{token&.string}'", "An unexpected error occurred during execution. Check the token syntax and try again.", token&.location)
       error.set_caught_error(e)
       raise error
@@ -409,7 +414,11 @@ module Forthic
     # @param [Token] token
     def handle_word_token(token)
       word = find_word(token.string)
-      raise ForthicError.new(ErrorCodes::WORD_NOT_FOUND, "Word '#{token.string}' not found", "Check for typos in the word name or ensure the word has been defined.", token.location) unless word
+      unless word
+        # Generate suggested words for better error messages
+        suggested_words = find_similar_words(token.string)
+        raise Errors::UnknownWordError.new(token.string, token.location, suggested_words)
+      end
       handle_word(word, token.location)
     end
 
@@ -423,6 +432,87 @@ module Forthic
         count_word(word)
         word.execute(self)
       end
+    end
+
+    private
+
+    # Find words similar to the given word name for error suggestions
+    # @param [String] word_name The unknown word to find suggestions for
+    # @return [Array<String>] Array of similar word names
+    def find_similar_words(word_name)
+      return [] if word_name.nil? || word_name.empty?
+
+      all_words = collect_available_words
+
+      # Find words with similar names using simple string distance
+      suggestions = all_words.select do |available_word|
+        levenshtein_distance(word_name.downcase, available_word.downcase) <= 2
+      end
+
+      # If no close matches, try prefix matching
+      if suggestions.empty?
+        suggestions = all_words.select do |available_word|
+          available_word.downcase.start_with?(word_name[0, 2].downcase) ||
+            word_name.downcase.start_with?(available_word[0, 2].downcase)
+        end
+      end
+
+      suggestions.take(3)
+    end
+
+    # Collect all available word names from all modules in scope
+    # @return [Array<String>] Array of all available word names
+    def collect_available_words
+      words = []
+
+      # Collect from global module (hardcoded common words since GlobalModule uses methods)
+      global_words = %w[
+        POP DUP SWAP >STR CONCAT SPLIT JOIN /N /R /T LOWERCASE UPPERCASE
+        APPEND REVERSE UNIQUE MAP FOREACH KEYS VALUES LENGTH RANGE SLICE
+        SELECT TAKE DROP NTH LAST FLATTEN REDUCE + - * / MOD
+        == != > >= < <= OR AND NOT IN BOOL INT FLOAT
+        VARIABLES ! @ !@ INTERPRET EXPORT USE-MODULES REC
+      ]
+      words.concat(global_words)
+
+      # Collect from module stack
+      @execution_state.module_stack.each do |mod|
+        if mod.respond_to?(:words) && mod.words
+          words.concat(mod.words.map(&:name))
+        end
+      end
+
+      words.uniq.compact
+    end
+
+    # Calculate Levenshtein distance between two strings
+    # @param [String] str1
+    # @param [String] str2
+    # @return [Integer] The edit distance between the strings
+    def levenshtein_distance(str1, str2)
+      return str2.length if str1.empty?
+      return str1.length if str2.empty?
+
+      # Create matrix
+      matrix = Array.new(str1.length + 1) { Array.new(str2.length + 1, 0) }
+
+      # Initialize first row and column
+      (0..str1.length).each { |i| matrix[i][0] = i }
+      (0..str2.length).each { |j| matrix[0][j] = j }
+
+      # Fill matrix
+      (1..str1.length).each do |i|
+        (1..str2.length).each do |j|
+          cost = (str1[i - 1] == str2[j - 1]) ? 0 : 1
+          matrix[i][j] = [
+            matrix[i - 1][j] + 1,      # deletion
+            matrix[i][j - 1] + 1,      # insertion
+            matrix[i - 1][j - 1] + cost # substitution
+          ].min
+        end
+      end
+
+      matrix[str1.length][str2.length]
     end
   end
 end

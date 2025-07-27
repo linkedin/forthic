@@ -16,5 +16,20 @@ module Forthic
       @start_pos = start_pos
       @end_pos = end_pos
     end
+
+    # @return [String]
+    def to_s
+      "#{@screen_name}:#{@line}:#{@column}"
+    end
+
+    # @return [Integer]
+    def line_number
+      @line
+    end
+
+    # @return [Integer]
+    def column_number
+      @column
+    end
   end
 end

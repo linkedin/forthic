@@ -46,5 +46,20 @@ module Forthic
 
       result.reverse
     end
+
+    # @return [String]
+    def message
+      to_s
+    end
+
+    # @return [String]
+    def to_s
+      parts = [@title]
+      parts << "at #{@location}" if @location
+      if @description && !@description.empty?
+        parts[-1] = "#{parts[-1]}: #{@description}"
+      end
+      parts.join(" ")
+    end
   end
 end
