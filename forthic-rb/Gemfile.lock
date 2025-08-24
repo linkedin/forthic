@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    forthic (0.2.2)
+    forthic (0.2.3)
 
 GEM
   remote: https://rubygems.org/
