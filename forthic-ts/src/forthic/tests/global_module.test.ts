@@ -139,6 +139,58 @@ test("Bang at (!@)", async () => {
   expect(interp.stack_pop()).toBe(24);
 });
 
+test("Auto-create variables with string names", async () => {
+  // Test ! with string variable name (auto-creates variable)
+  await interp.run('"hello" "autovar1" !');
+  await interp.run('autovar1 @');
+  expect(interp.stack_pop()).toBe("hello");
+  
+  // Verify variable was created in app module
+  const autovar1 = (interp as any).app_module.variables["autovar1"];
+  expect(autovar1).toBeDefined();
+  expect(autovar1.get_value()).toBe("hello");
+  
+  // Test @ with string variable name (auto-creates with null)
+  await interp.run('"autovar2" @');
+  expect(interp.stack_pop()).toBe(null);
+  
+  // Verify variable was created
+  const autovar2 = (interp as any).app_module.variables["autovar2"];
+  expect(autovar2).toBeDefined();
+  expect(autovar2.get_value()).toBe(null);
+  
+  // Test !@ with string variable name (auto-creates and returns value)
+  await interp.run('"world" "autovar3" !@');
+  expect(interp.stack_pop()).toBe("world");
+  
+  // Verify variable was created with correct value
+  const autovar3 = (interp as any).app_module.variables["autovar3"];
+  expect(autovar3).toBeDefined();
+  expect(autovar3.get_value()).toBe("world");
+  
+  // Test that existing variables still work with strings
+  await interp.run('"updated" "autovar1" !');
+  await interp.run('"autovar1" @');
+  expect(interp.stack_pop()).toBe("updated");
+});
+
+test("Auto-create variables validation", async () => {
+  // Test that __ prefix variables are rejected
+  expect(async () => {
+    await interp.run('"value" "__invalid" !');
+  }).rejects.toThrow();
+  
+  // Test that validation works for @ as well
+  expect(async () => {
+    await interp.run('"__invalid2" @');
+  }).rejects.toThrow();
+  
+  // Test that validation works for !@ as well
+  expect(async () => {
+    await interp.run('"value" "__invalid3" !@');
+  }).rejects.toThrow();
+});
+
 test("Interpret", async () => {
   await interp.run("'24' INTERPRET");
   expect(interp.stack_pop()).toBe(24);
@@ -1502,21 +1554,21 @@ test("Date literals", async () => {
   // Case 1: Wildcard year and month and day
   await interp.run(`YYYY-MM-DD`);
   let date = interp.stack_pop();
-  expect(zonedDateTime.year).toBe(date.year);
-  expect(zonedDateTime.month).toBe(date.month);
-  expect(zonedDateTime.day).toBe(date.day);
+  expect(date.year).toBe(zonedDateTime.year);
+  expect(date.month).toBe(zonedDateTime.month);
+  expect(date.day).toBe(zonedDateTime.day);
 
   // Case 2: Wildcard year and month
   await interp.run(`YYYY-MM-14`);
   date = interp.stack_pop();
-  expect(zonedDateTime.year).toBe(date.year);
-  expect(zonedDateTime.month).toBe(date.month);
+  expect(date.year).toBe(zonedDateTime.year);
+  expect(date.month).toBe(zonedDateTime.month);
   expect(14).toBe(date.day);
 
   // Case 3: Wildcard year
   await interp.run(`YYYY-02-03`);
   date = interp.stack_pop();
-  expect(zonedDateTime.year).toBe(date.year);
+  expect(date.year).toBe(zonedDateTime.year);
   expect(2).toBe(date.month);
   expect(3).toBe(date.day);
 
@@ -1531,29 +1583,29 @@ test("Date literals", async () => {
   await interp.run(`2025-MM-DD`);
   date = interp.stack_pop();
   expect(2025).toBe(date.year);
-  expect(zonedDateTime.month).toBe(date.month);
-  expect(zonedDateTime.day).toBe(date.day);
+  expect(date.month).toBe(zonedDateTime.month);
+  expect(date.day).toBe(zonedDateTime.day);
 
   // Case 6: Wildcard day
   await interp.run(`2025-03-DD`);
   date = interp.stack_pop();
   expect(2025).toBe(date.year);
   expect(3).toBe(date.month);
-  expect(zonedDateTime.day).toBe(date.day);
+  expect(date.day).toBe(zonedDateTime.day);
 
   // Case 7: Wildcard month
   await interp.run(`2025-MM-03`);
   date = interp.stack_pop();
   expect(2025).toBe(date.year);
-  expect(zonedDateTime.month).toBe(date.month);
+  expect(date.month).toBe(zonedDateTime.month);
   expect(3).toBe(date.day);
 
   // Case 8: Wildcard year and day
   await interp.run(`YYYY-10-DD`);
   date = interp.stack_pop();
-  expect(zonedDateTime.year).toBe(date.year);
+  expect(date.year).toBe(zonedDateTime.year);
   expect(10).toBe(date.month);
-  expect(zonedDateTime.day).toBe(date.day);
+  expect(date.day).toBe(zonedDateTime.day);
 });
 
 // test("DAYS-OF-WEEK", async () => {

@@ -1,4 +1,4 @@
-import { Module, Word, PushValueWord } from "./module";
+import { Module, Word, PushValueWord, Variable } from "./module";
 import {
   is_array,
   is_record,
@@ -45,7 +45,7 @@ export class GlobalModule extends Module {
       this.to_bool,
       this.to_float,
       this.to_zoned_datetime,
-      this.to_literal_date,
+      this.to_literal_date.bind(this),
       this.to_time,
       this.to_int,
     ];
@@ -325,6 +325,32 @@ export class GlobalModule extends Module {
   // =======================
   // Words
 
+  // Helper method to get or create a variable from a string name
+  private static get_or_create_variable(interp: Interpreter, name: string): Variable {
+    // Validate variable name - no __ prefix allowed
+    if (name.match(/__.*/)) {
+      throw new InvalidVariableNameError(
+        interp.get_top_input_string(),
+        name,
+        "Variable names cannot begin with '__'",
+        interp.get_string_location(),
+      );
+    }
+
+    const cur_module = interp.cur_module();
+
+    // Check if variable already exists
+    let variable = cur_module.variables[name];
+
+    // Create it if it doesn't exist
+    if (!variable) {
+      cur_module.add_variable(name);
+      variable = cur_module.variables[name];
+    }
+
+    return variable;
+  }
+
   // ( varnames -- )
   word_VARIABLES(interp: Interpreter): void {
     const varnames = interp.stack_pop();
@@ -342,23 +368,53 @@ export class GlobalModule extends Module {
     });
   }
 
-  // ( value variable -- )
+  // ( value variable -- ) or ( value variable_name -- )
   word_bang(interp: Interpreter) {
-    const variable = interp.stack_pop();
+    const variable_or_name = interp.stack_pop();
     const value = interp.stack_pop();
+
+    let variable: Variable;
+    if (typeof variable_or_name === 'string') {
+      // Auto-create variable if passed a string
+      variable = GlobalModule.get_or_create_variable(interp, variable_or_name);
+    } else {
+      // Use existing Variable object
+      variable = variable_or_name;
+    }
+
     variable.value = value;
   }
 
-  // ( variable -- value )
+  // ( variable -- value ) or ( variable_name -- value )
   word_at(interp: Interpreter) {
-    const variable = interp.stack_pop();
+    const variable_or_name = interp.stack_pop();
+
+    let variable: Variable;
+    if (typeof variable_or_name === 'string') {
+      // Auto-create variable if passed a string
+      variable = GlobalModule.get_or_create_variable(interp, variable_or_name);
+    } else {
+      // Use existing Variable object
+      variable = variable_or_name;
+    }
+
     interp.stack_push(variable.value);
   }
 
-  // ( value variable -- value )
+  // ( value variable -- value ) or ( value variable_name -- value )
   word_bang_at(interp: Interpreter) {
-    const variable = interp.stack_pop();
+    const variable_or_name = interp.stack_pop();
     const value = interp.stack_pop();
+
+    let variable: Variable;
+    if (typeof variable_or_name === 'string') {
+      // Auto-create variable if passed a string
+      variable = GlobalModule.get_or_create_variable(interp, variable_or_name);
+    } else {
+      // Use existing Variable object
+      variable = variable_or_name;
+    }
+
     variable.value = value;
     interp.stack_push(variable.value);
   }
@@ -2534,7 +2590,7 @@ export class GlobalModule extends Module {
   }
 
   // ( -- )
-  word_NOP(_interp: Interpreter) {}
+  word_NOP(_interp: Interpreter) { }
 
   // ( -- )
   word_START_LOG(interp: Interpreter) {
@@ -2605,7 +2661,7 @@ export class GlobalModule extends Module {
   }
 
   // ( a -- a )
-  async word_IDENTITY(_interp: Interpreter) {}
+  async word_IDENTITY(_interp: Interpreter) { }
 
   // ( value num_places -- str )
   word_to_FIXED(interp: Interpreter) {
