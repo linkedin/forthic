@@ -236,3 +236,110 @@ test("Unterminated string", () => {
     console.log(e.message);
   }
 })
+
+describe("Triple quote string with nested quotes", () => {
+  const reference_location = new CodeLocation({
+    screen_name: "test",
+    line: 1,
+    column: 1,
+    start_pos: 0,
+  });
+
+  test("Basic case: '''I said 'Hello''''", () => {
+    const input = "'''I said 'Hello''''";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.string).toEqual("I said 'Hello'");
+  });
+
+  test("Normal triple quote behavior (no 4+ consecutive quotes)", () => {
+    const input = "'''Hello'''";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.string).toEqual("Hello");
+  });
+
+  test("Double quotes with greedy mode", () => {
+    const input = '"""I said "Hello""""';
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.string).toEqual('I said "Hello"');
+  });
+
+  test("Six consecutive quotes (empty string case)", () => {
+    const input = "''''''";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.string).toEqual("");
+  });
+
+  test("Eight consecutive quotes (two quote content)", () => {
+    const input = "''''''''";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.string).toEqual("''");
+  });
+
+  test("Multiple nested quotes", () => {
+    const input = `"""He said "I said 'Hello' to you""""`;
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.string).toEqual(`He said "I said 'Hello' to you"`);
+  });
+
+  test("No greedy mode when triple quote not followed by quote", () => {
+    const input = "'''Hello''' world'''";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    // Should close at first ''' since it's not followed by another quote
+    expect(token.string).toEqual("Hello");
+  });
+
+  test("Content with apostrophes (contractions)", () => {
+    const input = "'''It's a beautiful day, isn't it?''''";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.string).toEqual("It's a beautiful day, isn't it?'");
+  });
+
+  test("Mixed quote types don't trigger greedy mode", () => {
+    const input = "'''Hello\"\"\"";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    try {
+      tokenizer.next_token();
+    } catch (e) {
+      expect(e).toBeInstanceOf(UnterminatedStringError);
+    }
+  });
+
+  test("Backward compatibility: normal strings unchanged", () => {
+    const inputs = [
+      "'''simple'''",
+      "'''multi\nline\nstring'''",
+      "'''string with \"double quotes\"'''",
+      "'''string with 'single quotes'''''"
+    ];
+    
+    const expected = [
+      "simple",
+      "multi\nline\nstring", 
+      'string with "double quotes"',
+      "string with 'single quotes''"
+    ];
+    
+    inputs.forEach((input, i) => {
+      const tokenizer = new Tokenizer(input, reference_location);
+      const token = tokenizer.next_token();
+      expect(token.string).toEqual(expected[i]);
+    });
+  });
+});

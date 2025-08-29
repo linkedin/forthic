@@ -364,6 +364,19 @@ export class Tokenizer {
         char === string_delimiter &&
         this.is_triple_quote(this.input_pos, char)
       ) {
+        // Check if this triple quote is followed by at least one more quote (greedy mode trigger)
+        if (
+          this.input_pos + 3 < this.input_string.length &&
+          this.input_string[this.input_pos + 3] === string_delimiter
+        ) {
+          // Greedy mode: include this quote as content and continue looking for the end
+          this.advance_position(1); // Advance by 1 to catch overlapping sequences
+          this.token_string += string_delimiter;
+          this.string_delta.end = this.input_pos;
+          continue;
+        }
+        
+        // Normal behavior: close at first triple quote
         this.advance_position(3);
         const token = new Token(
           TokenType.STRING,
@@ -421,6 +434,7 @@ export class Tokenizer {
       this.get_token_location(),
     );
   }
+
 
   transition_from_GATHER_WORD(): Token {
     this.note_start_token();

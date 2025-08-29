@@ -358,10 +358,11 @@ test("Nested string issue", async () => {
   const gen = interp.streamingRun(`"""Reply saying "Thanks`, false);
   await gen.next();
 
-  // Should throw an error because we're done
+  // Should now handle nested quotes correctly (no longer throws error)
   interp = new Interpreter();
   const gen2 = interp.streamingRun(`"""Reply saying "Thanks""""`, true);
-  await expect(gen2.next()).rejects.toThrow(UnterminatedStringError);
+  const result = await gen2.next();
+  expect(result.done).toBe(true);
 });
 
 class SampleModule extends Module {
