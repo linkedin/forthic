@@ -11,6 +11,7 @@ export enum TokenType {
   END_DEF,
   START_MEMO,
   WORD,
+  DOT_SYMBOL,
   EOS,
 }
 
@@ -213,7 +214,10 @@ export class Tokenizer {
         return this.transition_from_GATHER_TRIPLE_QUOTE_STRING(char);
       } else if (this.is_quote(char))
         return this.transition_from_GATHER_STRING(char);
-      else {
+      else if (char === ".") {
+        this.advance_position(-1); // Back up to beginning of dot symbol
+        return this.transition_from_GATHER_DOT_SYMBOL();
+      } else {
         this.advance_position(-1); // Back up to beginning of word
         return this.transition_from_GATHER_WORD();
       }
@@ -450,6 +454,40 @@ export class Tokenizer {
     return new Token(
       TokenType.WORD,
       this.token_string,
+      this.get_token_location(),
+    );
+  }
+
+  transition_from_GATHER_DOT_SYMBOL(): Token {
+    this.note_start_token();
+    let full_token_string = "";
+    while (this.input_pos < this.input_string.length) {
+      const char = this.input_string[this.input_pos];
+      this.advance_position(1);
+      if (this.is_whitespace(char)) break;
+      if ([";", "[", "]", "{", "}", "#"].indexOf(char) >= 0) {
+        this.advance_position(-1);
+        break;
+      } else {
+        full_token_string += char;
+        this.token_string += char;
+      }
+    }
+    
+    // If dot symbol has less than 2 characters after the dot, treat it as a word
+    if (full_token_string.length < 3) { // "." + at least 2 chars = 3 minimum
+      return new Token(
+        TokenType.WORD,
+        full_token_string,
+        this.get_token_location(),
+      );
+    }
+    
+    // For DOT_SYMBOL, return the string without the dot prefix
+    const symbol_without_dot = full_token_string.substring(1);
+    return new Token(
+      TokenType.DOT_SYMBOL,
+      symbol_without_dot,
       this.get_token_location(),
     );
   }
