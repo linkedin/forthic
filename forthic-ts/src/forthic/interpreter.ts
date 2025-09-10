@@ -565,6 +565,7 @@ export class Interpreter {
       this.handle_start_memo_token(token);
     else if (token.type == TokenType.END_DEF)
       this.handle_end_definition_token(token);
+    else if (token.type == TokenType.DOT_SYMBOL) this.handle_dot_symbol_token(token);
     else if (token.type == TokenType.WORD) await this.handle_word_token(token);
     else if (token.type == TokenType.EOS) {
       return;
@@ -582,6 +583,11 @@ export class Interpreter {
     this.handle_word(new PushValueWord("<string>", value));
   }
 
+  handle_dot_symbol_token(token: Token) {
+    const value = new PositionedString(token.string, token.location);
+    this.handle_word(new PushValueWord("<dot-symbol>", value));
+  }
+
   // Start/end module tokens are treated as IMMEDIATE words *and* are also compiled
   async handle_start_module_token(token: Token) {
     const self = this;
@@ -589,7 +595,7 @@ export class Interpreter {
 
     if (self.is_compiling) self.cur_definition.add_word(word);
     self.count_word(word); // For profiling
-    word.execute(self);
+    await word.execute(self);
   }
 
   async handle_end_module_token(_token: Token) {
@@ -598,7 +604,7 @@ export class Interpreter {
 
     if (self.is_compiling) self.cur_definition.add_word(word);
     self.count_word(word);
-    word.execute(self);
+    await word.execute(self);
   }
 
   handle_start_array_token(token: Token) {

@@ -1589,18 +1589,18 @@ export class GlobalModule extends Module {
     let result;
     if (container instanceof Array) {
       interp.stack_push(initial);
-      container.forEach(async (item) => {
+      for (const item of container) {
         interp.stack_push(item);
         await interp.run(forthic, string_location);
-      });
+      }
       result = interp.stack_pop();
     } else {
       interp.stack_push(initial);
-      Object.keys(container).forEach(async (k) => {
+      for (const k of Object.keys(container)) {
         const v = container[k];
         interp.stack_push(v);
         await interp.run(forthic, string_location);
-      });
+      }
       result = interp.stack_pop();
     }
 

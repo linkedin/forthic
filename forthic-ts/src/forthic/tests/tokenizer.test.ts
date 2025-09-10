@@ -1,4 +1,4 @@
-import { Tokenizer, CodeLocation, InvalidWordNameError, UnterminatedStringError } from "../tokenizer";
+import { Tokenizer, CodeLocation, InvalidWordNameError, UnterminatedStringError, TokenType } from "../tokenizer";
 
 test("Knows token positions", () => {
   const main_forthic = `
@@ -341,5 +341,193 @@ describe("Triple quote string with nested quotes", () => {
       const token = tokenizer.next_token();
       expect(token.string).toEqual(expected[i]);
     });
+  });
+});
+
+describe("Dot symbol tokenization", () => {
+  const reference_location = new CodeLocation({
+    screen_name: "test",
+    line: 1,
+    column: 1,
+    start_pos: 0,
+  });
+
+  test("Basic dot symbol: .symbol", () => {
+    const input = ".symbol";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token.string).toEqual("symbol");
+  });
+
+  test("Dot symbol with numbers and hyphens: .symbol-123", () => {
+    const input = ".symbol-123";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token.string).toEqual("symbol-123");
+  });
+
+  test("Dot symbol with underscores: .my_symbol_123", () => {
+    const input = ".my_symbol_123";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token.string).toEqual("my_symbol_123");
+  });
+
+  test("Dot symbol terminated by whitespace", () => {
+    const input = ".symbol NEXT";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const token1 = tokenizer.next_token();
+    expect(token1.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token1.string).toEqual("symbol");
+    
+    const token2 = tokenizer.next_token();
+    expect(token2.type).toEqual(TokenType.WORD);
+    expect(token2.string).toEqual("NEXT");
+  });
+
+  test("Dot symbol terminated by array bracket", () => {
+    const input = ".symbol]";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const token1 = tokenizer.next_token();
+    expect(token1.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token1.string).toEqual("symbol");
+    
+    const token2 = tokenizer.next_token();
+    expect(token2.type).toEqual(TokenType.END_ARRAY);
+    expect(token2.string).toEqual("]");
+  });
+
+  test("Dot symbol terminated by semicolon", () => {
+    const input = ".symbol;";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const token1 = tokenizer.next_token();
+    expect(token1.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token1.string).toEqual("symbol");
+    
+    const token2 = tokenizer.next_token();
+    expect(token2.type).toEqual(TokenType.END_DEF);
+    expect(token2.string).toEqual(";");
+  });
+
+  test("Dot symbol in array: [.symbol1 .symbol2]", () => {
+    const input = "[.symbol1 .symbol2]";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const tokens = [];
+    let token = tokenizer.next_token();
+    while (token.type !== TokenType.EOS) {
+      tokens.push(token);
+      token = tokenizer.next_token();
+    }
+    
+    expect(tokens.length).toEqual(4);
+    expect(tokens[0].type).toEqual(TokenType.START_ARRAY);
+    expect(tokens[1].type).toEqual(TokenType.DOT_SYMBOL);
+    expect(tokens[1].string).toEqual("symbol1");
+    expect(tokens[2].type).toEqual(TokenType.DOT_SYMBOL);
+    expect(tokens[2].string).toEqual("symbol2");
+    expect(tokens[3].type).toEqual(TokenType.END_ARRAY);
+  });
+
+  test("Dot symbol with complex characters: .test@domain.com", () => {
+    const input = ".test@domain.com";
+    const tokenizer = new Tokenizer(input, reference_location);
+    const token = tokenizer.next_token();
+    
+    expect(token.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token.string).toEqual("test@domain.com");
+  });
+
+  test("Just a dot by itself should be treated as a word", () => {
+    const input = ". NEXT";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const token1 = tokenizer.next_token();
+    expect(token1.type).toEqual(TokenType.WORD);
+    expect(token1.string).toEqual(".");
+    
+    const token2 = tokenizer.next_token();
+    expect(token2.type).toEqual(TokenType.WORD);
+    expect(token2.string).toEqual("NEXT");
+  });
+
+  test("Short dot symbols (.s, .S) should be treated as words", () => {
+    const input = ".s .S .x";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const token1 = tokenizer.next_token();
+    expect(token1.type).toEqual(TokenType.WORD);
+    expect(token1.string).toEqual(".s");
+    
+    const token2 = tokenizer.next_token();
+    expect(token2.type).toEqual(TokenType.WORD);
+    expect(token2.string).toEqual(".S");
+    
+    const token3 = tokenizer.next_token();
+    expect(token3.type).toEqual(TokenType.WORD);
+    expect(token3.string).toEqual(".x");
+  });
+
+  test("Minimum length dot symbol (.ab) should be treated as DOT_SYMBOL", () => {
+    const input = ".ab NEXT";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const token1 = tokenizer.next_token();
+    expect(token1.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token1.string).toEqual("ab");
+    
+    const token2 = tokenizer.next_token();
+    expect(token2.type).toEqual(TokenType.WORD);
+    expect(token2.string).toEqual("NEXT");
+  });
+
+  test("Multiple dot symbols in sequence", () => {
+    const input = ".first .second .third";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const token1 = tokenizer.next_token();
+    expect(token1.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token1.string).toEqual("first");
+    
+    const token2 = tokenizer.next_token();
+    expect(token2.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token2.string).toEqual("second");
+    
+    const token3 = tokenizer.next_token();
+    expect(token3.type).toEqual(TokenType.DOT_SYMBOL);
+    expect(token3.string).toEqual("third");
+  });
+
+  test("Dot symbol mixed with other tokens", () => {
+    const input = ": TEST-DEF   .symbol 42 + ;";
+    const tokenizer = new Tokenizer(input, reference_location);
+    
+    const tokens = [];
+    let token = tokenizer.next_token();
+    while (token.type !== TokenType.EOS) {
+      tokens.push(token);
+      token = tokenizer.next_token();
+    }
+    
+    expect(tokens.length).toEqual(5);
+    expect(tokens[0].type).toEqual(TokenType.START_DEF);
+    expect(tokens[0].string).toEqual("TEST-DEF");
+    expect(tokens[1].type).toEqual(TokenType.DOT_SYMBOL);
+    expect(tokens[1].string).toEqual("symbol");
+    expect(tokens[2].type).toEqual(TokenType.WORD);
+    expect(tokens[2].string).toEqual("42");
+    expect(tokens[3].type).toEqual(TokenType.WORD);
+    expect(tokens[3].string).toEqual("+");
+    expect(tokens[4].type).toEqual(TokenType.END_DEF);
+    expect(tokens[4].string).toEqual(";");
   });
 });
