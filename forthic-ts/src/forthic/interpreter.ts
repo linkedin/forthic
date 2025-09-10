@@ -589,7 +589,7 @@ export class Interpreter {
 
     if (self.is_compiling) self.cur_definition.add_word(word);
     self.count_word(word); // For profiling
-    word.execute(self);
+    await word.execute(self);
   }
 
   async handle_end_module_token(_token: Token) {
@@ -598,7 +598,7 @@ export class Interpreter {
 
     if (self.is_compiling) self.cur_definition.add_word(word);
     self.count_word(word);
-    word.execute(self);
+    await word.execute(self);
   }
 
   handle_start_array_token(token: Token) {
