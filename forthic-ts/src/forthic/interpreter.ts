@@ -549,23 +549,23 @@ export class Interpreter {
   // Handle tokens
 
   async handle_token(token: Token) {
-    if (token.type == TokenType.STRING) this.handle_string_token(token);
+    if (token.type == TokenType.STRING) await this.handle_string_token(token);
     else if (token.type == TokenType.COMMENT) this.handle_comment_token(token);
     else if (token.type == TokenType.START_ARRAY)
-      this.handle_start_array_token(token);
+      await this.handle_start_array_token(token);
     else if (token.type == TokenType.END_ARRAY)
-      this.handle_end_array_token(token);
+      await this.handle_end_array_token(token);
     else if (token.type == TokenType.START_MODULE)
       await this.handle_start_module_token(token);
     else if (token.type == TokenType.END_MODULE)
-      this.handle_end_module_token(token);
+      await this.handle_end_module_token(token);
     else if (token.type == TokenType.START_DEF)
       this.handle_start_definition_token(token);
     else if (token.type == TokenType.START_MEMO)
       this.handle_start_memo_token(token);
     else if (token.type == TokenType.END_DEF)
       this.handle_end_definition_token(token);
-    else if (token.type == TokenType.DOT_SYMBOL) this.handle_dot_symbol_token(token);
+    else if (token.type == TokenType.DOT_SYMBOL) await this.handle_dot_symbol_token(token);
     else if (token.type == TokenType.WORD) await this.handle_word_token(token);
     else if (token.type == TokenType.EOS) {
       return;
@@ -578,14 +578,14 @@ export class Interpreter {
     }
   }
 
-  handle_string_token(token: Token) {
+  async handle_string_token(token: Token) {
     const value = new PositionedString(token.string, token.location);
-    this.handle_word(new PushValueWord("<string>", value));
+    await this.handle_word(new PushValueWord("<string>", value));
   }
 
-  handle_dot_symbol_token(token: Token) {
+  async handle_dot_symbol_token(token: Token) {
     const value = new PositionedString(token.string, token.location);
-    this.handle_word(new PushValueWord("<dot-symbol>", value));
+    await this.handle_word(new PushValueWord("<dot-symbol>", value));
   }
 
   // Start/end module tokens are treated as IMMEDIATE words *and* are also compiled
@@ -607,12 +607,12 @@ export class Interpreter {
     await word.execute(self);
   }
 
-  handle_start_array_token(token: Token) {
-    this.handle_word(new PushValueWord("<start_array_token>", token));
+  async handle_start_array_token(token: Token) {
+    await this.handle_word(new PushValueWord("<start_array_token>", token));
   }
 
-  handle_end_array_token(_token: Token) {
-    this.handle_word(new EndArrayWord());
+  async handle_end_array_token(_token: Token) {
+    await this.handle_word(new EndArrayWord());
   }
 
   handle_comment_token(_token: Token) {
