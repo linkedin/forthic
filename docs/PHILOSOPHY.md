@@ -1,3 +1,8 @@
+> **⚠️ ARCHIVED - This documentation is from an archived repository.**
+> **For current documentation, visit:** https://github.com/forthix/forthic
+
+---
+
 # Philosophy of Forthic
 
 Every language has a perspective -- some want to guarantee correctness, some want to guarantee safety, some are focused on conciseness, some on readability. **Forthic is focused on tweakability at the conceptual level of an app.**

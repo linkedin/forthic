@@ -1,3 +1,8 @@
+> **⚠️ ARCHIVED - This documentation is from an archived repository.**
+> **For current documentation, visit:** https://github.com/forthix/forthic
+
+---
+
 # Examples
 Because Forthic apps often pull data from 3rd party sources like gsheets and Jira, it's natural for them to run as web apps -- this makes it possible to implement the OAuth flows.
 

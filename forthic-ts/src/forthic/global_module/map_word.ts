@@ -1,5 +1,5 @@
 import { dup_interpreter } from "../interpreter";
-import type { Interpreter } from "../interpreter";
+import type { BareInterpreter } from "../interpreter";
 
 type MapWordFlags = {
   depth?: number;

@@ -1,3 +1,13 @@
+> **⚠️ DEPRECATED PACKAGE**
+>
+> This package is from an archived repository and will not receive updates.
+>
+> **New repository:** https://github.com/forthix/forthic-py
+>
+> Watch the new repository for announcements about updated packages.
+
+---
+
 # Forthic
 
 Forthic is a stack-based language for making apps tweakable.

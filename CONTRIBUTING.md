@@ -1,3 +1,17 @@
+> **⚠️ ARCHIVED REPOSITORY - NOT ACCEPTING CONTRIBUTIONS**
+>
+> This repository is archived and read-only. We are not accepting new contributions here.
+>
+> **Please contribute to the new repositories:**
+> - **Python Runtime:** https://github.com/forthix/forthic-py
+> - **TypeScript Runtime:** https://github.com/forthix/forthic-ts
+> - **Ruby Runtime:** https://github.com/forthix/forthic-rb
+> - **General/Cross-runtime:** https://github.com/forthix/forthic
+>
+> See the CONTRIBUTING.md file in the relevant repository for contribution guidelines.
+
+---
+
 Contribution Agreement
 ======================
 

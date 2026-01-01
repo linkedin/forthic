@@ -1,3 +1,8 @@
+> **⚠️ ARCHIVED - This documentation is from an archived repository.**
+> **For current documentation, visit:** https://github.com/forthix/forthic
+
+---
+
 # Forthic Syntax
 
 Forthic is intended to be the "top" of the application. It relies on a host language like Python and Javascript to provide lower level capability and constructs. Forthic is designed to coordinate chunks of code written in the host languages.

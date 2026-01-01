@@ -1,7 +1,7 @@
 {
   "name": "@forthic/interp",
-  "version": "0.20.0",
-  "description": "Forthic interpreter",
+  "version": "0.20.1",
+  "description": "[ARCHIVED] Forthic interpreter - See https://github.com/forthix/forthic-ts for the new repository",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "files": [
@@ -17,14 +17,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/linkedin/forthic.git"
+    "url": "git+https://github.com/forthix/forthic-ts.git"
   },
   "author": "Rino Jose",
   "license": "BSD-2-Clause",
   "bugs": {
-    "url": "https://github.com/linkedin/forthic/issues"
+    "url": "https://github.com/forthix/forthic-ts/issues"
   },
-  "homepage": "https://github.com/linkedin/forthic#readme",
+  "homepage": "https://github.com/forthix/forthic-ts#readme",
   "dependencies": {
     "temporal-polyfill": "^0.2.5"
   },

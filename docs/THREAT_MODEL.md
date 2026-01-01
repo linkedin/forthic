@@ -1,3 +1,8 @@
+> **⚠️ ARCHIVED - This documentation is from an archived repository.**
+> **For current documentation, visit:** https://github.com/forthix/forthic
+
+---
+
 # Threat Model
 
 ## Application Architecture

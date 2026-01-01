@@ -1,3 +1,19 @@
+> **⚠️ ARCHIVED REPOSITORY**
+>
+> This repository has been archived and is no longer maintained.
+>
+> **The Forthic project has moved to individual repositories:**
+> - **Index/Overview:** https://github.com/forthix/forthic
+> - **Python Runtime:** https://github.com/forthix/forthic-py
+> - **TypeScript Runtime:** https://github.com/forthix/forthic-ts
+> - **Ruby Runtime:** https://github.com/forthix/forthic-rb
+>
+> All future development happens in the new repositories. Published packages will continue to work.
+>
+> See [MIGRATION.md](MIGRATION.md) for details.
+
+---
+
 # Forthic
 
 Forthic is a stack-based language for making apps tweakable.

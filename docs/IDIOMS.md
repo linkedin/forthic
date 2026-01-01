@@ -1,3 +1,8 @@
+> **⚠️ ARCHIVED - This documentation is from an archived repository.**
+> **For current documentation, visit:** https://github.com/forthix/forthic
+
+---
+
 # Idioms and Techniques
 This document describes conventions for using Forthic in consistent ways. This reflects years of experience building 100s of internal tools at LinkedIn.
 

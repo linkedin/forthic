@@ -7,8 +7,8 @@ name = "forthic"
 authors = [{name = "Rino Jose", email = "rjose@forthix.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
-version = "4.0.0"
-description = "A stack-based language for concisely building tweakable apps"
+version = "4.0.1"
+description = "[ARCHIVED] A stack-based language for concisely building tweakable apps - See https://github.com/forthix/forthic-py"
 dependencies = [
     "urllib3 == 1.26.15",
     "pytz",
@@ -20,6 +20,6 @@ dependencies = [
 ]
 
 [project.urls]
-Home = "https://github.com/linkedin/forthic"
+Home = "https://github.com/forthix/forthic-py"
 
 

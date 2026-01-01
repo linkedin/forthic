@@ -1,3 +1,13 @@
+> **⚠️ DEPRECATED PACKAGE**
+>
+> This package is from an archived repository and will not receive updates.
+>
+> **New repository:** https://github.com/forthix/forthic-ts
+>
+> Watch the new repository for announcements about updated packages.
+
+---
+
 # @forthic/interp
 
 A Forthic interpreter that runs within TypeScript.

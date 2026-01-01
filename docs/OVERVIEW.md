@@ -1,3 +1,8 @@
+> **⚠️ ARCHIVED - This documentation is from an archived repository.**
+> **For current documentation, visit:** https://github.com/forthix/forthic
+
+---
+
 # Overview
 
 Forthic is a stack-based language for building tweakable apps. A Forthic program consists of words executed sequentially. Data is passed between words via a parameter stack. Some words push data, some consume data, some consume and push new data. Here's an example of a Forthic program:
